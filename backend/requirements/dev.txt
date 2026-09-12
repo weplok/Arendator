@@ -1,0 +1,13 @@
+-r prod.txt
+
+# Code style and static analysis
+black>=26.0,<27
+flake8>=7.0,<8
+flake8-bugbear>=24.0,<26
+flake8-comprehensions>=3.14,<4
+flake8-import-order>=0.18,<1
+flake8-quotes>=3.4,<4
+flake8-simplify>=0.21,<1
+pep8-naming>=0.14,<1
+mypy>=1.15,<2
+django-stubs>=5.1,<7
