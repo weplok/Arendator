@@ -3,6 +3,29 @@ line-length = 88
 target-version = ["py314"]
 extend-exclude = '''/(migrations|__pycache__)/'''
 
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+pythonpath = ["backend"]
+testpaths = ["backend"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py314"
+extend-exclude = ["migrations"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "N", "Q", "SIM"]
+
+[tool.ruff.lint.isort]
+force-sort-within-sections = true
+order-by-type = false
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
 [tool.mypy]
 python_version = "3.14"
 files = ["backend"]
@@ -21,5 +44,5 @@ warn_unused_ignores = true
 django_settings_module = "config.settings"
 
 [[tool.mypy.overrides]]
-module = ["channels.*"]
+module = ["celery.*", "channels.*", "drf_spectacular.*", "rest_framework.*"]
 ignore_missing_imports = true

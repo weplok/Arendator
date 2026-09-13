@@ -15,6 +15,7 @@ htmlcov/
 venv/
 env/
 *.sqlite3
+staticfiles/
 
 # Node.js
 node_modules/

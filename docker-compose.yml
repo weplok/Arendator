@@ -1,0 +1,108 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-arendator}
+      POSTGRES_USER: ${POSTGRES_USER:-arendator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arendator}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build:
+      context: ./backend
+    command:
+      - sh
+      - -c
+      - python manage.py migrate --noinput && daphne -b 0.0.0.0 -p 8000 config.asgi:application
+    environment: &backend-environment
+      DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-unsafe-compose-development-key}
+      DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:5173}
+      DATABASE_ENGINE: django.db.backends.postgresql
+      POSTGRES_DB: ${POSTGRES_DB:-arendator}
+      POSTGRES_USER: ${POSTGRES_USER:-arendator}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-arendator}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_CONN_MAX_AGE: ${POSTGRES_CONN_MAX_AGE:-60}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379/0}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL:-redis://redis:6379/0}
+      CELERY_RESULT_BACKEND: ${CELERY_RESULT_BACKEND:-redis://redis:6379/0}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health/', timeout=2)
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 10s
+
+  celery-worker:
+    build:
+      context: ./backend
+    command: ["celery", "-A", "config", "worker", "--loglevel=info"]
+    environment: *backend-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery-beat:
+    build:
+      context: ./backend
+    command:
+      - celery
+      - -A
+      - config
+      - beat
+      - --loglevel=info
+      - --schedule=/tmp/celerybeat-schedule
+    environment: *backend-environment
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  frontend:
+    build:
+      context: ./frontend
+    environment:
+      VITE_BACKEND_PROXY_URL: ${VITE_BACKEND_PROXY_URL:-http://backend:8000}
+    ports:
+      - "5173:5173"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  redis-data:
