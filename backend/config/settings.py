@@ -27,7 +27,11 @@ ALLOWED_HOSTS = env_list(
     "DJANGO_ALLOWED_HOSTS",
     "localhost,127.0.0.1,backend",
 )
-CSRF_TRUSTED_ORIGINS = env_list("DJANGO_CSRF_TRUSTED_ORIGINS")
+CSRF_TRUSTED_ORIGINS = env_list(
+    "DJANGO_CSRF_TRUSTED_ORIGINS",
+    "http://localhost:5173,http://127.0.0.1:5173",
+)
+COOKIE_SECURE = env_bool("DJANGO_COOKIE_SECURE", default=not DEBUG)
 
 INSTALLED_APPS = [
     "daphne",
@@ -127,6 +131,9 @@ USE_TZ = True
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
@@ -153,10 +160,22 @@ CELERY_TIMEZONE = TIME_ZONE
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.SessionAuthentication",
+        "core.authentication.CookieSessionAuthentication",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    "EXCEPTION_HANDLER": "core.exceptions.api_exception_handler",
+    "DEFAULT_THROTTLE_RATES": {
+        "auth_login": "10/minute",
+        "auth_register": "5/hour",
+    },
 }
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = COOKIE_SECURE
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SECURE = COOKIE_SECURE
+CSRF_COOKIE_SAMESITE = "Lax"
+CSRF_FAILURE_VIEW = "core.exceptions.csrf_failure"
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Arendator API",

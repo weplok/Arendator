@@ -30,12 +30,15 @@ services:
     command:
       - sh
       - -c
-      - python manage.py migrate --noinput && daphne -b 0.0.0.0 -p 8000 config.asgi:application
+      - python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./backend:/app
     environment: &backend-environment
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-unsafe-compose-development-key}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
-      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:5173}
+      DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
+      DJANGO_COOKIE_SECURE: ${DJANGO_COOKIE_SECURE:-false}
       DATABASE_ENGINE: django.db.backends.postgresql
       POSTGRES_DB: ${POSTGRES_DB:-arendator}
       POSTGRES_USER: ${POSTGRES_USER:-arendator}
@@ -68,6 +71,8 @@ services:
     build:
       context: ./backend
     command: ["celery", "-A", "config", "worker", "--loglevel=info"]
+    volumes:
+      - ./backend:/app
     environment: *backend-environment
     depends_on:
       postgres:
@@ -85,6 +90,8 @@ services:
       - beat
       - --loglevel=info
       - --schedule=/tmp/celerybeat-schedule
+    volumes:
+      - ./backend:/app
     environment: *backend-environment
     depends_on:
       postgres:
@@ -97,6 +104,10 @@ services:
       context: ./frontend
     environment:
       VITE_BACKEND_PROXY_URL: ${VITE_BACKEND_PROXY_URL:-http://backend:8000}
+      CHOKIDAR_USEPOLLING: ${CHOKIDAR_USEPOLLING:-true}
+    volumes:
+      - ./frontend:/app
+      - frontend-node-modules:/app/node_modules
     ports:
       - "5173:5173"
     depends_on:
@@ -106,3 +117,4 @@ services:
 volumes:
   postgres-data:
   redis-data:
+  frontend-node-modules:

@@ -26,6 +26,19 @@
 - После изменений Python-кода запустите `./scripts/format-backend.ps1`, затем `venv\Scripts\python.exe -m flake8 backend` и `venv\Scripts\python.exe -m mypy backend`.
 - Не реализуйте функции из `TODO.md` без отдельной задачи.
 
+## Frontend: обязательный pipeline
+
+- Frontend находится в `frontend/`; для любой задачи, затрагивающей его код,
+  сначала применяйте навык `.agents/skills/frontend-quality` и следуйте
+  `frontend/AGENTS.md`.
+- Задача с изменениями frontend-кода не завершена, пока `npm run check` из
+  `frontend/` не завершится успешно. Команда включает lint, unit/component
+  tests и production build.
+- Для изменения пользовательского поведения добавляйте или обновляйте
+  поведенческий тест Vitest + Testing Library. Для изменений интерфейса также
+  выполняйте UI/UX и accessibility-ревью, а для критичного пользовательского
+  сценария — браузерную проверку, когда тестовое окружение доступно.
+
 ## Завершение задачи
 
 В итоговом сообщении обязательно перечислите:

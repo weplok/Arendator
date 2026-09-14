@@ -31,3 +31,6 @@ coverage/
 Thumbs.db
 .DS_Store
 docs/
+docs/*
+.agents/
+backend/media/*

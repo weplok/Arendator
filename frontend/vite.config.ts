@@ -14,6 +14,10 @@ export default defineConfig(({ mode }) => {
           target: env.VITE_BACKEND_PROXY_URL ?? "http://localhost:8000",
           changeOrigin: true,
         },
+        "/media": {
+          target: env.VITE_BACKEND_PROXY_URL ?? "http://localhost:8000",
+          changeOrigin: true,
+        },
       },
     },
     test: {
