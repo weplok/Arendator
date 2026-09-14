@@ -20,6 +20,7 @@ docker compose up --build
 - OpenAPI: <http://localhost:8000/api/schema/>;
 - Swagger UI: <http://localhost:8000/api/docs/>;
 - Django admin: <http://localhost:8000/admin/>.
+- проверочное дерево категорий: <http://localhost:5173/categories>.
 
 Backend перед стартом автоматически применяет миграции. Исходники backend и
 frontend подключены в контейнеры как bind mounts: Django и Vite автоматически
@@ -104,6 +105,8 @@ Frontend содержит маршруты `/register` и `/login`, а посл�
 - `POST /api/v1/auth/login/` — войти;
 - `POST /api/v1/auth/logout/` — завершить сессию;
 - `GET /api/v1/auth/me/` — получить текущего пользователя.
+- `GET /api/v1/categories/` — получить дерево категорий плоским списком с
+  характеристиками и вариантами значений.
 
 В production задайте `DJANGO_DEBUG=false` и `DJANGO_COOKIE_SECURE=true`. Для
 локального HTTP запуска значение `DJANGO_COOKIE_SECURE` должно оставаться `false`.

@@ -5,9 +5,19 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { CURRENT_USER_QUERY_KEY, getCurrentUser } from "./api/auth";
 import { LoginPage } from "./auth/LoginPage";
 import { RegisterPage } from "./auth/RegisterPage";
+import { CategoriesPage } from "./categories/CategoriesPage";
 import { HomePage } from "./HomePage";
 
 export default function App() {
+  return (
+    <Routes>
+      <Route path="/categories" element={<CategoriesPage />} />
+      <Route path="*" element={<SessionApp />} />
+    </Routes>
+  );
+}
+
+function SessionApp() {
   const currentUserQuery = useQuery({
     queryKey: CURRENT_USER_QUERY_KEY,
     queryFn: getCurrentUser,

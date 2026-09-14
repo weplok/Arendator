@@ -11,4 +11,4 @@ inline-quotes = double
 multiline-quotes = double
 docstring-quotes = double
 import-order-style = google
-application-import-names = config, core, users
+application-import-names = categories, config, core, users

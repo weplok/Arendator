@@ -138,6 +138,78 @@ describe("authentication flow", () => {
   });
 });
 
+describe("category tree", () => {
+  it("announces category loading", () => {
+    vi.stubGlobal("fetch", vi.fn().mockReturnValue(new Promise(() => undefined)));
+
+    renderApp("/categories");
+
+    expect(screen.getByRole("status")).toHaveTextContent("Загрузка категорий");
+  });
+
+  it("renders categories with their hierarchy", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        jsonResponse([
+          {
+            id: 1,
+            name: "Инструменты",
+            parent_id: null,
+            characteristics: [],
+          },
+          {
+            id: 2,
+            name: "Электроинструменты",
+            parent_id: 1,
+            characteristics: [],
+          },
+          {
+            id: 3,
+            name: "Дрели",
+            parent_id: 2,
+            characteristics: [],
+          },
+        ]),
+      ),
+    );
+
+    renderApp("/categories");
+
+    expect(await screen.findByText("Инструменты")).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Дерево категорий" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Электроинструменты")).toBeInTheDocument();
+    expect(screen.getByText("Дрели")).toBeInTheDocument();
+    expect(screen.getAllByRole("list")).toHaveLength(3);
+  });
+
+  it("shows an empty state when no categories exist", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse([])));
+
+    renderApp("/categories");
+
+    expect(
+      await screen.findByText("Категории пока не созданы."),
+    ).toBeInTheDocument();
+  });
+
+  it("shows an error and retry action when loading fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response(null, { status: 500 })),
+    );
+
+    renderApp("/categories");
+
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "Не удалось загрузить категории.",
+    );
+    expect(screen.getByRole("button", { name: "Повторить" })).toBeEnabled();
+  });
+});
+
 function renderApp(initialEntry: string): void {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
