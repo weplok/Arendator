@@ -21,6 +21,9 @@ const theme = createTheme({
       'Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
     h3: { fontWeight: 750, letterSpacing: "-0.035em" },
     h4: { fontWeight: 750, letterSpacing: "-0.025em" },
+    h2: { fontWeight: 780, letterSpacing: "-0.045em" },
+    h5: { fontWeight: 750, letterSpacing: "-0.015em" },
+    h6: { fontWeight: 750 },
     body1: { lineHeight: 1.6 },
   },
   components: {
@@ -32,6 +35,16 @@ const theme = createTheme({
     },
     MuiTextField: {
       defaultProps: { fullWidth: true },
+    },
+    MuiIconButton: {
+      styleOverrides: {
+        root: { width: 44, height: 44 },
+      },
+    },
+    MuiTab: {
+      styleOverrides: {
+        root: { minHeight: 52, textTransform: "none", fontWeight: 700 },
+      },
     },
   },
 });

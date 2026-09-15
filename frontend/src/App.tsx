@@ -5,8 +5,12 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { CURRENT_USER_QUERY_KEY, getCurrentUser } from "./api/auth";
 import { LoginPage } from "./auth/LoginPage";
 import { RegisterPage } from "./auth/RegisterPage";
+import { CatalogPage } from "./catalog/CatalogPage";
+import { ManagerProfilePage } from "./catalog/ManagerProfilePage";
+import { ProductDetailPage } from "./catalog/ProductDetailPage";
 import { CategoriesPage } from "./categories/CategoriesPage";
 import { HomePage } from "./HomePage";
+import { AppShell } from "./layout/AppShell";
 
 export default function App() {
   return (
@@ -46,20 +50,31 @@ function SessionApp() {
     );
   }
 
-  if (currentUserQuery.data) {
-    return (
-      <Routes>
-        <Route path="/" element={<HomePage user={currentUserQuery.data} />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    );
-  }
-
+  const user = currentUserQuery.data;
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
-      <Route path="*" element={<Navigate to="/login" replace />} />
+      <Route
+        path="*"
+        element={
+          <AppShell user={user}>
+            <Routes>
+              <Route path="/" element={<CatalogPage />} />
+              <Route
+                path="/products/:productId"
+                element={<ProductDetailPage user={user} />}
+              />
+              <Route path="/managers/:managerId" element={<ManagerProfilePage />} />
+              <Route
+                path="/account"
+                element={user ? <HomePage user={user} /> : <Navigate to="/" replace />}
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </AppShell>
+        }
+      />
     </Routes>
   );
 }

@@ -107,6 +107,13 @@ Frontend содержит маршруты `/register` и `/login`, а посл�
 - `GET /api/v1/auth/me/` — получить текущего пользователя.
 - `GET /api/v1/categories/` — получить дерево категорий плоским списком с
   характеристиками и вариантами значений.
+- `GET /api/v1/products/` — получить страницу публичного каталога;
+- `GET /api/v1/products/{id}/` — получить карточку товара;
+- `GET /api/v1/managers/{id}/` — получить публичный профиль менеджера;
+- `GET /api/v1/managers/{id}/products/active/` — получить активные товары
+  менеджера;
+- `GET /api/v1/managers/{id}/products/frozen/` — получить замороженные товары
+  менеджера.
 
 В production задайте `DJANGO_DEBUG=false` и `DJANGO_COOKIE_SECURE=true`. Для
 локального HTTP запуска значение `DJANGO_COOKIE_SECURE` должно оставаться `false`.

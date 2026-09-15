@@ -3,7 +3,11 @@ import { Alert, Button, Link, Stack, TextField, Typography } from "@mui/material
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
-import { Link as RouterLink, useNavigate } from "react-router-dom";
+import {
+  Link as RouterLink,
+  useNavigate,
+  useSearchParams,
+} from "react-router-dom";
 import { z } from "zod";
 
 import { CURRENT_USER_QUERY_KEY, login } from "../api/auth";
@@ -20,6 +24,7 @@ const LOGIN_FIELDS: readonly (keyof LoginFormValues)[] = ["email", "password"];
 
 export function LoginPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const errorSummaryRef = useRef<HTMLDivElement>(null);
   const form = useForm<LoginFormValues>({
@@ -30,7 +35,7 @@ export function LoginPage() {
     mutationFn: login,
     onSuccess: (user) => {
       queryClient.setQueryData(CURRENT_USER_QUERY_KEY, user);
-      navigate("/", { replace: true });
+      navigate(readSafeNextPath(searchParams.get("next")), { replace: true });
     },
   });
 
@@ -111,4 +116,11 @@ export function LoginPage() {
       </Stack>
     </AuthLayout>
   );
+}
+
+function readSafeNextPath(value: string | null): string {
+  if (!value || !value.startsWith("/") || value.startsWith("//")) {
+    return "/account";
+  }
+  return value;
 }

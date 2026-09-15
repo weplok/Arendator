@@ -65,7 +65,7 @@ export function RegisterPage() {
     mutationFn: registerUser,
     onSuccess: (user) => {
       queryClient.setQueryData(CURRENT_USER_QUERY_KEY, user);
-      navigate("/", { replace: true });
+      navigate("/account", { replace: true });
     },
   });
 

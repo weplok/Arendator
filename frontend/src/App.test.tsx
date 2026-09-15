@@ -19,10 +19,10 @@ afterEach(() => {
 });
 
 describe("authentication flow", () => {
-  it("shows login when there is no active session", async () => {
+  it("shows login when a guest opens the login page", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(unauthenticatedResponse()));
 
-    renderApp("/");
+    renderApp("/login");
 
     expect(
       await screen.findByRole("heading", { name: "Вход в аккаунт" }),
@@ -32,7 +32,7 @@ describe("authentication flow", () => {
   it("restores the current user from the cookie session", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(renter)));
 
-    renderApp("/");
+    renderApp("/account");
 
     expect(
       await screen.findByRole("heading", {
@@ -121,18 +121,24 @@ describe("authentication flow", () => {
     expect(screen.getByDisplayValue("не-email")).toBeInTheDocument();
   });
 
-  it("logs out and returns to login", async () => {
+  it("logs out and returns to the public catalog", async () => {
     document.cookie = "csrftoken=logout-token; path=/";
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(renter));
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
-    renderApp("/");
+    fetchMock.mockResolvedValueOnce(jsonResponse({
+      count: 0,
+      next: null,
+      previous: null,
+      results: [],
+    }));
+    renderApp("/account");
 
     fireEvent.click(await screen.findByRole("button", { name: "Выйти" }));
 
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "Вход в аккаунт" }),
+        screen.getByRole("heading", { name: "Каталог оборудования" }),
       ).toBeInTheDocument();
     });
   });
