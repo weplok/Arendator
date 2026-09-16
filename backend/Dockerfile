@@ -13,7 +13,9 @@ RUN python -m pip install --upgrade pip \
     && adduser --system --ingroup app app
 
 COPY --chown=app:app . .
-RUN python manage.py collectstatic --noinput
+RUN python manage.py collectstatic --noinput \
+    && mkdir --parents /app/media \
+    && chown app:app /app/media
 
 USER app
 

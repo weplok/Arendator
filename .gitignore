@@ -30,7 +30,7 @@ coverage/
 *.swo
 Thumbs.db
 .DS_Store
-docs/
 docs/*
+!docs/design/
 .agents/
 backend/media/*

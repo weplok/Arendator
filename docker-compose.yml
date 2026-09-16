@@ -33,6 +33,7 @@ services:
       - python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
+      - media-data:/app/media
     environment: &backend-environment
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-unsafe-compose-development-key}
       DJANGO_DEBUG: ${DJANGO_DEBUG:-true}
@@ -118,3 +119,4 @@ volumes:
   postgres-data:
   redis-data:
   frontend-node-modules:
+  media-data:
