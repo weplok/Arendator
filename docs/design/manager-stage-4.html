@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Этап №4 — первые эскизы кабинета менеджера</title>
+  <link rel="stylesheet" href="manager-stage-4.css">
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 10 9-5M12 12 3 7m9 5v10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-drill" viewBox="0 0 90 90"><path d="M18 24h48l9 10-8 9H44l-7 8H24V40h-6zM47 43v25l-9 7h-9V48M18 28h-8v10h8M66 29v12M51 68h-9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></symbol>
+    <symbol id="i-photo" viewBox="0 0 24 24"><rect x="2.5" y="3.5" width="19" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="8" cy="9" r="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m3 17 6-5 4 3 3-4 5 5" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+  </svg>
+
+  <div class="prototype-bar">
+    <div class="prototype-head"><strong>Этап №4 · эскизы для проверки</strong><span>Первый вариант. Переключайте экраны ниже; это визуальный прототип без сохранения данных.</span></div>
+    <nav class="prototype-nav" aria-label="Экраны эскизов">
+      <a href="#overview">01 Обзор</a><a href="#products">02 Мои товары</a><a href="#basic">03 Основное</a><a href="#photos">04 Фото</a><a href="#features">05 Характеристики</a><a href="#pickup">06 Точка</a><a href="#instances">07 Экземпляры</a><a href="#edit">08 Редактирование</a><a href="#freeze">09 Заморозка</a><a href="#archive">10 Архив</a>
+    </nav>
+  </div>
+
+  <div class="app">
+    <header class="app-header">
+      <a class="brand" href="#overview"><span class="brand-mark" aria-hidden="true"></span>Арентатор</a>
+      <div class="header-right"><a href="#products" class="text-link">Мои товары</a><div class="account"><span class="avatar">А</span><span>Алексей<small>Менеджер</small></span></div></div>
+    </header>
+    <div class="app-body">
+      <aside class="sidebar">
+        <div class="sidebar-label">Кабинет менеджера</div>
+        <nav aria-label="Навигация менеджера">
+          <a class="side-link" data-group="overview" href="#overview"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</a>
+          <a class="side-link" data-group="products" href="#products"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои товары</a>
+          <a class="side-link" data-group="archive" href="#archive"><svg aria-hidden="true"><use href="#i-box"/></svg>Архив</a>
+        </nav>
+        <p class="side-note">Эскиз показывает только управление собственным каталогом на этапе №4.</p>
+      </aside>
+      <main id="content">
+        <section class="screen" id="overview" aria-labelledby="overview-title">
+          <div class="page-head"><div><h1 id="overview-title">Кабинет менеджера</h1><p>Короткая сводка по вашим товарам</p></div><a class="btn btn-primary" href="#basic">+ Добавить товар</a></div>
+          <div class="grid-4">
+            <div class="stat"><div class="stat-label">Всего товаров</div><div class="stat-value">12</div><small>только ваши карточки</small></div>
+            <div class="stat"><div class="stat-label">Опубликовано</div><div class="stat-value">8</div><small>видны в каталоге</small></div>
+            <div class="stat"><div class="stat-label">Черновики</div><div class="stat-value">3</div><small>ждут заполнения</small></div>
+            <div class="stat"><div class="stat-label">В архиве</div><div class="stat-value">1</div><small>заморожен</small></div>
+          </div>
+          <div class="surface"><div class="surface-head"><h2>Продолжить работу</h2><a class="text-link" href="#products">Все товары →</a></div>
+            <div class="table-wrap"><table><thead><tr><th>Товар</th><th>Статус</th><th>Экземпляры</th><th>Действие</th></tr></thead><tbody>
+              <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Аккумуляторная дрель Makita DDF482</span><span class="product-sub">Электроинструмент</span></span></div></td><td data-label="Статус"><span class="status good">Опубликован</span></td><td data-label="Экземпляры">3 всего · 2 свободно</td><td data-label="Действие"><a class="text-link" href="#edit">Редактировать</a></td></tr>
+              <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-photo"/></svg></span><span><span class="product-title">Строительный пылесос</span><span class="product-sub">Уборочное оборудование</span></span></div></td><td data-label="Статус"><span class="status neutral">Черновик</span></td><td data-label="Экземпляры">0</td><td data-label="Действие"><a class="text-link" href="#basic">Продолжить</a></td></tr>
+            </tbody></table></div>
+          </div>
+          <div class="notice info">В этом этапе опубликованный товар появляется в каталоге автоматически после отправки. Приём заявок пока недоступен.</div>
+        </section>
+
+        <section class="screen" id="products" aria-labelledby="products-title">
+          <div class="page-head"><div><h1 id="products-title">Мои товары</h1><p>Создавайте карточки и управляйте собственными экземплярами</p></div><a class="btn btn-primary" href="#basic">+ Добавить товар</a></div>
+          <div class="filters"><span class="pill active">Все активные · 11</span><span class="pill">Опубликованы · 8</span><span class="pill">Черновики · 3</span><a class="pill" href="#archive">Архив · 1</a><input class="search-field" aria-label="Поиск по своим товарам" placeholder="Поиск по названию"></div>
+          <div class="surface"><div class="table-wrap"><table><thead><tr><th>Товар</th><th>Статус</th><th>Ставка</th><th>Экземпляры</th><th>Действие</th></tr></thead><tbody>
+            <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Аккумуляторная дрель Makita DDF482</span><span class="product-sub">Электроинструмент · Москва, Хамовники</span></span></div></td><td data-label="Статус"><span class="status good">Опубликован</span></td><td data-label="Ставка" class="num">3 ₽/мин</td><td data-label="Экземпляры">3 всего · 2 свободно</td><td data-label="Действие"><a class="text-link" href="#edit">Редактировать</a></td></tr>
+            <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-photo"/></svg></span><span><span class="product-title">Строительный пылесос</span><span class="product-sub">Уборочное оборудование</span></span></div></td><td data-label="Статус"><span class="status neutral">Черновик</span></td><td data-label="Ставка" class="num">—</td><td data-label="Экземпляры">0</td><td data-label="Действие"><a class="text-link" href="#basic">Продолжить</a></td></tr>
+            <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-box"/></svg></span><span><span class="product-title">Шлифовальная машина Bosch GWS 9-125</span><span class="product-sub">Электроинструмент · Москва, Пресня</span></span></div></td><td data-label="Статус"><span class="status good">Опубликован</span></td><td data-label="Ставка" class="num">2 ₽/мин</td><td data-label="Экземпляры">0 · нет доступных</td><td data-label="Действие"><a class="text-link" href="#edit">Редактировать</a></td></tr>
+          </tbody></table></div></div>
+          <p class="mock-note">Нулевое наличие не скрывает опубликованную карточку из каталога. В общем списке менеджер видит только свои товары.</p>
+        </section>
+
+        <section class="screen" id="basic" aria-labelledby="basic-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / Новый товар</div>
+          <div class="page-head"><div><h1 id="basic-title">Новый товар</h1><p>Шаг 1 из 5 · Основное</p></div><span class="status neutral">Черновик</span></div>
+          <div class="editor-tabs" aria-label="Разделы редактора"><a class="current" href="#basic">1 Основное</a><a href="#photos">2 Фото</a><a href="#features">3 Характеристики</a><a href="#pickup">4 Точка</a><a href="#instances">5 Экземпляры</a></div>
+          <div class="editor-layout"><div class="surface"><div class="surface-head"><h2>Основная информация</h2></div><div class="form-grid">
+            <div class="field wide"><label for="new-category">Категория <span class="required">*</span></label><select id="new-category"><option>Инструменты → Электроинструмент → Дрели</option></select><span class="field-help">После создания товара категорию изменить нельзя.</span></div>
+            <div class="field wide"><label for="new-name">Название <span class="required">*</span></label><input id="new-name" value="Аккумуляторная дрель Makita DDF482"></div>
+            <div class="field wide"><label for="new-description">Описание <span class="required">*</span></label><textarea id="new-description">Аккумуляторная дрель для сборки мебели и небольших ремонтных работ. В комплекте кейс и зарядное устройство.</textarea></div>
+            <div class="field"><label for="new-rate">Ставка, ₽/мин <span class="required">*</span></label><input id="new-rate" inputmode="decimal" value="3"><span class="field-help">Общая ставка для всех экземпляров товара.</span></div>
+          </div><div class="form-actions"><a class="text-link" href="#products">Отменить</a><div class="right"><a class="btn btn-secondary" href="#products">Сохранить черновик</a><a class="btn btn-primary" href="#photos">Сохранить и продолжить →</a></div></div></div>
+          <aside class="checklist"><h2>Перед публикацией</h2><ul><li>○ Основное</li><li>○ Фото</li><li>○ Обязательные характеристики</li><li>○ Точка самовывоза</li><li>○ Минимум один экземпляр</li></ul><div class="aside-note">После заполнения карточка автоматически перейдёт через этап «На модерации» в статус «Опубликован».</div></aside></div>
+        </section>
+
+        <section class="screen" id="photos" aria-labelledby="photos-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / Новый товар</div>
+          <div class="page-head"><div><h1 id="photos-title">Фотографии товара</h1><p>Шаг 2 из 5 · Покажите оборудование с разных сторон</p></div><span class="status neutral">Черновик</span></div>
+          <div class="editor-tabs" aria-label="Разделы редактора"><a href="#basic">1 Основное</a><a class="current" href="#photos">2 Фото</a><a href="#features">3 Характеристики</a><a href="#pickup">4 Точка</a><a href="#instances">5 Экземпляры</a></div>
+          <div class="editor-layout"><div class="surface"><div class="upload-zone"><svg class="icon" aria-hidden="true"><use href="#i-photo"/></svg><strong>Добавить фотографии</strong><span class="fine">Выберите файлы или перетащите их сюда</span><button class="btn btn-secondary btn-small" type="button">Выбрать файлы</button></div><p class="fine">PNG, JPG или JPEG · до 15 МБ на файл. Количество фотографий не ограничено.</p>
+            <div class="photo-grid"><div class="photo-card"><div class="photo-image"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="photo-meta"><span class="status good">Главное фото</span><button type="button">Удалить</button></div></div><div class="photo-card"><div class="photo-image lighter"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="photo-meta"><button type="button">Сделать главным</button><button type="button">Удалить</button></div></div><div class="photo-card"><div class="photo-image darker"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="photo-meta"><button type="button">Сделать главным</button><button type="button">Удалить</button></div></div></div>
+            <div class="form-actions"><a class="text-link" href="#basic">← Назад</a><div class="right"><a class="btn btn-secondary" href="#products">Сохранить черновик</a><a class="btn btn-primary" href="#features">Сохранить и продолжить →</a></div></div>
+          </div><aside class="checklist"><h2>Перед публикацией</h2><ul><li class="done">✓ Основное</li><li class="done">✓ Фото</li><li>○ Обязательные характеристики</li><li>○ Точка самовывоза</li><li>○ Минимум один экземпляр</li></ul><div class="aside-note">Это публичные фото товара. Фотоакты выдачи и возврата здесь не размещаются.</div></aside></div>
+        </section>
+
+        <section class="screen" id="features" aria-labelledby="features-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / Новый товар</div>
+          <div class="page-head"><div><h1 id="features-title">Характеристики</h1><p>Шаг 3 из 5 · Поля зависят от выбранной категории</p></div><span class="status neutral">Черновик</span></div>
+          <div class="editor-tabs" aria-label="Разделы редактора"><a href="#basic">1 Основное</a><a href="#photos">2 Фото</a><a class="current" href="#features">3 Характеристики</a><a href="#pickup">4 Точка</a><a href="#instances">5 Экземпляры</a></div>
+          <div class="editor-layout"><div class="surface"><div class="group-title"><strong>Общие · Электроинструмент</strong><span>Унаследованы от родительской категории</span></div><div class="form-grid"><div class="field"><label for="power">Мощность, Вт <span class="required">*</span></label><input id="power" inputmode="decimal" value="450"></div><div class="field"><label for="battery">Аккумуляторный</label><select id="battery"><option>Да</option><option>Нет</option></select></div></div><div class="section-gap"></div><div class="group-title"><strong>Дрели</strong><span>Характеристики выбранной категории</span></div><div class="form-grid"><div class="field"><label for="mode">Режим работы <span class="required">*</span></label><select id="mode"><option>Безударный</option><option>Ударный</option></select></div><div class="field"><label for="diameter">Диаметр патрона, мм</label><input id="diameter" inputmode="decimal" value="13"></div></div><div class="form-actions"><a class="text-link" href="#photos">← Назад</a><div class="right"><a class="btn btn-secondary" href="#products">Сохранить черновик</a><a class="btn btn-primary" href="#pickup">Сохранить и продолжить →</a></div></div></div>
+          <aside class="checklist"><h2>Перед публикацией</h2><ul><li class="done">✓ Основное</li><li class="done">✓ Фото</li><li class="done">✓ Обязательные характеристики</li><li>○ Точка самовывоза</li><li>○ Минимум один экземпляр</li></ul><div class="aside-note">Если позже появится новая обязательная характеристика, она будет видна при следующем редактировании значений.</div></aside></div>
+        </section>
+
+        <section class="screen" id="pickup" aria-labelledby="pickup-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / Новый товар</div>
+          <div class="page-head"><div><h1 id="pickup-title">Точка самовывоза</h1><p>Шаг 4 из 5 · Одна точка для всех экземпляров товара</p></div><span class="status neutral">Черновик</span></div>
+          <div class="editor-tabs" aria-label="Разделы редактора"><a href="#basic">1 Основное</a><a href="#photos">2 Фото</a><a href="#features">3 Характеристики</a><a class="current" href="#pickup">4 Точка</a><a href="#instances">5 Экземпляры</a></div>
+          <div class="editor-layout"><div class="surface"><div class="form-grid"><div class="field"><label for="city">Город <span class="required">*</span></label><input id="city" value="Москва"></div><div class="field"><label for="district">Район <span class="required">*</span></label><input id="district" value="Хамовники"></div><div class="field wide"><label for="address">Полный адрес <span class="required">*</span></label><input id="address" value="Комсомольский проспект, 25, подъезд 2"><span class="field-help">Гость увидит только город и район. Полный адрес доступен авторизованным пользователям.</span></div><div class="field"><label for="latitude">Широта <span class="required">*</span></label><input id="latitude" value="55.728684"></div><div class="field"><label for="longitude">Долгота <span class="required">*</span></label><input id="longitude" value="37.577119"></div></div><div class="map" role="img" aria-label="Эскиз карты с одной точкой самовывоза"><span class="map-marker">•</span><span class="map-caption">Предпросмотр точки на карте</span></div><div class="form-actions"><a class="text-link" href="#features">← Назад</a><div class="right"><a class="btn btn-secondary" href="#products">Сохранить черновик</a><a class="btn btn-primary" href="#instances">Сохранить и продолжить →</a></div></div></div>
+          <aside class="checklist"><h2>Перед публикацией</h2><ul><li class="done">✓ Основное</li><li class="done">✓ Фото</li><li class="done">✓ Обязательные характеристики</li><li class="done">✓ Точка самовывоза</li><li>○ Минимум один экземпляр</li></ul><div class="aside-note">После первой публикации точку самовывоза изменить нельзя.</div></aside></div>
+        </section>
+
+        <section class="screen" id="instances" aria-labelledby="instances-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / Новый товар</div>
+          <div class="page-head"><div><h1 id="instances-title">Экземпляры товара</h1><p>Шаг 5 из 5 · Добавьте физические единицы оборудования</p></div><span class="status neutral">Черновик</span></div>
+          <div class="editor-tabs" aria-label="Разделы редактора"><a href="#basic">1 Основное</a><a href="#photos">2 Фото</a><a href="#features">3 Характеристики</a><a href="#pickup">4 Точка</a><a class="current" href="#instances">5 Экземпляры</a></div>
+          <div class="notice info">Для первой публикации нужен хотя бы один экземпляр. После создания экземпляр получает статус «Свободен».</div>
+          <div class="editor-layout"><div><div class="surface"><div class="surface-head"><h2>Добавить экземпляр</h2></div><div class="form-grid"><div class="field wide"><label for="inventory">Инвентарный номер <span class="required">*</span></label><input id="inventory" value="1-1"><span class="field-help">Можно ввести свой номер или сформировать автоматически. Номер уникален среди ваших товаров.</span></div></div><div class="form-actions"><button class="btn btn-secondary" type="button">Сформировать номер</button><button class="btn btn-primary" type="button">Добавить экземпляр</button></div></div><div class="surface"><div class="surface-head"><h2>Добавленные экземпляры · 2</h2></div><div class="table-wrap"><table><thead><tr><th>Инвентарный номер</th><th>Статус</th><th>Действие</th></tr></thead><tbody><tr><td data-label="Номер" class="num">1-1</td><td data-label="Статус"><span class="status good">Свободен</span></td><td data-label="Действие"><button class="btn btn-danger btn-small" type="button">Удалить</button></td></tr><tr><td data-label="Номер" class="num">1-2</td><td data-label="Статус"><span class="status good">Свободен</span></td><td data-label="Действие"><button class="btn btn-danger btn-small" type="button">Удалить</button></td></tr></tbody></table></div></div><div class="form-actions"><a class="text-link" href="#pickup">← Назад</a><div class="right"><a class="btn btn-secondary" href="#products">Сохранить черновик</a><a class="btn btn-primary" href="#products">Опубликовать товар</a></div></div></div>
+          <aside class="checklist"><h2>Готово к публикации</h2><ul><li class="done">✓ Основное</li><li class="done">✓ Фото</li><li class="done">✓ Обязательные характеристики</li><li class="done">✓ Точка самовывоза</li><li class="done">✓ Минимум один экземпляр</li></ul><div class="aside-note">После отправки товар автоматически перейдёт из статуса «На модерации» в «Опубликован» и появится в каталоге.</div></aside></div>
+        </section>
+
+        <section class="screen" id="edit" aria-labelledby="edit-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / Аккумуляторная дрель Makita DDF482</div>
+          <div class="page-head"><div><h1 id="edit-title">Редактирование товара</h1><p>Аккумуляторная дрель Makita DDF482</p></div><div class="head-actions"><span class="status good">Опубликован</span><a class="btn btn-danger" href="#freeze">Заморозить</a></div></div>
+          <div class="notice">Изменения названия, описания, фото, ставки, характеристик и экземпляров сохраняются без повторной модерации. Товар остаётся опубликованным.</div>
+          <div class="editor-tabs" aria-label="Разделы редактора"><a class="current" href="#edit">Основное</a><a href="#photos">Фото</a><a href="#features">Характеристики</a><a href="#pickup">Точка</a><a href="#instances">Экземпляры</a></div>
+          <div class="editor-layout"><div class="surface"><div class="form-grid"><div class="field wide"><label for="edit-category">Категория</label><input id="edit-category" value="Инструменты → Электроинструмент → Дрели" disabled><span class="field-help">Категория фиксируется при создании товара.</span></div><div class="field wide"><label for="edit-name">Название <span class="required">*</span></label><input id="edit-name" value="Аккумуляторная дрель Makita DDF482"></div><div class="field wide"><label for="edit-description">Описание <span class="required">*</span></label><textarea id="edit-description">Аккумуляторная дрель для сборки мебели и небольших ремонтных работ. В комплекте кейс и зарядное устройство.</textarea></div><div class="field"><label for="edit-rate">Ставка, ₽/мин <span class="required">*</span></label><input id="edit-rate" value="3"></div></div><div class="form-actions"><a class="text-link" href="#products">← К списку товаров</a><button class="btn btn-primary" type="button">Сохранить изменения</button></div></div>
+          <aside class="checklist"><h2>Карточка товара</h2><dl class="summary-list"><dt>Статус</dt><dd>Опубликован</dd><dt>Экземпляры</dt><dd>3 всего · 2 свободно</dd><dt>Точка</dt><dd>Москва, Хамовники</dd></dl><div class="aside-note">Точка самовывоза после первой публикации заблокирована. Заморозка помещает товар в архив.</div></aside></div>
+          <div class="surface"><div class="surface-head"><h2>Точка самовывоза</h2><span class="status neutral">Не изменяется</span></div><p class="fine">Москва, Хамовники · Комсомольский проспект, 25, подъезд 2</p><p class="fine">Координаты: 55.728684, 37.577119</p></div>
+        </section>
+
+        <section class="screen" id="freeze" aria-labelledby="freeze-title">
+          <div class="page-head"><div><h1 id="freeze-title">Заморозка товара</h1><p>Подтверждение действия в карточке опубликованного товара</p></div></div>
+          <div class="confirm-backdrop"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialog-title"><h2 id="dialog-title">Заморозить товар?</h2><p><strong>Аккумуляторная дрель Makita DDF482</strong> исчезнет из общего каталога и перейдёт в архив вашего публичного профиля.</p><p>Новые заявки на товар станут недоступны. Уже начатые брони и аренды сохраняются и продолжаются по обычным правилам.</p><p>Товар и его история не удаляются. Возврат из архива в текущих правилах не предусмотрен.</p><div class="dialog-actions"><a class="btn btn-quiet" href="#edit">Отмена</a><a class="btn btn-danger" href="#archive">Заморозить товар</a></div></div></div>
+        </section>
+
+        <section class="screen" id="archive" aria-labelledby="archive-title">
+          <div class="page-head"><div><h1 id="archive-title">Архив товаров</h1><p>Замороженные карточки вашего каталога</p></div><a class="btn btn-secondary" href="#products">К активным товарам</a></div>
+          <div class="notice info">Замороженный товар не виден в общем каталоге. Его карточка остаётся доступной в отдельном архиве публичного профиля менеджера.</div>
+          <div class="surface"><div class="table-wrap"><table><thead><tr><th>Товар</th><th>Статус</th><th>Ставка</th><th>Экземпляры</th><th>Действие</th></tr></thead><tbody><tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Аккумуляторная дрель Makita DDF482</span><span class="product-sub">Электроинструмент · Москва, Хамовники</span></span></div></td><td data-label="Статус"><span class="status neutral">Заморожен</span></td><td data-label="Ставка" class="num">3 ₽/мин</td><td data-label="Экземпляры">3 всего</td><td data-label="Действие"><span class="muted">Просмотр</span></td></tr></tbody></table></div></div>
+          <p class="mock-note">Эскиз не предлагает разморозку: такого перехода нет в текущих правилах `SPEC.md`.</p>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    const allowed = new Set(["overview", "products", "basic", "photos", "features", "pickup", "instances", "edit", "freeze", "archive"]);
+    function showScreen() {
+      const id = location.hash.slice(1);
+      const selected = allowed.has(id) ? id : "overview";
+      document.querySelectorAll(".screen").forEach((section) => section.classList.toggle("active", section.id === selected));
+      document.querySelectorAll(".prototype-nav a").forEach((link) => {
+        if (link.hash === `#${selected}`) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+      const group = selected === "overview" ? "overview" : selected === "archive" ? "archive" : "products";
+      document.querySelectorAll(".side-link").forEach((link) => {
+        if (link.dataset.group === group) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+      window.scrollTo(0, 0);
+    }
+    addEventListener("hashchange", showScreen);
+    showScreen();
+  </script>
+</body>
+</html>
