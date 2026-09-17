@@ -5,7 +5,12 @@ from typing import Any, cast
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
-from catalog.models import PickupPoint, Product, ProductPhoto
+from catalog.models import (
+    PickupPoint,
+    Product,
+    ProductCharacteristicValue,
+    ProductPhoto,
+)
 from categories.models import Category
 from users.models import User
 
@@ -89,6 +94,27 @@ class ProductPhotoSerializer(serializers.ModelSerializer[ProductPhoto]):
         return photo.image.url
 
 
+class ProductCharacteristicValueSerializer(
+    serializers.ModelSerializer[ProductCharacteristicValue]
+):
+    class Meta:
+        model = ProductCharacteristicValue
+        fields = ("characteristic_id", "option_id", "number_value", "boolean_value")
+
+
+class CharacteristicValueInputSerializer(serializers.Serializer):
+    characteristic_id = serializers.IntegerField(min_value=1)
+    option_id = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+    number_value = serializers.DecimalField(
+        max_digits=18, decimal_places=6, required=False, allow_null=True
+    )
+    boolean_value = serializers.BooleanField(required=False, allow_null=True)
+
+
+class ProductCharacteristicValuesInputSerializer(serializers.Serializer):
+    values = CharacteristicValueInputSerializer(many=True)
+
+
 class ProductSummarySerializer(serializers.ModelSerializer[Product]):
     category = ProductCategorySerializer(read_only=True)
     manager = PublicManagerSerializer(read_only=True)
@@ -124,6 +150,7 @@ class ProductSummarySerializer(serializers.ModelSerializer[Product]):
 
 class ProductDetailSerializer(ProductSummarySerializer):
     photos = serializers.SerializerMethodField()
+    characteristics = serializers.SerializerMethodField()
 
     class Meta:
         model = Product
@@ -139,6 +166,7 @@ class ProductDetailSerializer(ProductSummarySerializer):
             "available_instances_count",
             "description",
             "photos",
+            "characteristics",
             "created_at",
             "published_at",
         )
@@ -153,4 +181,12 @@ class ProductDetailSerializer(ProductSummarySerializer):
                 many=True,
                 context=self.context,
             ).data,
+        )
+
+    @extend_schema_field(ProductCharacteristicValueSerializer(many=True))
+    def get_characteristics(self, product: Product) -> list[dict[str, Any]]:
+        values = getattr(product, "catalog_characteristics", ())
+        return cast(
+            list[dict[str, Any]],
+            ProductCharacteristicValueSerializer(values, many=True).data,
         )

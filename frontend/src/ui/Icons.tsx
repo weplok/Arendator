@@ -97,3 +97,11 @@ export function PlusIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+export function MenuIcon(props: IconProps) {
+  return (
+    <IconBase {...props}>
+      <path d="M4 6h16M4 12h16M4 18h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </IconBase>
+  );
+}

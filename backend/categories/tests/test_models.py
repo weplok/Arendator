@@ -1,8 +1,13 @@
 """Category and characteristic model tests."""
 
+from typing import Any
+
 from django.core.exceptions import ValidationError
+from django.db.models.deletion import ProtectedError
 import pytest
 
+from catalog.models import ProductCharacteristicValue
+from catalog.tests.factories import create_product
 from categories.models import Category, Characteristic, CharacteristicOption
 
 pytestmark = pytest.mark.django_db
@@ -133,3 +138,88 @@ def test_list_option_rejects_a_whitespace_only_value() -> None:
         )
 
     assert "value" in error.value.message_dict
+
+
+def test_descendant_cannot_redefine_ancestor_characteristic() -> None:
+    root = Category.objects.create(name="Инструменты")
+    child = Category.objects.create(name="Дрели", parent=root)
+    Characteristic.objects.create(
+        category=root, name="Бренд", type=Characteristic.Type.LIST
+    )
+
+    with pytest.raises(ValidationError) as error:
+        Characteristic.objects.create(
+            category=child, name="бренд", type=Characteristic.Type.BOOLEAN
+        )
+
+    assert "name" in error.value.message_dict
+
+
+def test_same_name_in_separate_branches_is_allowed() -> None:
+    left = Category.objects.create(name="Инструменты")
+    right = Category.objects.create(name="Фото")
+    for category in (left, right):
+        Characteristic.objects.create(
+            category=category, name="Бренд", type=Characteristic.Type.LIST
+        )
+
+
+def test_existing_characteristic_type_is_immutable() -> None:
+    category = Category.objects.create(name="Инструменты")
+    characteristic = Characteristic.objects.create(
+        category=category, name="Бренд", type=Characteristic.Type.LIST
+    )
+    characteristic.type = Characteristic.Type.BOOLEAN
+
+    with pytest.raises(ValidationError) as error:
+        characteristic.save()
+
+    assert "type" in error.value.message_dict
+
+
+def test_used_list_option_is_protected_but_definition_can_be_deleted(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    category = Category.objects.create(name="Инструменты")
+    characteristic = Characteristic.objects.create(
+        category=category, name="Бренд", type=Characteristic.Type.LIST
+    )
+    option = CharacteristicOption.objects.create(
+        characteristic=characteristic, value="A"
+    )
+    product = create_product(category=category)
+    ProductCharacteristicValue.objects.create(
+        product=product, characteristic=characteristic, option=option
+    )
+
+    with pytest.raises(ProtectedError):
+        option.delete()
+    characteristic.delete()
+
+    assert not ProductCharacteristicValue.objects.filter(product=product).exists()
+
+
+def test_moving_branch_cannot_orphan_existing_values(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    root = Category.objects.create(name="Инструменты")
+    child = Category.objects.create(name="Дрели", parent=root)
+    other_root = Category.objects.create(name="Фото")
+    characteristic = Characteristic.objects.create(
+        category=root, name="Бренд", type=Characteristic.Type.LIST
+    )
+    option = CharacteristicOption.objects.create(
+        characteristic=characteristic, value="A"
+    )
+    product = create_product(category=child)
+    ProductCharacteristicValue.objects.create(
+        product=product, characteristic=characteristic, option=option
+    )
+    child.parent = other_root
+
+    with pytest.raises(ValidationError) as error:
+        child.save()
+
+    assert "parent" in error.value.message_dict

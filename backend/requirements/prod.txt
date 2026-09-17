@@ -6,6 +6,7 @@ Django==6.1.1
 djangorestframework==3.18.1
 drf-spectacular==0.30.0
 Pillow==12.3.0
+PyYAML==6.0.3
 psycopg2-binary==2.9.13
 redis==8.1.0
 whitenoise==6.12.0

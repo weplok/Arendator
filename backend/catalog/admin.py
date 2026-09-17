@@ -6,7 +6,13 @@ from django import forms
 from django.contrib import admin
 from django.http import HttpRequest
 
-from catalog.models import PickupPoint, Product, ProductInstance, ProductPhoto
+from catalog.models import (
+    PickupPoint,
+    Product,
+    ProductCharacteristicValue,
+    ProductInstance,
+    ProductPhoto,
+)
 
 
 class ProductInstanceAdminForm(forms.ModelForm):
@@ -113,3 +119,16 @@ class ProductInstanceAdmin(admin.ModelAdmin):
         obj: ProductInstance | None = None,
     ) -> bool:
         return False
+
+
+@admin.register(ProductCharacteristicValue)
+class ProductCharacteristicValueAdmin(admin.ModelAdmin):
+    list_display = (
+        "product",
+        "characteristic",
+        "option",
+        "number_value",
+        "boolean_value",
+    )
+    list_select_related = ("product", "characteristic", "option")
+    autocomplete_fields = ("product", "characteristic")

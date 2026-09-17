@@ -26,13 +26,18 @@ services:
 
   backend:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     command:
       - sh
-      - -c
-      - python manage.py migrate --noinput && python manage.py runserver 0.0.0.0:8000
+      - /app/start-backend.sh
+      - python
+      - manage.py
+      - runserver
+      - 0.0.0.0:8000
     volumes:
       - ./backend:/app
+      - ./docs:/docs:ro
       - media-data:/app/media
     environment: &backend-environment
       DJANGO_SECRET_KEY: ${DJANGO_SECRET_KEY:-unsafe-compose-development-key}
@@ -40,6 +45,9 @@ services:
       DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1,backend}
       DJANGO_CSRF_TRUSTED_ORIGINS: ${DJANGO_CSRF_TRUSTED_ORIGINS:-http://localhost:5173,http://127.0.0.1:5173}
       DJANGO_COOKIE_SECURE: ${DJANGO_COOKIE_SECURE:-false}
+      DJANGO_SUPERUSER_EMAIL: ${DJANGO_SUPERUSER_EMAIL:?Set DJANGO_SUPERUSER_EMAIL in .env}
+      DJANGO_SUPERUSER_PASSWORD: ${DJANGO_SUPERUSER_PASSWORD:?Set DJANGO_SUPERUSER_PASSWORD in .env}
+      DJANGO_SUPERUSER_NAME: ${DJANGO_SUPERUSER_NAME:-Администратор}
       DATABASE_ENGINE: django.db.backends.postgresql
       POSTGRES_DB: ${POSTGRES_DB:-arendator}
       POSTGRES_USER: ${POSTGRES_USER:-arendator}
@@ -70,20 +78,20 @@ services:
 
   celery-worker:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     command: ["celery", "-A", "config", "worker", "--loglevel=info"]
     volumes:
       - ./backend:/app
     environment: *backend-environment
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
+      backend:
         condition: service_healthy
 
   celery-beat:
     build:
-      context: ./backend
+      context: .
+      dockerfile: backend/Dockerfile
     command:
       - celery
       - -A
@@ -95,9 +103,7 @@ services:
       - ./backend:/app
     environment: *backend-environment
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
+      backend:
         condition: service_healthy
 
   frontend:

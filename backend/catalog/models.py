@@ -16,7 +16,12 @@ from django.db.models import Max
 from django.utils import timezone
 from PIL import Image, UnidentifiedImageError
 
-from categories.models import Category
+from categories.models import (
+    ancestor_ids,
+    Category,
+    Characteristic,
+    CharacteristicOption,
+)
 from users.models import User
 
 MAX_PHOTO_SIZE = 15 * 1024 * 1024
@@ -247,6 +252,7 @@ class Product(models.Model):
         self.description = self.description.strip()
         self.rejection_reason = self.rejection_reason.strip()
         errors: dict[str, str] = {}
+        original_status: str | None = None
         if not self.name:
             errors["name"] = "Укажите название товара."
         if not self.description:
@@ -270,10 +276,13 @@ class Product(models.Model):
         if self.pk:
             original = self.__class__.objects.only(
                 "status",
+                "category_id",
                 "pickup_point_id",
                 "published_at",
             ).get(pk=self.pk)
             original_status = original.status
+            if self.category_id != original.category_id:
+                errors["category"] = "Категорию созданного товара менять нельзя."
             if (
                 self.status != original_status
                 and self.status
@@ -295,6 +304,25 @@ class Product(models.Model):
                 )
         elif self.status != self.Status.DRAFT:
             errors["status"] = "Новый товар должен создаваться как черновик."
+        if (
+            self.pk
+            and self.status == self.Status.ON_MODERATION
+            and original_status != self.Status.ON_MODERATION
+        ):
+            required_ids = set(
+                self.category.applicable_characteristics()
+                .filter(is_required=True)
+                .values_list("id", flat=True)
+            )
+            supplied_ids = set(
+                self.characteristic_values.filter(
+                    characteristic_id__in=required_ids
+                ).values_list("characteristic_id", flat=True)
+            )
+            if required_ids - supplied_ids:
+                errors["characteristics"] = (
+                    "Заполните все обязательные характеристики категории."
+                )
         if self.pk and self.status == self.Status.PUBLISHED:
             if not self.instances.filter(is_deleted=False).exists():
                 errors["status"] = "Для первой публикации нужен хотя бы один экземпляр."
@@ -322,6 +350,123 @@ class Product(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class ProductCharacteristicValue(models.Model):
+    """A typed value for one applicable characteristic of a product."""
+
+    product = models.ForeignKey(
+        Product,
+        verbose_name="товар",
+        on_delete=models.CASCADE,
+        related_name="characteristic_values",
+    )
+    characteristic = models.ForeignKey(
+        Characteristic,
+        verbose_name="характеристика",
+        on_delete=models.CASCADE,
+        related_name="product_values",
+    )
+    option = models.ForeignKey(
+        CharacteristicOption,
+        verbose_name="вариант",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="product_values",
+    )
+    number_value = models.DecimalField(
+        "числовое значение",
+        max_digits=18,
+        decimal_places=6,
+        null=True,
+        blank=True,
+    )
+    boolean_value = models.BooleanField(
+        "логическое значение",
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        verbose_name = "значение характеристики товара"
+        verbose_name_plural = "значения характеристик товаров"
+        constraints = [
+            models.UniqueConstraint(
+                fields=("product", "characteristic"),
+                name="product_one_characteristic_value",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        option__isnull=False,
+                        number_value__isnull=True,
+                        boolean_value__isnull=True,
+                    )
+                    | models.Q(
+                        option__isnull=True,
+                        number_value__isnull=False,
+                        boolean_value__isnull=True,
+                    )
+                    | models.Q(
+                        option__isnull=True,
+                        number_value__isnull=True,
+                        boolean_value__isnull=False,
+                    )
+                ),
+                name="product_characteristic_one_typed_value",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=("characteristic", "option", "product"),
+                name="product_char_option_idx",
+            ),
+            models.Index(
+                fields=("characteristic", "number_value", "product"),
+                name="product_char_number_idx",
+            ),
+            models.Index(
+                fields=("characteristic", "boolean_value", "product"),
+                name="product_char_boolean_idx",
+            ),
+        ]
+
+    def clean(self) -> None:
+        errors: dict[str, str] = {}
+        if (
+            self.product_id
+            and self.characteristic_id
+            and self.characteristic.category_id
+            not in ancestor_ids(self.product.category)
+        ):
+            errors["characteristic"] = (
+                "Характеристика не применяется к категории товара."
+            )
+        if self.characteristic_id:
+            expected_fields: dict[str, str] = {
+                Characteristic.Type.LIST: "option",
+                Characteristic.Type.NUMBER: "number_value",
+                Characteristic.Type.BOOLEAN: "boolean_value",
+            }
+            expected = expected_fields.get(self.characteristic.type)
+            for field in ("option", "number_value", "boolean_value"):
+                present = getattr(self, f"{field}_id" if field == "option" else field)
+                if (field == expected) != (present is not None):
+                    errors[field] = "Значение не соответствует типу характеристики."
+        if (
+            self.option_id
+            and self.characteristic_id
+            and self.option is not None
+            and self.option.characteristic_id != self.characteristic_id
+        ):
+            errors["option"] = "Вариант относится к другой характеристике."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class ProductPhoto(models.Model):

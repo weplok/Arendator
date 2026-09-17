@@ -4,21 +4,16 @@ import {
   Box,
   Breadcrumbs,
   Button,
-  Chip,
   Container,
-  Divider,
   Link,
   Paper,
-  Snackbar,
-  Stack,
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { useState } from "react";
-import { Link as RouterLink, useLocation, useParams } from "react-router-dom";
+import { Link as RouterLink, useParams } from "react-router-dom";
 
-import { getProduct, type ProductDetail } from "../api/catalog";
 import type { CurrentUser } from "../api/auth";
+import { getProduct, type ProductDetail } from "../api/catalog";
 import { LaunchIcon, LocationIcon } from "../ui/Icons";
 import { CatalogError, CatalogLoading } from "./CatalogState";
 import { formatRate } from "./formatting";
@@ -47,7 +42,6 @@ export function ProductDetailPage({ user }: ProductDetailPageProps) {
       />
     );
   }
-
   return <ProductDetailContent product={productQuery.data} user={user} />;
 }
 
@@ -57,14 +51,11 @@ interface ProductDetailContentProps {
 }
 
 function ProductDetailContent({ product, user }: ProductDetailContentProps) {
-  const [noticeOpen, setNoticeOpen] = useState(false);
-
   return (
     <Container maxWidth="lg" className="product-page">
-      <Breadcrumbs aria-label="Навигационная цепочка" sx={{ mb: 3 }}>
-        <Link component={RouterLink} to="/" color="inherit">
-          Каталог
-        </Link>
+      <Breadcrumbs aria-label="Навигационная цепочка" className="product-breadcrumbs">
+        <Link component={RouterLink} to="/" color="inherit">Каталог</Link>
+        <Typography color="text.secondary">{product.category.name}</Typography>
         <Typography color="text.primary">{product.name}</Typography>
       </Breadcrumbs>
       {product.status === "FROZEN" ? (
@@ -72,154 +63,136 @@ function ProductDetailContent({ product, user }: ProductDetailContentProps) {
           Товар находится в архиве. Новые заявки не принимаются.
         </Alert>
       ) : null}
-      <Box className="product-hero">
-        <ProductGallery photos={product.photos} productName={product.name} />
-        <Paper className="product-summary" elevation={0}>
-          <Stack spacing={2.5}>
-            <Typography className="page-eyebrow">{product.category.name}</Typography>
-            <Typography component="h1" variant="h3">
-              {product.name}
+      <Box className="product-layout">
+        <div className="product-content">
+          <Typography component="h1" className="product-title">{product.name}</Typography>
+          <ProductGallery photos={product.photos} productName={product.name} />
+          <PickupPoint product={product} user={user} />
+          <Characteristics />
+          <Paper component="section" className="product-information" elevation={0}>
+            <Typography component="h2" variant="h6">Описание</Typography>
+            <Typography className="product-description">
+              {product.description || "Описание пока не добавлено."}
             </Typography>
-            <ProductAvailability product={product} />
-            <Box>
-              <Typography className="product-summary__rate">
-                {formatRate(product.minute_rate)} ₽
-              </Typography>
-              <Typography color="text.secondary">за минуту аренды</Typography>
-            </Box>
-            <Divider />
-            <PickupPoint product={product} user={user} />
+          </Paper>
+          <div className="product-mobile-manager">
             <ManagerSummary product={product} />
-            <RequestAction
-              product={product}
-              user={user}
-              onPreview={() => setNoticeOpen(true)}
-            />
-          </Stack>
+            <ProductAvailability product={product} />
+          </div>
+        </div>
+        <Paper component="aside" className="product-summary" elevation={0}>
+          <div className="product-summary__action">
+            <Rate product={product} />
+            <RequestAction product={product} user={user} />
+          </div>
+          <div className="product-summary__seller">
+            <ManagerSummary product={product} />
+            <ProductAvailability product={product} />
+          </div>
         </Paper>
       </Box>
-      <Box className="product-details-grid">
-        <section aria-labelledby="description-heading">
-          <Typography id="description-heading" component="h2" variant="h4">
-            Описание
-          </Typography>
-          <Typography className="product-description">
-            {product.description || "Описание пока не добавлено."}
-          </Typography>
-        </section>
-        <CharacteristicsPlaceholder />
-      </Box>
-      <Snackbar
-        open={noticeOpen}
-        autoHideDuration={5000}
-        onClose={() => setNoticeOpen(false)}
-        message="Форма заявки будет подключена на следующем этапе."
-      />
+      <div className="product-mobile-action">
+        <Rate product={product} />
+        <RequestAction product={product} user={user} />
+      </div>
     </Container>
   );
 }
 
+function Rate({ product }: { product: ProductDetail }) {
+  return <Typography className="product-summary__rate">{formatRate(product.minute_rate)} ₽/мин</Typography>;
+}
+
 function ProductAvailability({ product }: { product: ProductDetail }) {
-  if (product.status === "FROZEN") {
-    return <Chip label="В архиве" className="availability availability--archived" />;
-  }
-  if (product.available_instances_count === 0) {
-    return <Chip label="Сейчас нет доступных экземпляров" className="availability availability--empty" />;
-  }
-  return <Chip label={`Свободно: ${product.available_instances_count}`} className="availability availability--available" />;
+  const archived = product.status === "FROZEN";
+  const available = product.available_instances_count > 0 && !archived;
+  const label = archived
+    ? "В архиве"
+    : available
+      ? `Свободно: ${product.available_instances_count}`
+      : "Сейчас нет свободных экземпляров";
+  return (
+    <span className={`availability ${available ? "availability--available" : "availability--empty"}`}>
+      {label}
+    </span>
+  );
 }
 
 function PickupPoint({ product, user }: ProductDetailContentProps) {
   const pickup = product.pickup_point;
   return (
-    <Stack spacing={1.25}>
-      <Stack direction="row" spacing={1} sx={{ alignItems: "center" }}>
+    <Paper component="section" className="product-information pickup-point" elevation={0}>
+      <Typography component="h2" variant="h6">Точка самовывоза</Typography>
+      <div className="pickup-point__location">
         <LocationIcon />
-        <Typography component="h2" variant="h6">Точка самовывоза</Typography>
-      </Stack>
-      <Typography>{pickup.city} · {pickup.district}</Typography>
+        <Typography>{pickup.city} · {pickup.district}</Typography>
+      </div>
       {user && pickup.full_address ? (
-        <>
+        <div className="pickup-point__address">
           <Typography color="text.secondary">{pickup.full_address}</Typography>
           {pickup.yandex_maps_url ? (
             <Button
               component="a"
               href={pickup.yandex_maps_url}
               target="_blank"
-              rel="noreferrer"
-              variant="outlined"
+              rel="noopener noreferrer"
               endIcon={<LaunchIcon />}
             >
               Открыть в Яндекс.Картах
             </Button>
           ) : null}
-        </>
+        </div>
       ) : (
-        <Typography className="private-address-note">
-          Точный адрес доступен после входа
-        </Typography>
+        <Typography color="text.secondary">Точный адрес доступен после входа</Typography>
       )}
-    </Stack>
+    </Paper>
+  );
+}
+
+function Characteristics() {
+  return (
+    <Paper component="section" className="product-information" elevation={0}>
+      <Typography component="h2" variant="h6">Характеристики</Typography>
+      <table className="product-characteristics">
+        <thead><tr><th scope="col">Параметр</th><th scope="col">Значение</th></tr></thead>
+        <tbody><tr><td colSpan={2}>Характеристики пока недоступны</td></tr></tbody>
+      </table>
+    </Paper>
   );
 }
 
 function ManagerSummary({ product }: { product: ProductDetail }) {
   return (
-    <Link component={RouterLink} to={`/managers/${product.manager.id}`} underline="none" className="manager-summary">
+    <Link
+      component={RouterLink}
+      to={`/managers/${product.manager.id}`}
+      underline="none"
+      className="manager-summary"
+    >
       <Avatar src={product.manager.avatar ?? undefined} alt="">
         {product.manager.name.slice(0, 1)}
       </Avatar>
       <Box>
         <Typography variant="caption" color="text.secondary">Менеджер</Typography>
-        <Typography sx={{ fontWeight: 700 }}>{product.manager.name}</Typography>
+        <Typography className="manager-summary__name">{product.manager.name}</Typography>
       </Box>
     </Link>
   );
 }
 
-interface RequestActionProps extends ProductDetailContentProps {
-  onPreview: () => void;
-}
-
-function RequestAction({ product, user, onPreview }: RequestActionProps) {
-  const location = useLocation();
+function RequestAction({ product, user }: ProductDetailContentProps) {
   if (product.status === "FROZEN") {
-    return <Button variant="contained" disabled>Товар в архиве</Button>;
+    return <Typography color="text.secondary">Новые заявки не принимаются</Typography>;
   }
-  if (!user) {
-    const next = encodeURIComponent(`${location.pathname}${location.search}`);
-    return (
-      <Button component={RouterLink} to={`/login?next=${next}`} variant="contained">
-        Войти, чтобы оставить заявку
-      </Button>
-    );
+  if (user && user.role !== "RENTER") {
+    return <Typography color="text.secondary">Заявки доступны арендаторам</Typography>;
   }
-  if (user.role !== "RENTER") {
-    return <Button variant="contained" disabled>Заявки доступны арендаторам</Button>;
-  }
-  return <Button variant="contained" onClick={onPreview}>Оставить заявку</Button>;
-}
-
-function CharacteristicsPlaceholder() {
   return (
-    <section aria-labelledby="characteristics-heading">
-      <Typography id="characteristics-heading" component="h2" variant="h4">
-        Характеристики
+    <div className="product-request-unavailable">
+      <Button variant="contained" disabled>Подать заявку</Button>
+      <Typography variant="caption" color="text.secondary">
+        Подача заявки пока недоступна
       </Typography>
-      <Paper className="characteristics-placeholder" elevation={0}>
-        <Typography sx={{ fontWeight: 700 }}>
-          Блок подготовлен для характеристик категории
-        </Typography>
-        <Typography color="text.secondary">
-          Здесь появятся параметры товара после подключения динамических характеристик.
-        </Typography>
-        {[1, 2, 3].map((item) => (
-          <Box className="placeholder-row" key={item} aria-hidden="true">
-            <span />
-            <span />
-          </Box>
-        ))}
-      </Paper>
-    </section>
+    </div>
   );
 }

@@ -32,5 +32,6 @@ Thumbs.db
 .DS_Store
 docs/*
 !docs/design/
+!docs/category-taxonomy-v*.yaml
 .agents/
 backend/media/*

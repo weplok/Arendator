@@ -64,7 +64,19 @@ describe("public catalog", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Москва · Хамовники")).toBeInTheDocument();
     expect(screen.getByText("Свободно: 3")).toBeInTheDocument();
+    expect(screen.getAllByRole("textbox", { name: "Поиск по названию" })[0]).toBeDisabled();
+    expect(screen.getByText("Найдено объявлений: 1")).toBeInTheDocument();
+    expect(await screen.findByLabelText("Дерево категорий")).toHaveTextContent("Перфораторы");
     expect(screen.queryByText("ул. Усачёва, 22")).not.toBeInTheDocument();
+  });
+
+  it("opens marketplace navigation from the mobile menu", async () => {
+    stubCatalogApi();
+
+    renderApp("/");
+    fireEvent.click(await screen.findByRole("button", { name: "Открыть меню" }));
+
+    expect(screen.getByRole("menuitem", { name: "Зарегистрироваться" })).toHaveAttribute("href", "/register");
   });
 
   it("opens an accessible photo viewer from product details", async () => {
@@ -94,14 +106,12 @@ describe("public catalog", () => {
       await screen.findByRole("heading", { name: publicProduct.name }),
     ).toBeInTheDocument();
     expect(screen.getByText("Точный адрес доступен после входа")).toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "Войти, чтобы оставить заявку" }),
-    ).toBeInTheDocument();
+    expect(screen.getAllByRole("button", { name: "Подать заявку" })[0]).toBeDisabled();
     expect(
       screen.getByRole("heading", { name: "Характеристики" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByText("Блок подготовлен для характеристик категории"),
+      screen.getByText("Характеристики пока недоступны"),
     ).toBeInTheDocument();
   });
 
@@ -114,9 +124,11 @@ describe("public catalog", () => {
     expect(
       screen.getByRole("link", { name: "Открыть в Яндекс.Картах" }),
     ).toHaveAttribute("href", "https://yandex.ru/maps/?pt=37.56,55.73&z=16&l=map");
-    fireEvent.click(screen.getByRole("button", { name: "Оставить заявку" }));
     expect(
-      await screen.findByText("Форма заявки будет подключена на следующем этапе."),
+      screen.getAllByRole("button", { name: "Подать заявку" })[0],
+    ).toBeDisabled();
+    expect(
+      screen.getAllByText("Подача заявки пока недоступна")[0],
     ).toBeInTheDocument();
   });
 });
@@ -145,6 +157,14 @@ function stubCatalogApi(currentUser: typeof renter | null = null): void {
     }
     if (path === "/api/v1/products/?page=1") {
       return paginatedResponse([publicProduct]);
+    }
+    if (path === "/api/v1/categories/") {
+      return jsonResponse([{
+        id: 3,
+        name: "Перфораторы",
+        parent_id: null,
+        characteristics: [],
+      }]);
     }
     if (path === "/api/v1/products/7/") {
       const pickupPoint = currentUser

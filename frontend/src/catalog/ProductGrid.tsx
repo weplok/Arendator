@@ -7,16 +7,17 @@ interface ProductGridProps {
   page: number;
   products: PaginatedProducts;
   onPageChange: (page: number) => void;
+  variant?: "catalog" | "profile";
 }
 
-export function ProductGrid({ page, products, onPageChange }: ProductGridProps) {
+export function ProductGrid({ page, products, onPageChange, variant = "profile" }: ProductGridProps) {
   const totalPages = Math.ceil(products.count / CATALOG_PAGE_SIZE);
 
   return (
     <>
       <Box className="product-grid">
         {products.results.map((product) => (
-          <ProductCard key={product.id} product={product} />
+          <ProductCard key={product.id} product={product} variant={variant} />
         ))}
       </Box>
       {totalPages > 1 ? (

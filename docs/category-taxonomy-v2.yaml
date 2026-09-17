@@ -1,0 +1,462 @@
+# Стартовая таксономия, загружаемая командой seed_categories.
+#
+# При запуске backend команда добавляет недостающие категории, характеристики
+# и варианты значений в БД. Характеристики наследуются: эффективный
+# набор узла состоит из характеристик всех его предков (от корня к узлу) и его
+# собственных характеристик. Одноимённую характеристику нельзя объявлять в
+# потомке повторно — её следует определить в ближайшем общем предке.
+
+version: 2
+status: active
+characteristic_inheritance:
+  enabled: true
+  order: "сначала характеристики предков от корня, затем собственные"
+  duplicate_name_policy: "запрещены между предком и потомком"
+format:
+  category:
+    name: "Самодостаточное название категории"
+    children: "Необязательный список дочерних категорий"
+    characteristics: "Собственные характеристики категории"
+  characteristic:
+    name: "Название характеристики"
+    type: "LIST | NUMBER | BOOLEAN"
+    required: "true | false"
+    options: "Только для LIST; до 10 первоначальных значений"
+    unit: "Только для NUMBER; строчная сокращённая единица"
+
+categories:
+  - name: "Электроинструменты"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["bosch", "makita", "dewalt", "metabo", "milwaukee", "интерскол", "другой"] }
+      - { name: "Питание", type: LIST, required: true, options: ["аккумулятор", "сеть 220 в", "сеть 380 в"] }
+      - { name: "Мощность", type: NUMBER, required: false, unit: "вт" }
+      - { name: "Вес", type: NUMBER, required: false, unit: "кг" }
+      - { name: "Ударный режим", type: BOOLEAN, required: false }
+    children:
+      - name: "Аккумуляторные шуруповёрты"
+        characteristics:
+          - { name: "Напряжение аккумулятора", type: NUMBER, required: true, unit: "в" }
+          - { name: "Ёмкость аккумулятора", type: NUMBER, required: false, unit: "ач" }
+          - { name: "Максимальный крутящий момент", type: NUMBER, required: false, unit: "н·м" }
+          - { name: "Количество аккумуляторов в комплекте", type: NUMBER, required: true, unit: "шт." }
+      - name: "Электрические дрели"
+        characteristics:
+          - { name: "Максимальный диаметр сверления", type: NUMBER, required: true, unit: "мм" }
+      - name: "Перфораторы"
+        characteristics:
+          - { name: "Энергия удара", type: NUMBER, required: true, unit: "дж" }
+          - { name: "Тип патрона", type: LIST, required: true, options: ["sds-plus", "sds-max"] }
+          - { name: "Режим долбления", type: BOOLEAN, required: true }
+      - name: "Углошлифовальные машины"
+        characteristics:
+          - { name: "Диаметр диска", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Регулировка оборотов", type: BOOLEAN, required: true }
+
+  - name: "Ручные инструменты и строительная оснастка"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["matrix", "gross", "stayer", "kraftool", "зубр", "вихрь", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["столярные работы", "слесарные работы", "малярные работы", "монтаж", "кладка"] }
+      - { name: "Материал рабочей части", type: LIST, required: false, options: ["сталь", "нержавеющая сталь", "алюминий", "пластик"] }
+      - { name: "Вес", type: NUMBER, required: false, unit: "кг" }
+    children:
+      - name: "Наборы ручных инструментов"
+        characteristics:
+          - { name: "Количество предметов", type: NUMBER, required: true, unit: "шт." }
+          - { name: "Кейс в комплекте", type: BOOLEAN, required: true }
+      - name: "Строительные лестницы и стремянки"
+        characteristics:
+          - { name: "Тип конструкции", type: LIST, required: true, options: ["приставная лестница", "стремянка", "трансформер", "телескопическая лестница"] }
+          - { name: "Рабочая высота", type: NUMBER, required: true, unit: "м" }
+          - { name: "Максимальная нагрузка", type: NUMBER, required: true, unit: "кг" }
+          - { name: "Диэлектрическое покрытие", type: BOOLEAN, required: true }
+      - name: "Строительные леса и вышки-туры"
+        characteristics:
+          - { name: "Тип конструкции", type: LIST, required: true, options: ["рамные леса", "хомутовые леса", "вышка-тура"] }
+          - { name: "Рабочая высота", type: NUMBER, required: true, unit: "м" }
+          - { name: "Ширина рабочей площадки", type: NUMBER, required: true, unit: "м" }
+          - { name: "Колёса", type: BOOLEAN, required: true }
+
+  - name: "Измерительное и геодезическое оборудование"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["bosch", "ada", "rgk", "condtrol", "flir", "leica", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["измерение расстояний", "выравнивание", "геодезическая съёмка", "тепловизионный контроль"] }
+      - { name: "Погрешность", type: NUMBER, required: false, unit: "мм" }
+      - { name: "Питание", type: LIST, required: false, options: ["батарейки", "аккумулятор", "сеть 220 в"] }
+    children:
+      - name: "Лазерные уровни"
+        characteristics:
+          - { name: "Количество плоскостей", type: NUMBER, required: true, unit: "шт." }
+          - { name: "Дальность работы", type: NUMBER, required: true, unit: "м" }
+          - { name: "Точность", type: NUMBER, required: true, unit: "мм/м" }
+          - { name: "Зелёный луч", type: BOOLEAN, required: true }
+      - name: "Лазерные дальномеры"
+        characteristics:
+          - { name: "Максимальная дальность измерения", type: NUMBER, required: true, unit: "м" }
+          - { name: "Точность", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Вычисление площади и объёма", type: BOOLEAN, required: true }
+      - name: "Тепловизоры"
+        characteristics:
+          - { name: "Разрешение матрицы", type: LIST, required: true, options: ["160 × 120", "256 × 192", "320 × 240", "384 × 288", "640 × 480"] }
+          - { name: "Температурный диапазон", type: LIST, required: true, options: ["−20…150 °c", "−20…300 °c", "−20…550 °c", "0…650 °c"] }
+          - { name: "Тепловая чувствительность", type: NUMBER, required: false, unit: "мк" }
+          - { name: "Запись фото", type: BOOLEAN, required: true }
+
+  - name: "Сварочное и газорезательное оборудование"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["ресанта", "aurora", "svarog", "fubag", "esab", "сварог", "другой"] }
+      - { name: "Тип питания", type: LIST, required: true, options: ["сеть 220 в", "сеть 380 в", "бензин", "дизель"] }
+      - { name: "Вес", type: NUMBER, required: false, unit: "кг" }
+      - { name: "Комплект кабелей", type: BOOLEAN, required: true }
+    children:
+      - name: "Сварочные аппараты"
+        characteristics:
+          - { name: "Тип сварки", type: LIST, required: true, options: ["mma", "mig/mag", "tig", "универсальный"] }
+          - { name: "Сварочный ток", type: NUMBER, required: true, unit: "а" }
+          - { name: "Питание", type: LIST, required: true, options: ["сеть 220 в", "сеть 380 в"] }
+          - { name: "Режим аргонодуговой сварки", type: BOOLEAN, required: true }
+      - name: "Плазменные резаки"
+        characteristics:
+          - { name: "Максимальная толщина реза", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Ток реза", type: NUMBER, required: true, unit: "а" }
+          - { name: "Питание", type: LIST, required: true, options: ["сеть 220 в", "сеть 380 в"] }
+          - { name: "Компрессор встроен", type: BOOLEAN, required: true }
+      - name: "Газовые резаки"
+        characteristics:
+          - { name: "Тип газа", type: LIST, required: true, options: ["пропан", "ацетилен", "метан"] }
+          - { name: "Максимальная толщина реза", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Шланги в комплекте", type: BOOLEAN, required: true }
+
+  - name: "Бетонное и отделочное оборудование"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["zitrek", "patriot", "sturm", "diam", "deko", "калибр", "другой"] }
+      - { name: "Питание", type: LIST, required: true, options: ["сеть 220 в", "сеть 380 в", "бензин"] }
+      - { name: "Производительность", type: NUMBER, required: false, unit: "м³/ч" }
+      - { name: "Вес", type: NUMBER, required: false, unit: "кг" }
+    children:
+      - name: "Бетономешалки"
+        characteristics:
+          - { name: "Объём барабана", type: NUMBER, required: true, unit: "л" }
+          - { name: "Мощность", type: NUMBER, required: true, unit: "вт" }
+          - { name: "Напряжение", type: LIST, required: true, options: ["220 в", "380 в"] }
+          - { name: "Колёса", type: BOOLEAN, required: true }
+      - name: "Вибраторы для бетона"
+        characteristics:
+          - { name: "Длина гибкого вала", type: NUMBER, required: true, unit: "м" }
+          - { name: "Диаметр вибробулавы", type: NUMBER, required: true, unit: "мм" }
+      - name: "Плиткорезы"
+        characteristics:
+          - { name: "Тип плиткореза", type: LIST, required: true, options: ["ручной", "электрический"] }
+          - { name: "Максимальная длина реза", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Максимальная толщина реза", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Водяное охлаждение", type: BOOLEAN, required: true }
+
+  - name: "Энергетическое и пневматическое оборудование"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["fubag", "huter", "champion", "patriot", "daewoo", "denzel", "другой"] }
+      - { name: "Тип оборудования", type: LIST, required: true, options: ["генератор", "компрессор", "пневмоинструмент", "тепловая пушка"] }
+      - { name: "Мощность", type: NUMBER, required: false, unit: "вт" }
+      - { name: "Вес", type: NUMBER, required: false, unit: "кг" }
+    children:
+      - name: "Бензиновые генераторы"
+        characteristics:
+          - { name: "Номинальная мощность", type: NUMBER, required: true, unit: "квт" }
+          - { name: "Максимальная мощность", type: NUMBER, required: true, unit: "квт" }
+          - { name: "Объём топливного бака", type: NUMBER, required: true, unit: "л" }
+          - { name: "Электростартер", type: BOOLEAN, required: true }
+      - name: "Дизельные генераторы"
+        characteristics:
+          - { name: "Номинальная мощность", type: NUMBER, required: true, unit: "квт" }
+          - { name: "Напряжение", type: LIST, required: true, options: ["220 в", "380 в", "220/380 в"] }
+          - { name: "Объём топливного бака", type: NUMBER, required: true, unit: "л" }
+          - { name: "Автозапуск", type: BOOLEAN, required: true }
+      - name: "Воздушные компрессоры"
+        characteristics:
+          - { name: "Производительность", type: NUMBER, required: true, unit: "л/мин" }
+          - { name: "Объём ресивера", type: NUMBER, required: true, unit: "л" }
+          - { name: "Рабочее давление", type: NUMBER, required: true, unit: "бар" }
+          - { name: "Безмасляный", type: BOOLEAN, required: true }
+
+  - name: "Клининговое оборудование"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["kärcher", "nilfisk", "cleanfix", "tennant", "ghibli", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["сухая уборка", "влажная уборка", "мойка поверхностей", "чистка паром"] }
+      - { name: "Питание", type: LIST, required: true, options: ["сеть 220 в", "аккумулятор", "бензин"] }
+      - { name: "Вес", type: NUMBER, required: false, unit: "кг" }
+    children:
+      - name: "Аппараты высокого давления"
+        characteristics:
+          - { name: "Рабочее давление", type: NUMBER, required: true, unit: "бар" }
+          - { name: "Расход воды", type: NUMBER, required: true, unit: "л/ч" }
+          - { name: "Подогрев воды", type: BOOLEAN, required: true }
+      - name: "Промышленные пылесосы"
+        characteristics:
+          - { name: "Мощность", type: NUMBER, required: true, unit: "вт" }
+          - { name: "Объём бака", type: NUMBER, required: true, unit: "л" }
+          - { name: "Тип уборки", type: LIST, required: true, options: ["сухая", "сухая и влажная", "сбор строительной пыли"] }
+          - { name: "Розетка для электроинструмента", type: BOOLEAN, required: true }
+      - name: "Поломоечные машины"
+        characteristics:
+          - { name: "Ширина уборки", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Производительность", type: NUMBER, required: true, unit: "м²/ч" }
+          - { name: "Тип питания", type: LIST, required: true, options: ["аккумулятор", "сеть 220 в"] }
+          - { name: "Самоходная", type: BOOLEAN, required: true }
+
+  - name: "Садовая техника"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["stihl", "husqvarna", "champion", "patriot", "makita", "daewoo", "другой"] }
+      - { name: "Питание", type: LIST, required: true, options: ["бензин", "аккумулятор", "сеть 220 в"] }
+      - { name: "Мощность", type: NUMBER, required: false, unit: "вт" }
+      - { name: "Вес", type: NUMBER, required: false, unit: "кг" }
+    children:
+      - name: "Газонокосилки"
+        characteristics:
+          - { name: "Тип газонокосилки", type: LIST, required: true, options: ["колёсная", "робот", "райдер"] }
+          - { name: "Ширина скашивания", type: NUMBER, required: true, unit: "см" }
+          - { name: "Травосборник", type: BOOLEAN, required: true }
+      - name: "Садовые триммеры"
+        characteristics:
+          - { name: "Ширина скашивания", type: NUMBER, required: true, unit: "см" }
+          - { name: "Ремень в комплекте", type: BOOLEAN, required: true }
+      - name: "Бензопилы"
+        characteristics:
+          - { name: "Длина шины", type: NUMBER, required: true, unit: "см" }
+          - { name: "Шаг цепи", type: LIST, required: true, options: ["1/4 дюйма", "3/8 дюйма", "0,325 дюйма", "0,404 дюйма"] }
+          - { name: "Цепь в комплекте", type: BOOLEAN, required: true }
+
+  - name: "Спецтехника"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["jcb", "caterpillar", "komatsu", "hyundai", "volvo", "doosan", "другой"] }
+      - { name: "Тип привода", type: LIST, required: true, options: ["гусеничный", "колёсный", "полный"] }
+      - { name: "Масса", type: NUMBER, required: false, unit: "т" }
+      - { name: "Требуется водитель оператора", type: BOOLEAN, required: true }
+    children:
+      - name: "Мини-экскаваторы"
+        characteristics:
+          - { name: "Эксплуатационная масса", type: NUMBER, required: true, unit: "т" }
+          - { name: "Глубина копания", type: NUMBER, required: true, unit: "м" }
+          - { name: "Ширина ковша", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Гидромолот в комплекте", type: BOOLEAN, required: true }
+      - name: "Фронтальные погрузчики"
+        characteristics:
+          - { name: "Грузоподъёмность", type: NUMBER, required: true, unit: "кг" }
+          - { name: "Высота разгрузки", type: NUMBER, required: true, unit: "м" }
+          - { name: "Объём ковша", type: NUMBER, required: true, unit: "м³" }
+          - { name: "Кабина закрытая", type: BOOLEAN, required: true }
+      - name: "Автовышки"
+        characteristics:
+          - { name: "Рабочая высота", type: NUMBER, required: true, unit: "м" }
+          - { name: "Грузоподъёмность люльки", type: NUMBER, required: true, unit: "кг" }
+          - { name: "Тип стрелы", type: LIST, required: true, options: ["телескопическая", "коленчатая"] }
+
+  - name: "Складское и грузоподъёмное оборудование"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["jungheinrich", "toyota", "linde", "heli", "still", "tisel", "другой"] }
+      - { name: "Грузоподъёмность", type: NUMBER, required: true, unit: "кг" }
+      - { name: "Высота подъёма", type: NUMBER, required: false, unit: "м" }
+      - { name: "Самоходное", type: BOOLEAN, required: true }
+    children:
+      - name: "Ручные гидравлические тележки"
+        characteristics:
+          - { name: "Длина вил", type: NUMBER, required: true, unit: "мм" }
+          - { name: "Весы встроены", type: BOOLEAN, required: true }
+      - name: "Штабелеры"
+        characteristics:
+          - { name: "Тип штабелера", type: LIST, required: true, options: ["ручной", "электрический", "самоходный"] }
+          - { name: "Платформа для оператора", type: BOOLEAN, required: true }
+      - name: "Вилочные погрузчики"
+        characteristics:
+          - { name: "Тип питания", type: LIST, required: true, options: ["электрический", "дизель", "газ-бензин"] }
+          - { name: "Кабина закрытая", type: BOOLEAN, required: true }
+
+  - name: "Грузовой транспорт"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["камаз", "газ", "maz", "man", "isuzu", "hino", "другой"] }
+      - { name: "Грузоподъёмность", type: NUMBER, required: true, unit: "кг" }
+      - { name: "Тип топлива", type: LIST, required: true, options: ["бензин", "дизель", "газ", "электричество"] }
+      - { name: "Коробка передач", type: LIST, required: true, options: ["механическая", "автоматическая", "роботизированная"] }
+      - { name: "Водитель включён", type: BOOLEAN, required: true }
+    children:
+      - name: "Грузовые фургоны"
+        characteristics:
+          - { name: "Объём грузового отсека", type: NUMBER, required: true, unit: "м³" }
+      - name: "Самосвалы"
+        characteristics:
+          - { name: "Объём кузова", type: NUMBER, required: true, unit: "м³" }
+          - { name: "Тип разгрузки", type: LIST, required: true, options: ["задняя", "боковая", "трёхсторонняя"] }
+      - name: "Грузовые прицепы"
+        characteristics:
+          - { name: "Длина платформы", type: NUMBER, required: true, unit: "м" }
+          - { name: "Тип кузова", type: LIST, required: true, options: ["бортовой", "тентованный", "фургон", "платформа"] }
+          - { name: "Тормозная система", type: BOOLEAN, required: true }
+
+  - name: "Пассажирский транспорт"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["lada", "kia", "hyundai", "toyota", "volkswagen", "skoda", "другой"] }
+      - { name: "Количество мест", type: NUMBER, required: true, unit: "чел." }
+      - { name: "Тип топлива", type: LIST, required: true, options: ["бензин", "дизель", "гибрид", "электричество"] }
+      - { name: "Коробка передач", type: LIST, required: true, options: ["механическая", "автоматическая", "роботизированная"] }
+      - { name: "Кондиционер", type: BOOLEAN, required: true }
+    children:
+      - name: "Легковые автомобили"
+        characteristics:
+          - { name: "Класс автомобиля", type: LIST, required: true, options: ["эконом", "компакт", "средний", "бизнес", "внедорожник"] }
+          - { name: "Детское кресло", type: BOOLEAN, required: true }
+      - name: "Минивэны"
+        characteristics:
+          - { name: "Объём багажника", type: NUMBER, required: false, unit: "л" }
+          - { name: "Детское кресло", type: BOOLEAN, required: true }
+      - name: "Пассажирские микроавтобусы"
+        characteristics:
+          - { name: "Водитель включён", type: BOOLEAN, required: true }
+
+  - name: "Фото-, видео- и аудиооборудование"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["canon", "nikon", "sony", "fujifilm", "gopro", "dji", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["фотосъёмка", "видеосъёмка", "звукозапись", "освещение"] }
+      - { name: "Питание", type: LIST, required: false, options: ["аккумулятор", "сеть 220 в", "батарейки"] }
+      - { name: "Кейс в комплекте", type: BOOLEAN, required: true }
+    children:
+      - name: "Фотокамеры"
+        characteristics:
+          - { name: "Тип фотокамеры", type: LIST, required: true, options: ["зеркальная", "беззеркальная", "компактная", "моментальная"] }
+          - { name: "Разрешение матрицы", type: NUMBER, required: true, unit: "мп" }
+          - { name: "Тип крепления объектива", type: LIST, required: false, options: ["canon ef", "canon rf", "nikon f", "nikon z", "sony e", "micro 4/3"] }
+          - { name: "Объектив в комплекте", type: BOOLEAN, required: true }
+      - name: "Видеокамеры"
+        characteristics:
+          - { name: "Максимальное разрешение видео", type: LIST, required: true, options: ["full hd", "2,7k", "4k", "6k", "8k"] }
+          - { name: "Тип видеокамеры", type: LIST, required: true, options: ["экшн-камера", "видеокамера", "кинокамера", "360-камера"] }
+          - { name: "Стабилизация изображения", type: BOOLEAN, required: true }
+          - { name: "Микрофон в комплекте", type: BOOLEAN, required: true }
+      - name: "Студийный свет"
+        characteristics:
+          - { name: "Тип света", type: LIST, required: true, options: ["постоянный", "импульсный", "кольцевой"] }
+          - { name: "Цветовая температура", type: NUMBER, required: false, unit: "к" }
+          - { name: "Стойка в комплекте", type: BOOLEAN, required: true }
+
+  - name: "Оборудование для мероприятий"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["epson", "benq", "viewsonic", "yamaha", "shure", "alustage", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["презентация", "сцена", "банкет", "выставка", "уличное мероприятие"] }
+      - { name: "Монтаж включён", type: BOOLEAN, required: true }
+      - { name: "Требуется электропитание", type: BOOLEAN, required: true }
+    children:
+      - name: "Проекторы"
+        characteristics:
+          - { name: "Яркость", type: NUMBER, required: true, unit: "лм" }
+          - { name: "Разрешение", type: LIST, required: true, options: ["hd", "full hd", "wuxga", "4k"] }
+          - { name: "Проекционное расстояние", type: NUMBER, required: false, unit: "м" }
+          - { name: "Крепление в комплекте", type: BOOLEAN, required: true }
+      - name: "Проекционные экраны"
+        characteristics:
+          - { name: "Тип экрана", type: LIST, required: true, options: ["напольный", "настенный", "натяжной", "на раме"] }
+          - { name: "Диагональ", type: NUMBER, required: true, unit: "дюйм" }
+          - { name: "Соотношение сторон", type: LIST, required: true, options: ["4:3", "16:9", "16:10"] }
+          - { name: "Штатив в комплекте", type: BOOLEAN, required: true }
+      - name: "Банкетная мебель"
+        characteristics:
+          - { name: "Тип мебели", type: LIST, required: true, options: ["стол", "стул", "барный стул", "коктейльный стол", "диван"] }
+          - { name: "Количество мест", type: NUMBER, required: false, unit: "чел." }
+          - { name: "Материал", type: LIST, required: false, options: ["пластик", "дерево", "металл", "ткань", "ротанг"] }
+          - { name: "Складная", type: BOOLEAN, required: true }
+
+  - name: "Компьютерная и офисная техника"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["apple", "lenovo", "hp", "dell", "asus", "xerox", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["работа", "презентация", "печать", "сеть", "игры"] }
+      - { name: "Питание от сети 220 в", type: BOOLEAN, required: true }
+      - { name: "Кабели в комплекте", type: BOOLEAN, required: true }
+    children:
+      - name: "Ноутбуки"
+        characteristics:
+          - { name: "Диагональ экрана", type: NUMBER, required: true, unit: "дюйм" }
+          - { name: "Операционная система", type: LIST, required: true, options: ["windows 11", "macos", "linux", "без операционной системы"] }
+          - { name: "Оперативная память", type: NUMBER, required: true, unit: "гб" }
+          - { name: "Дискретная видеокарта", type: BOOLEAN, required: true }
+      - name: "Принтеры и МФУ"
+        characteristics:
+          - { name: "Тип печати", type: LIST, required: true, options: ["лазерная", "струйная", "термосублимационная"] }
+          - { name: "Цветная печать", type: BOOLEAN, required: true }
+          - { name: "Формат печати", type: LIST, required: true, options: ["а4", "а3", "а2"] }
+          - { name: "Автоподатчик документов", type: BOOLEAN, required: true }
+      - name: "Мониторы"
+        characteristics:
+          - { name: "Диагональ экрана", type: NUMBER, required: true, unit: "дюйм" }
+          - { name: "Разрешение", type: LIST, required: true, options: ["full hd", "2k", "4k", "ultrawide"] }
+          - { name: "Частота обновления", type: NUMBER, required: false, unit: "гц" }
+          - { name: "Крепление vesa", type: BOOLEAN, required: true }
+
+  - name: "Бытовая и климатическая техника"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["samsung", "lg", "haier", "ballu", "electrolux", "midea", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["обогрев", "охлаждение", "осушение", "приготовление пищи", "хранение продуктов"] }
+      - { name: "Мощность", type: NUMBER, required: false, unit: "вт" }
+      - { name: "Питание", type: LIST, required: true, options: ["сеть 220 в", "газ", "аккумулятор"] }
+    children:
+      - name: "Мобильные кондиционеры"
+        characteristics:
+          - { name: "Площадь охлаждения", type: NUMBER, required: true, unit: "м²" }
+          - { name: "Мощность охлаждения", type: NUMBER, required: true, unit: "вт" }
+          - { name: "Уровень шума", type: NUMBER, required: false, unit: "дб" }
+          - { name: "Пульт управления", type: BOOLEAN, required: true }
+      - name: "Осушители воздуха"
+        characteristics:
+          - { name: "Производительность осушения", type: NUMBER, required: true, unit: "л/сут." }
+          - { name: "Площадь помещения", type: NUMBER, required: true, unit: "м²" }
+          - { name: "Объём бака", type: NUMBER, required: true, unit: "л" }
+          - { name: "Непрерывный слив", type: BOOLEAN, required: true }
+      - name: "Холодильники и морозильники"
+        characteristics:
+          - { name: "Тип техники", type: LIST, required: true, options: ["холодильник", "морозильник", "холодильная витрина"] }
+          - { name: "Общий объём", type: NUMBER, required: true, unit: "л" }
+          - { name: "Температурный режим", type: LIST, required: true, options: ["охлаждение", "заморозка", "охлаждение и заморозка"] }
+          - { name: "Колёса", type: BOOLEAN, required: true }
+
+  - name: "Спортивное и туристическое снаряжение"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["decathlon", "outventure", "naturehike", "stern", "head", "salomon", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["туризм", "велоспорт", "водный спорт", "зимний спорт", "фитнес"] }
+      - { name: "Вес", type: NUMBER, required: false, unit: "кг" }
+      - { name: "Для детей", type: BOOLEAN, required: true }
+    children:
+      - name: "Туристические палатки"
+        characteristics:
+          - { name: "Количество мест", type: NUMBER, required: true, unit: "чел." }
+          - { name: "Сезонность", type: LIST, required: true, options: ["летняя", "трёхсезонная", "зимняя"] }
+          - { name: "Тамбур", type: BOOLEAN, required: true }
+      - name: "Велосипеды"
+        characteristics:
+          - { name: "Тип велосипеда", type: LIST, required: true, options: ["городской", "горный", "шоссейный", "детский", "электровелосипед"] }
+          - { name: "Размер рамы", type: LIST, required: true, options: ["xs", "s", "m", "l", "xl"] }
+          - { name: "Диаметр колёс", type: NUMBER, required: true, unit: "дюйм" }
+          - { name: "Шлем в комплекте", type: BOOLEAN, required: true }
+      - name: "Сапборды"
+        characteristics:
+          - { name: "Длина", type: NUMBER, required: true, unit: "см" }
+          - { name: "Максимальная нагрузка", type: NUMBER, required: true, unit: "кг" }
+          - { name: "Тип сапборда", type: LIST, required: true, options: ["прогулочный", "туринговый", "гоночный", "для йоги"] }
+          - { name: "Весло в комплекте", type: BOOLEAN, required: true }
+
+  - name: "Медицинское и реабилитационное оборудование"
+    characteristics:
+      - { name: "Производитель", type: LIST, required: true, options: ["armed", "med-mos", "otto bock", "invacare", "philips", "yuwell", "другой"] }
+      - { name: "Назначение", type: LIST, required: true, options: ["передвижение", "уход", "дыхательная поддержка", "восстановление"] }
+      - { name: "Максимальная нагрузка", type: NUMBER, required: false, unit: "кг" }
+      - { name: "Требуется назначение врача", type: BOOLEAN, required: true }
+    children:
+      - name: "Инвалидные коляски"
+        characteristics:
+          - { name: "Тип коляски", type: LIST, required: true, options: ["механическая", "электрическая", "прогулочная", "активная"] }
+          - { name: "Ширина сиденья", type: NUMBER, required: true, unit: "см" }
+          - { name: "Складная", type: BOOLEAN, required: true }
+      - name: "Медицинские кровати"
+        characteristics:
+          - { name: "Количество секций", type: NUMBER, required: true, unit: "шт." }
+          - { name: "Привод", type: LIST, required: true, options: ["механический", "электрический"] }
+          - { name: "Матрас в комплекте", type: BOOLEAN, required: true }
+      - name: "Кислородные концентраторы"
+        characteristics:
+          - { name: "Производительность", type: NUMBER, required: true, unit: "л/мин" }
+          - { name: "Концентрация кислорода", type: NUMBER, required: true, unit: "%" }
+          - { name: "Уровень шума", type: NUMBER, required: false, unit: "дб" }
+          - { name: "Небулайзер в комплекте", type: BOOLEAN, required: true }

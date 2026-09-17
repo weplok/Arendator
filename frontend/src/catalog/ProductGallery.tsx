@@ -38,7 +38,7 @@ export function ProductGallery({ photos, productName }: ProductGalleryProps) {
   }
 
   return (
-    <Box>
+    <Box className="product-gallery">
       <button
         type="button"
         className="gallery-main-button"
@@ -94,7 +94,7 @@ function EmptyGallery() {
   return (
     <Box className="gallery-empty">
       <ImageIcon width="56" height="56" />
-      <Typography>Фотографии пока не добавлены</Typography>
+      <Typography>Фотография не добавлена</Typography>
     </Box>
   );
 }

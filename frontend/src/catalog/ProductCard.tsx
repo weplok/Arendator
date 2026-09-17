@@ -16,61 +16,104 @@ import { formatRate } from "./formatting";
 
 interface ProductCardProps {
   product: ProductSummary;
+  variant?: "catalog" | "profile";
 }
 
-export function ProductCard({ product }: ProductCardProps) {
+export function ProductCard({ product, variant = "profile" }: ProductCardProps) {
   return (
     <Card className="product-card" elevation={0}>
       <ProductImage product={product} />
       <CardContent className="product-card__content">
-        <Stack spacing={1.5} sx={{ height: "100%" }}>
-          <Typography className="product-card__category">
-            {product.category.name}
-          </Typography>
-          <Typography component="h2" variant="h6">
-            <Link
-              component={RouterLink}
-              to={`/products/${product.id}`}
-              className="product-card__title"
-              underline="none"
-            >
-              {product.name}
-            </Link>
-          </Typography>
-          <ManagerLink product={product} />
-          <Stack
-            direction="row"
-            spacing={0.75}
-            sx={{ alignItems: "center", color: "text.secondary" }}
-          >
-            <LocationIcon width="18" height="18" />
-            <Typography variant="body2">
-              {product.pickup_point.city} · {product.pickup_point.district}
-            </Typography>
-          </Stack>
-          <Box sx={{ flexGrow: 1 }} />
-          <Stack
-            direction="row"
-            sx={{
-              alignItems: "flex-end",
-              justifyContent: "space-between",
-              flexWrap: "wrap",
-              gap: 1,
-            }}
-          >
-            <Box>
-              <Typography className="product-card__rate">
-                {formatRate(product.minute_rate)} ₽
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                за минуту
-              </Typography>
-            </Box>
-            <AvailabilityLabel product={product} />
-          </Stack>
-        </Stack>
+        {variant === "catalog" ? (
+          <CatalogCardContent product={product} />
+        ) : (
+          <ProfileCardContent product={product} />
+        )}
       </CardContent>
     </Card>
+  );
+}
+
+function ProductTitle({ product }: ProductCardProps) {
+  return (
+    <Typography component="h2" variant="h6">
+      <Link
+        component={RouterLink}
+        to={`/products/${product.id}`}
+        className="product-card__title"
+        underline="none"
+      >
+        {product.name}
+      </Link>
+    </Typography>
+  );
+}
+
+function ProductLocation({ product }: ProductCardProps) {
+  return (
+    <Stack
+      direction="row"
+      spacing={0.75}
+      sx={{ alignItems: "center", color: "text.secondary" }}
+    >
+      <LocationIcon width="18" height="18" />
+      <Typography variant="body2">
+        {product.pickup_point.city} · {product.pickup_point.district}
+      </Typography>
+    </Stack>
+  );
+}
+
+function CatalogCardContent({ product }: ProductCardProps) {
+  return (
+    <Stack spacing={0.75} sx={{ height: "100%" }}>
+      <Typography className="product-card__category">
+        {product.category.name}
+      </Typography>
+      <ProductTitle product={product} />
+      <Typography className="product-card__rate">
+        {formatRate(product.minute_rate)} ₽/мин
+      </Typography>
+      <ProductLocation product={product} />
+      <Box sx={{ flexGrow: 1 }} />
+      <Stack className="product-card__footer" direction="row">
+        <AvailabilityLabel product={product} variant="catalog" />
+        <ManagerLink product={product} />
+      </Stack>
+    </Stack>
+  );
+}
+
+function ProfileCardContent({ product }: ProductCardProps) {
+  return (
+    <Stack spacing={1.5} sx={{ height: "100%" }}>
+      <Typography className="product-card__category">
+        {product.category.name}
+      </Typography>
+      <ProductTitle product={product} />
+      <ManagerLink product={product} />
+      <ProductLocation product={product} />
+      <Box sx={{ flexGrow: 1 }} />
+      <Stack
+        direction="row"
+        sx={{
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          flexWrap: "wrap",
+          gap: 1,
+        }}
+      >
+        <Box>
+          <Typography className="product-card__rate">
+            {formatRate(product.minute_rate)} ₽
+          </Typography>
+          <Typography variant="caption" color="text.secondary">
+            за минуту
+          </Typography>
+        </Box>
+        <AvailabilityLabel product={product} />
+      </Stack>
+    </Stack>
   );
 }
 
@@ -116,14 +159,14 @@ function ManagerLink({ product }: ProductCardProps) {
   );
 }
 
-function AvailabilityLabel({ product }: ProductCardProps) {
+function AvailabilityLabel({ product, variant = "profile" }: ProductCardProps) {
   if (product.status === "FROZEN") {
     return <Chip label="В архиве" className="availability availability--archived" />;
   }
   if (product.available_instances_count === 0) {
     return (
       <Chip
-        label="Сейчас нет доступных экземпляров"
+        label={variant === "catalog" ? "Сейчас нет свободных экземпляров" : "Сейчас нет доступных экземпляров"}
         className="availability availability--empty"
       />
     );

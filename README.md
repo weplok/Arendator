@@ -4,14 +4,60 @@
 Требования к продукту определены в [SPEC.md](SPEC.md), а отложенные функции —
 в [TODO.md](TODO.md).
 
-## Быстрый запуск
+## Запуск через Docker Compose
 
-Требуется Docker с поддержкой Compose. Файл `.env` необязателен: значения для
-локальной разработки уже заданы в `docker-compose.yml`.
+Нужен Docker с поддержкой Compose. Команды ниже выполняются из корня репозитория
+в PowerShell.
+
+1. Создайте локальный файл окружения:
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+2. Откройте `.env` и задайте `DJANGO_SUPERUSER_PASSWORD` (сложный пароль длиной
+   не менее 8 символов), замените `DJANGO_SECRET_KEY` на случайную строку.
+   Администратор будет создан с адресом `DJANGO_SUPERUSER_EMAIL` и именем
+   `DJANGO_SUPERUSER_NAME`. Файл `.env` не добавляется в Git. Для production также
+   замените `POSTGRES_PASSWORD`, настройте домены и CSRF origins, укажите
+   `DJANGO_DEBUG=false` и `DJANGO_COOKIE_SECURE=true`.
+
+3. Соберите и запустите сервисы:
+
+   ```powershell
+   docker compose up --build -d
+   docker compose ps
+   ```
+
+При старте backend дожидается PostgreSQL и Redis, затем последовательно
+выполняет `migrate --noinput`, `seed_categories` и `ensure_superuser`. Только после
+их успешного завершения стартует сервер. Celery worker, планировщик и frontend
+дожидаются работающего backend. Если миграция или заполнение БД завершается с
+ошибкой, backend не запускается; причину покажет `docker compose logs backend`.
+Тот же порядок применяется при запуске backend из production Docker-образа.
+
+`seed_categories` добавляет недостающие категории, характеристики и варианты
+из `docs/category-taxonomy-v2.yaml`. Повторный запуск не создаёт дубликаты и не
+перезаписывает существующие определения. `ensure_superuser` создаёт учётную запись
+только при её отсутствии; при повторном запуске пароль не сбрасывается. Если
+указанный email уже занят обычным пользователем, запуск останавливается без
+повышения его прав.
+
+Проверить результат можно командами:
 
 ```powershell
-docker compose up --build
+docker compose logs --tail=50 backend
+docker compose exec backend python manage.py showmigrations
+docker compose exec backend python manage.py seed_categories
+docker compose exec backend python manage.py ensure_superuser
 ```
+
+На чистой БД загрузка создаёт 73 категории, 254 характеристики и 370 вариантов.
+Повторный запуск `seed_categories` сообщает о нулевом числе добавленных записей.
+Вход в Django admin: <http://localhost:8000/admin/>; используйте email и пароль
+суперпользователя из `.env`. Для смены пароля существующего администратора
+выполните `docker compose exec backend python manage.py changepassword
+admin@example.local`, подставив свой email.
 
 После запуска доступны:
 
@@ -19,32 +65,29 @@ docker compose up --build
 - health-check backend: <http://localhost:8000/api/health/>;
 - OpenAPI: <http://localhost:8000/api/schema/>;
 - Swagger UI: <http://localhost:8000/api/docs/>;
-- Django admin: <http://localhost:8000/admin/>.
-- проверочное дерево категорий: <http://localhost:5173/categories>.
+- Django admin: <http://localhost:8000/admin/>;
+- дерево категорий: <http://localhost:5173/categories>.
 
-Backend перед стартом автоматически применяет миграции. Исходники backend и
-frontend подключены в контейнеры как bind mounts: Django и Vite автоматически
-перезапускаются при изменении файлов. `node_modules` хранится в отдельном
-контейнерном томе и не смешивается с зависимостями Windows. Остановить систему
-можно командой `docker compose down`. Данные PostgreSQL и Redis сохраняются в
-именованных томах.
+Compose подключает исходники backend и frontend в контейнеры как bind mounts.
+Django и Vite перезапускаются при изменении кода. Данные PostgreSQL, Redis, media
+и `node_modules` хранятся в именованных томах. Остановка без удаления данных:
 
-После изменения Python- или frontend-кода пересборка контейнеров не требуется.
-После изменения `requirements/prod.txt` или Dockerfile пересоберите соответствующий
-образ. Зависимости frontend находятся в постоянном томе, поэтому после изменения
-`package.json` или `package-lock.json` синхронизируйте их отдельной командой:
+```powershell
+docker compose down
+```
+
+После изменения Python-кода пересборка не требуется. После изменения
+`backend/requirements/prod.txt`, Dockerfile или файлов сборочного окружения
+запустите `docker compose up --build -d`. После изменения зависимостей frontend
+синхронизируйте `node_modules`:
 
 ```powershell
 docker compose run --rm frontend npm ci
 docker compose restart frontend
 ```
 
-Celery не перезагружает импортированные задачи автоматически, поэтому после
-изменения фоновых задач перезапустите только затронутые процессы:
-
-```powershell
-docker compose restart celery-worker celery-beat
-```
+Celery не перезагружает импортированные задачи автоматически. После изменения
+фоновых задач выполните `docker compose restart celery-worker celery-beat`.
 
 ## Сервисы Compose
 
@@ -59,11 +102,25 @@ docker compose restart celery-worker celery-beat
 
 По умолчанию вне Docker используется SQLite, чтобы проверки не требовали запущенных
 инфраструктурных сервисов. В Docker `DATABASE_ENGINE` явно переключается на
-PostgreSQL.
+PostgreSQL. Для локального запуска `.env` автоматически не читается: задайте
+переменные в текущей сессии PowerShell. Нужен Python 3.14.
 
 ```powershell
+py -3.14 -m venv venv
 venv\Scripts\python.exe -m pip install -r backend\requirements\dev.txt
+$env:DJANGO_SUPERUSER_EMAIL = "admin@example.local"
+$env:DJANGO_SUPERUSER_NAME = "Администратор"
+$env:DJANGO_SUPERUSER_PASSWORD = "укажите-сильный-пароль"
 venv\Scripts\python.exe backend\manage.py migrate
+venv\Scripts\python.exe backend\manage.py seed_categories
+venv\Scripts\python.exe backend\manage.py ensure_superuser
+venv\Scripts\python.exe backend\manage.py runserver
+```
+
+Замените пример пароля на собственный сложный пароль.
+Команды миграции и заполнения можно запускать повторно. Для проверок backend:
+
+```powershell
 venv\Scripts\python.exe -m pytest
 ./scripts/format-backend.ps1
 venv\Scripts\python.exe -m ruff check backend
@@ -77,9 +134,7 @@ venv\Scripts\python.exe -m mypy backend
 Set-Location frontend
 npm ci
 npm run dev
-npm run lint
-npm run test
-npm run build
+npm run check
 ```
 
 При локальном запуске Vite проксирует `/api` на `http://localhost:8000`. Все

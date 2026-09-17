@@ -55,6 +55,7 @@ def test_category_list_is_public_and_has_a_fixed_query_count(
             "characteristics": [
                 {
                     "id": power.id,
+                    "category_id": child.id,
                     "name": "Мощность",
                     "type": "NUMBER",
                     "is_required": True,
@@ -64,6 +65,7 @@ def test_category_list_is_public_and_has_a_fixed_query_count(
                 },
                 {
                     "id": chuck.id,
+                    "category_id": child.id,
                     "name": "Тип патрона",
                     "type": "LIST",
                     "is_required": False,
@@ -80,3 +82,31 @@ def test_category_list_is_public_and_has_a_fixed_query_count(
             ],
         },
     ]
+
+
+def test_category_list_exposes_inherited_definitions_at_every_depth() -> None:
+    root = Category.objects.create(name="Инструменты")
+    child = Category.objects.create(name="Пилы", parent=root)
+    leaf = Category.objects.create(name="Циркулярные", parent=child)
+    shared = Characteristic.objects.create(
+        category=root, name="Бренд", type=Characteristic.Type.LIST
+    )
+    local = Characteristic.objects.create(
+        category=child, name="Мощность", type=Characteristic.Type.NUMBER, unit="Вт"
+    )
+
+    response = APIClient().get(reverse("categories:list"))
+
+    assert response.status_code == status.HTTP_200_OK
+    categories = {item["id"]: item for item in response.json()}
+    assert [item["id"] for item in categories[root.id]["characteristics"]] == [
+        shared.id
+    ]
+    assert {item["id"] for item in categories[child.id]["characteristics"]} == {
+        shared.id,
+        local.id,
+    }
+    assert {item["id"] for item in categories[leaf.id]["characteristics"]} == {
+        shared.id,
+        local.id,
+    }

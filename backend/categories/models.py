@@ -3,7 +3,32 @@
 from typing import Any
 
 from django.core.exceptions import ValidationError
-from django.db import models
+from django.db import models, transaction
+
+
+def ancestor_ids(category: "Category") -> list[int]:
+    """Return this category and its ancestors, nearest first."""
+    ids: list[int] = []
+    current: Category | None = category
+    while current is not None:
+        if current.pk in ids:
+            raise ValidationError("Обнаружен цикл в дереве категорий.")
+        ids.append(current.pk)
+        current = current.parent
+    return ids
+
+
+def descendant_ids(category: "Category") -> set[int]:
+    """Return the complete branch, including its root."""
+    ids = {category.pk}
+    pending = [category.pk]
+    while pending:
+        children = list(
+            Category.objects.filter(parent_id__in=pending).values_list("pk", flat=True)
+        )
+        pending = [child_id for child_id in children if child_id not in ids]
+        ids.update(pending)
+    return ids
 
 
 class Category(models.Model):
@@ -33,9 +58,44 @@ class Category(models.Model):
         self.name = self.name.strip()
         if not self.name:
             raise ValidationError({"name": "Укажите название категории."})
-        if self.parent_id is None:
+        if self.parent_id is not None:
+            self._validate_parent_chain()
+        original = Category.objects.filter(pk=self.pk).first() if self.pk else None
+        if original is not None and original.parent_id == self.parent_id:
             return
-        self._validate_parent_chain()
+        incoming_ids: list[int] = []
+        if self.parent_id is not None:
+            parent = self.parent
+            assert parent is not None
+            incoming_ids = ancestor_ids(parent)
+        incoming_names = {
+            name.casefold()
+            for name in Characteristic.objects.filter(
+                category_id__in=incoming_ids
+            ).values_list("name", flat=True)
+        }
+        branch_ids = descendant_ids(self) if self.pk else set()
+        branch_names = {
+            name.casefold()
+            for name in Characteristic.objects.filter(
+                category_id__in=branch_ids
+            ).values_list("name", flat=True)
+        }
+        if incoming_names & branch_names:
+            raise ValidationError(
+                {"parent": "В новой ветке уже есть характеристика с таким названием."}
+            )
+        if original is not None:
+            from catalog.models import ProductCharacteristicValue
+
+            removed_ids = set(ancestor_ids(original)) - set(incoming_ids)
+            if ProductCharacteristicValue.objects.filter(
+                product__category_id__in=branch_ids,
+                characteristic__category_id__in=removed_ids,
+            ).exists():
+                raise ValidationError(
+                    {"parent": "Перенос оставит значения товаров вне их категории."}
+                )
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.full_clean()
@@ -54,6 +114,16 @@ class Category(models.Model):
                 )
             visited_ids.add(ancestor.pk)
             ancestor = ancestor.parent
+
+    def applicable_characteristics(self) -> models.QuerySet["Characteristic"]:
+        """Definitions shared by products in this category and its descendants."""
+        return Characteristic.objects.filter(category_id__in=ancestor_ids(self))
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        with transaction.atomic():
+            for characteristic in list(self.characteristics.all()):
+                characteristic.delete()
+            return super().delete(*args, **kwargs)
 
 
 class Characteristic(models.Model):
@@ -117,6 +187,27 @@ class Characteristic(models.Model):
                     )
                 }
             )
+        if self.pk:
+            original = Characteristic.objects.only("type", "category_id").get(
+                pk=self.pk
+            )
+            if self.type != original.type:
+                raise ValidationError({"type": "Тип характеристики менять нельзя."})
+            if (
+                self.category_id != original.category_id
+                and self.product_values.exists()
+            ):
+                raise ValidationError(
+                    {"category": "Нельзя переносить используемую характеристику."}
+                )
+        if self.category_id:
+            branch = set(ancestor_ids(self.category)) | descendant_ids(self.category)
+            siblings = Characteristic.objects.filter(category_id__in=branch)
+            for characteristic in siblings.exclude(pk=self.pk).only("name"):
+                if characteristic.name.casefold() == self.name.casefold():
+                    raise ValidationError(
+                        {"name": "Такая характеристика уже есть в этой ветке."}
+                    )
 
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.full_clean()
@@ -124,6 +215,14 @@ class Characteristic(models.Model):
 
     def __str__(self) -> str:
         return f"{self.category}: {self.name}"
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        """Remove dependent product values before protected list options."""
+        from catalog.models import ProductCharacteristicValue
+
+        with transaction.atomic():
+            ProductCharacteristicValue.objects.filter(characteristic=self).delete()
+            return super().delete(*args, **kwargs)
 
 
 class CharacteristicOption(models.Model):

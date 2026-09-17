@@ -8,9 +8,15 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
 import pytest
 
-from catalog.models import PickupPoint, Product, ProductInstance, ProductPhoto
+from catalog.models import (
+    PickupPoint,
+    Product,
+    ProductCharacteristicValue,
+    ProductInstance,
+    ProductPhoto,
+)
 from catalog.tests.factories import create_manager, create_product, make_png
-from categories.models import Category
+from categories.models import Category, Characteristic, CharacteristicOption
 from users.models import User
 
 pytestmark = pytest.mark.django_db
@@ -237,3 +243,70 @@ def test_product_photo_storage_name_is_generated_by_server(
     assert image_name is not None
     assert image_name.startswith(f"products/{product.pk}/")
     assert "private-client-name" not in image_name
+
+
+def test_product_category_cannot_change_after_creation(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product()
+    product.category = Category.objects.create(name="Другая")
+
+    with pytest.raises(ValidationError) as error:
+        product.save()
+
+    assert "category" in error.value.message_dict
+
+
+def test_inherited_required_value_is_checked_on_moderation(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    root = Category.objects.create(name="Инструменты")
+    child = Category.objects.create(name="Пилы", parent=root)
+    leaf = Category.objects.create(name="Циркулярные", parent=child)
+    characteristic = Characteristic.objects.create(
+        category=root,
+        name="Мощность",
+        type=Characteristic.Type.NUMBER,
+        unit="Вт",
+        is_required=True,
+    )
+    product = create_product(category=leaf)
+    product.status = Product.Status.ON_MODERATION
+
+    with pytest.raises(ValidationError) as error:
+        product.save()
+    assert "characteristics" in error.value.message_dict
+
+    ProductCharacteristicValue.objects.create(
+        product=product, characteristic=characteristic, number_value=Decimal("500")
+    )
+    product.save()
+    assert product.status == Product.Status.ON_MODERATION
+
+
+def test_value_rejects_unrelated_definition_and_wrong_option(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    root = Category.objects.create(name="Инструменты")
+    sibling = Category.objects.create(name="Фото")
+    product = create_product(category=root)
+    other = Characteristic.objects.create(
+        category=sibling, name="Бренд", type=Characteristic.Type.LIST
+    )
+    option = CharacteristicOption.objects.create(characteristic=other, value="A")
+
+    with pytest.raises(ValidationError):
+        ProductCharacteristicValue.objects.create(
+            product=product, characteristic=other, option=option
+        )
+
+    own = Characteristic.objects.create(
+        category=root, name="Другой бренд", type=Characteristic.Type.LIST
+    )
+    with pytest.raises(ValidationError):
+        ProductCharacteristicValue.objects.create(
+            product=product, characteristic=own, option=option
+        )
