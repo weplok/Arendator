@@ -79,6 +79,13 @@ class PhotoInputSerializer(serializers.Serializer):
     image = serializers.ImageField()
 
 
+class PhotoOrderInputSerializer(serializers.Serializer):
+    photo_ids = serializers.ListField(
+        child=serializers.IntegerField(min_value=1),
+        allow_empty=False,
+    )
+
+
 class InstanceInputSerializer(serializers.Serializer):
     inventory_number = serializers.CharField(
         max_length=100, required=False, allow_blank=True
@@ -255,11 +262,48 @@ class ManagerPhotoView(APIView):
         product = owned_product(request, pk)
         editable_product(product)
         photo = get_object_or_404(ProductPhoto, pk=photo_id, product=product)
-        with transaction.atomic():
-            product.photos.filter(is_primary=True).update(is_primary=False)
-            photo.is_primary = True
-            photo.save()
-        return Response(ProductPhotoSerializer(photo).data)
+        ordered_ids = [
+            photo.pk,
+            *product.photos.exclude(pk=photo.pk).values_list("pk", flat=True),
+        ]
+        reorder_product_photos(product, ordered_ids)
+        return Response(status=204)
+
+
+class ManagerPhotoOrderView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def put(self, request: Request, pk: int) -> Response:
+        product = owned_product(request, pk)
+        editable_product(product)
+        serializer = PhotoOrderInputSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        photo_ids = serializer.validated_data["photo_ids"]
+        existing_ids = list(product.photos.values_list("pk", flat=True))
+        if len(photo_ids) != len(set(photo_ids)) or set(photo_ids) != set(existing_ids):
+            raise ValidationError(
+                {"photo_ids": "Передайте все фотографии товара без повторов."}
+            )
+        reorder_product_photos(product, photo_ids)
+        return Response(status=204)
+
+
+def reorder_product_photos(product: Product, photo_ids: list[int]) -> None:
+    with transaction.atomic():
+        photos = {
+            photo.pk: photo
+            for photo in ProductPhoto.objects.select_for_update().filter(
+                product=product
+            )
+        }
+        ProductPhoto.objects.filter(product=product, is_primary=True).update(
+            is_primary=False
+        )
+        for display_order, photo_id in enumerate(photo_ids):
+            photo = photos[photo_id]
+            photo.display_order = display_order
+            photo.is_primary = display_order == 0
+            photo.save(update_fields=("display_order", "is_primary"))
 
 
 class ManagerInstancesView(APIView):

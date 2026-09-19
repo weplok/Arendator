@@ -32,8 +32,14 @@ it("shows only own products and navigates to the editor", async () => {
   renderPage("/account");
   expect(await screen.findByRole("heading", { name: "Кабинет менеджера" })).toBeInTheDocument();
   expect(screen.getByText("Дрель")).toBeInTheDocument();
-  fireEvent.click(screen.getByRole("link", { name: "Редактировать Дрель" }));
+  expect(screen.getByText("Опубликовано").closest(".manager-stat")).toHaveClass("manager-stat--published");
+  expect(screen.getByText("Черновики").closest(".manager-stat")).toHaveClass("manager-stat--draft");
+  expect(screen.getByText("В архиве").closest(".manager-stat")).toHaveClass("manager-stat--archived");
+  expect(screen.getByLabelText("0 свободно из 0")).toHaveTextContent("0/0");
+  fireEvent.click(screen.getByRole("link", { name: "Открыть Дрель" }));
   expect(await screen.findByRole("heading", { name: "Редактирование товара" })).toBeInTheDocument();
+  expect(screen.getAllByRole("link", { name: "Мои товары" })).toHaveLength(2);
+  expect(screen.queryByText("1 Основное")).not.toBeInTheDocument();
 });
 
 it("creates a draft then opens its photo step", async () => {
@@ -77,9 +83,130 @@ it("confirms freezing and moves the product into the archive", async () => {
   });
   vi.stubGlobal("fetch", fetchMock);
   renderPage("/manager/products/8/instances");
+  const editorGrid = (await screen.findByRole("heading", { name: "Экземпляры товара" }))
+    .closest(".manager-main")
+    ?.querySelector(".manager-editor-grid");
+  expect(editorGrid).toHaveClass("manager-editor-grid--wide");
+  expect(screen.queryByRole("heading", { name: "Перед публикацией" })).not.toBeInTheDocument();
   fireEvent.click(await screen.findByRole("button", { name: "Заморозить" }));
   expect(screen.getByRole("dialog", { name: "Заморозить товар?" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Заморозить товар" }));
   expect(await screen.findByRole("heading", { name: "Архив товаров" })).toBeInTheDocument();
   expect(frozen).toBe(true);
+});
+
+it("formats characteristic numbers and continues to the pickup step after saving", async () => {
+  document.cookie = "csrftoken=manager-token; path=/";
+  const categoryWithCharacteristics = {
+    ...category,
+    characteristics: [
+      {
+        id: 11, category_id: 1, name: "Диаметр", type: "NUMBER",
+        is_required: true, unit: "дюйм", display_order: 0, options: [],
+      },
+      {
+        id: 12, category_id: 1, name: "Производитель", type: "LIST",
+        is_required: false, unit: "", display_order: 1,
+        options: [{ id: 101, value: "Bosch", display_order: 0 }],
+      },
+    ],
+  };
+  const values = [
+    { characteristic_id: 11, option_id: null, number_value: "26.000000", boolean_value: null },
+    { characteristic_id: 12, option_id: 101, number_value: null, boolean_value: null },
+  ];
+  let savedBody: string | undefined;
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options?: RequestInit) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("categories")) return Promise.resolve(Response.json([categoryWithCharacteristics]));
+    if (url.includes("characteristics")) {
+      if (options?.method === "PUT") savedBody = String(options.body);
+      return Promise.resolve(Response.json(values));
+    }
+    if (url.endsWith("/8/")) return Promise.resolve(Response.json(product));
+    return Promise.resolve(Response.json([product]));
+  }));
+
+  renderPage("/manager/products/8/features");
+
+  expect(await screen.findByRole("spinbutton", { name: /^Диаметр/ })).toHaveValue(26);
+  expect(screen.queryByRole("option", { name: "Выберите значение" })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Сохранить характеристики" }));
+  expect(await screen.findByRole("heading", { name: "Точка самовывоза", level: 1 })).toBeInTheDocument();
+  expect(savedBody).toContain('"number_value":"26"');
+  expect(screen.getByRole("link", { name: "Назад" })).toHaveAttribute(
+    "href",
+    "/manager/products/8/features",
+  );
+});
+
+it("moves a selected photo to the first position", async () => {
+  document.cookie = "csrftoken=manager-token; path=/";
+  const photos = [
+    { id: 20, url: "/first.jpg", display_order: 0, is_primary: true },
+    { id: 21, url: "/second.jpg", display_order: 1, is_primary: false },
+  ];
+  let currentProduct = { ...product, photos };
+  let submittedOrder: number[] = [];
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options?: RequestInit) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("categories")) return Promise.resolve(Response.json([category]));
+    if (url.endsWith("photos/order/") && options?.method === "PUT") {
+      submittedOrder = JSON.parse(String(options.body)).photo_ids;
+      currentProduct = {
+        ...currentProduct,
+        photos: submittedOrder.map((id, index) => ({
+          ...photos.find((photo) => photo.id === id)!,
+          display_order: index,
+          is_primary: index === 0,
+        })),
+      };
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
+    if (url.endsWith("/8/")) return Promise.resolve(Response.json(currentProduct));
+    if (url.includes("characteristics")) return Promise.resolve(Response.json([]));
+    return Promise.resolve(Response.json([currentProduct]));
+  }));
+
+  renderPage("/manager/products/8/photos");
+  fireEvent.click(await screen.findByRole("button", { name: "Сделать главным" }));
+
+  await waitFor(() => expect(submittedOrder).toEqual([21, 20]));
+  expect(screen.getByText("Главное фото").closest(".manager-photo")).toHaveTextContent(
+    "Главное фото",
+  );
+  expect(screen.getByRole("button", { name: "Выбрать файлы" })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Раньше|Позже/ })).not.toBeInTheDocument();
+});
+
+it("previews a dragged photo in its new place and saves the order on drop", async () => {
+  document.cookie = "csrftoken=manager-token; path=/";
+  const photos = [
+    { id: 20, url: "/first.jpg", display_order: 0, is_primary: true },
+    { id: 21, url: "/second.jpg", display_order: 1, is_primary: false },
+  ];
+  let submittedOrder: number[] = [];
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options?: RequestInit) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("categories")) return Promise.resolve(Response.json([category]));
+    if (url.endsWith("photos/order/") && options?.method === "PUT") {
+      submittedOrder = JSON.parse(String(options.body)).photo_ids;
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
+    if (url.endsWith("/8/")) return Promise.resolve(Response.json({ ...product, photos }));
+    if (url.includes("characteristics")) return Promise.resolve(Response.json([]));
+    return Promise.resolve(Response.json([{ ...product, photos }]));
+  }));
+
+  renderPage("/manager/products/8/photos");
+  const firstPhoto = await screen.findByRole("listitem", { name: "Фото 1 товара Дрель" });
+  const secondPhoto = screen.getByRole("listitem", { name: "Фото 2 товара Дрель" });
+
+  fireEvent.dragStart(secondPhoto);
+  fireEvent.dragEnter(firstPhoto);
+  expect(screen.getByRole("list", { name: "Фотографии товара" }).firstElementChild)
+    .toBe(secondPhoto);
+  fireEvent.drop(firstPhoto);
+
+  await waitFor(() => expect(submittedOrder).toEqual([21, 20]));
 });

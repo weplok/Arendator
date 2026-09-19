@@ -11,6 +11,9 @@
 .manager-head > a { flex-shrink: 0; }
 .manager-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
 .manager-stat { padding: 18px 20px; border-radius: var(--card-radius) !important; }
+.manager-stat--published { border-color: #abd929 !important; background: #f5ffd9 !important; }
+.manager-stat--draft { border-color: #e7c64a !important; background: #fff8d8 !important; }
+.manager-stat--archived { border-color: #76bde8 !important; background: #e8f6ff !important; }
 .manager-stat span { display: block; color: var(--color-text-muted); font-size: .85rem; }
 .manager-stat strong { display: block; margin-top: 9px; font-size: 1.9rem; font-variant-numeric: tabular-nums; }
 .manager-surface { padding: 24px; border-radius: var(--card-radius) !important; margin-bottom: 18px; }
@@ -26,6 +29,12 @@
 .manager-table th, .manager-table td { padding: 12px; }
 .manager-table td { border-bottom: 1px solid var(--color-border); }
 .manager-table tr:last-child td { border-bottom: 0; }
+.manager-product-row { position: relative; transition: background-color 150ms ease; }
+.manager-product-row:hover, .manager-product-row:focus-within { background: var(--green-50); }
+.manager-product-row:focus-within { box-shadow: inset var(--focus-ring); }
+.manager-row-link { color: inherit; text-decoration: none; }
+.manager-row-link::after { content: ""; position: absolute; inset: 0; }
+.manager-row-link:focus-visible { outline: none; box-shadow: none; }
 .manager-product-cell { display: flex; align-items: center; gap: 13px; min-width: 220px; }
 .manager-product-cell strong { display: block; line-height: 1.35; }
 .manager-product-cell small { display: block; color: var(--color-text-muted); margin-top: 4px; }
@@ -34,12 +43,15 @@
 .manager-empty { padding: 36px 20px; text-align: center; }
 .manager-state { display: flex; align-items: center; gap: 16px; padding: 48px; }
 .manager-crumb { color: var(--color-text-muted); margin-bottom: 18px; font-size: .9rem; }
+.manager-back-to-products { margin-bottom: 14px !important; }
+.manager-back-to-products svg { width: 20px; height: 20px; }
 .manager-status { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 50px; background: var(--gray-100); font-weight: 700; font-size: .8rem; white-space: nowrap; }
 .manager-status--published { color: var(--color-success-text); background: var(--green-50); }
 .manager-tabs { display: flex; gap: 4px; padding: 5px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); overflow-x: auto; margin-bottom: 18px; }
 .manager-tabs a, .manager-tabs span { flex: 1 0 auto; min-height: 42px; display: grid; place-items: center; border-radius: 8px; padding: 8px 13px; text-decoration: none; color: var(--color-text-muted); font-weight: 700; font-size: .85rem; }
 .manager-tabs a[aria-current="page"], .manager-tabs .active { color: var(--color-primary); background: var(--green-50); }
 .manager-editor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 278px; gap: 18px; align-items: start; }
+.manager-editor-grid--wide { grid-template-columns: minmax(0, 1fr); }
 .manager-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .manager-form-grid > :nth-child(-n+3) { grid-column: 1 / -1; }
 .manager-checklist { padding: 22px; border-radius: var(--card-radius) !important; }
@@ -48,12 +60,19 @@
 .manager-checklist li { padding: 10px 0; border-bottom: 1px solid var(--color-border); color: var(--color-text-muted); font-size: .85rem; }
 .manager-checklist li.done { color: var(--color-success-text); font-weight: 700; }
 .manager-checklist p { padding: 14px; background: var(--gray-100); border-radius: 12px; color: var(--color-text-muted); font-size: .8rem; line-height: 1.5; }
-.manager-upload { display: block; border: 2px dashed var(--color-border); border-radius: 14px; background: var(--green-50); text-align: center; padding: 30px; color: var(--color-primary); font-weight: 700; cursor: pointer; }
-.manager-upload input { display: block; margin: 12px auto 0; max-width: 100%; font-weight: 400; }
+.manager-upload { display: grid; justify-items: center; gap: 14px; border: 2px dashed var(--color-border); border-radius: 14px; background: var(--green-50); text-align: center; padding: 30px; color: var(--color-primary); font-weight: 700; }
 .manager-photo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin-top: 20px; }
-.manager-photo { overflow: hidden; border: 1px solid var(--color-border); border-radius: 12px; }
+.manager-photo { overflow: hidden; border: 1px solid var(--color-border); border-radius: 12px; transition: border-color 150ms ease, box-shadow 150ms ease, opacity 150ms ease; }
+.manager-photo[draggable="true"] { cursor: grab; }
+.manager-photo[draggable="true"]:active { cursor: grabbing; }
+.manager-photo[tabindex]:focus-visible { outline: 3px solid color-mix(in srgb, var(--color-primary) 35%, transparent); outline-offset: 3px; }
+.manager-photo[data-dragging="true"] { border-color: var(--color-primary); box-shadow: 0 10px 24px rgb(27 73 53 / 18%); opacity: .62; user-select: none; }
 .manager-photo img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
 .manager-photo div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 8px; font-size: .8rem; }
+.manager-instances { display: inline-flex; min-width: 58px; min-height: 34px; align-items: center; justify-content: center; padding: 4px 10px; border: 1px solid currentColor; border-radius: 8px; font-family: "Lucida Console", Monaco, Consolas, "Courier New", monospace; font-size: 1rem; font-weight: 700; font-variant-numeric: tabular-nums slashed-zero; font-feature-settings: "tnum" 1, "zero" 1; }
+.manager-instances--full { color: #1f62aa; background: #e8f2ff; }
+.manager-instances--partial { color: #876200; background: #fff5c7; }
+.manager-instances--empty { color: #a12b2b; background: #ffebeb; }
 .manager-instance-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
 .manager-instance-form .MuiTextField-root { flex: 1 1 220px; }
 .manager-map { margin-top: 20px; min-height: 170px; display: grid; place-content: center; text-align: center; border-radius: 12px; background: repeating-linear-gradient(25deg, var(--green-50) 0 23px, var(--gray-100) 24px 26px, var(--green-50) 27px 45px); }

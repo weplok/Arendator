@@ -6,6 +6,7 @@ from catalog.manager_views import (
     ManagerFreezeView,
     ManagerInstancesView,
     ManagerInstanceView,
+    ManagerPhotoOrderView,
     ManagerPhotosView,
     ManagerPhotoView,
     ManagerPickupView,
@@ -40,6 +41,11 @@ urlpatterns = [
         "manager/products/<int:pk>/photos/",
         ManagerPhotosView.as_view(),
         name="manager-photos",
+    ),
+    path(
+        "manager/products/<int:pk>/photos/order/",
+        ManagerPhotoOrderView.as_view(),
+        name="manager-photo-order",
     ),
     path(
         "manager/products/<int:pk>/photos/<int:photo_id>/",

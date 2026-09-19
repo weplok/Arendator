@@ -43,8 +43,8 @@ export function ManagerListPage({ section }: { section: "overview" | "products" 
         <Button component={RouterLink} to="/manager/products/new" variant="contained">+ Добавить товар</Button>}
     </div>
     {section === "overview" ? <div className="manager-stats">
-      {[["Всего товаров", products.length], ["Опубликовано", products.filter((item) => item.status === "PUBLISHED").length], ["Черновики", products.filter((item) => item.status === "DRAFT").length], ["В архиве", archive.length]].map(([label, count]) =>
-        <Paper key={label} variant="outlined" className="manager-stat"><span>{label}</span><strong>{count}</strong></Paper>)}
+      {[["Всего товаров", products.length, "total"], ["Опубликовано", products.filter((item) => item.status === "PUBLISHED").length, "published"], ["Черновики", products.filter((item) => item.status === "DRAFT").length, "draft"], ["В архиве", archive.length, "archived"]].map(([label, count, tone]) =>
+        <Paper key={label} variant="outlined" className={`manager-stat manager-stat--${tone}`}><span>{label}</span><strong>{count}</strong></Paper>)}
     </div> : null}
     {section === "products" ? <div className="manager-filters">
       {[["all", `Все активные · ${active.length}`], ["PUBLISHED", `Опубликованы · ${active.filter((item) => item.status === "PUBLISHED").length}`], ["DRAFT", `Черновики · ${active.filter((item) => item.status === "DRAFT").length}`]].map(([value, label]) =>
@@ -55,7 +55,7 @@ export function ManagerListPage({ section }: { section: "overview" | "products" 
     {section === "archive" ? <Alert severity="info" sx={{ mb: 2 }}>Замороженный товар не виден в общем каталоге. Его карточка доступна в отдельном архиве публичного профиля.</Alert> : null}
     <Paper variant="outlined" className="manager-surface">
       {section === "overview" ? <div className="manager-surface__head"><Typography variant="h6">Продолжить работу</Typography><Button component={RouterLink} to="/manager/products">Все товары →</Button></div> : null}
-      {visible.length ? <div className="manager-table-wrap"><table className="manager-table"><thead><tr><th>Товар</th><th>Статус</th><th>Ставка</th><th>Экземпляры</th><th>Действие</th></tr></thead><tbody>
+      {visible.length ? <div className="manager-table-wrap"><table className="manager-table"><thead><tr><th>Товар</th><th>Ставка</th><th>Экземпляры</th><th>Статус</th></tr></thead><tbody>
         {visible.map((product) => <ProductRow product={product} key={product.id} />)}
       </tbody></table></div> : <div className="manager-empty"><Typography variant="h6">{search || filter !== "all" ? "Ничего не найдено" : section === "archive" ? "Архив пока пуст" : "Товаров пока нет"}</Typography><Typography color="text.secondary">{section === "archive" ? "Здесь появятся замороженные товары." : "Добавьте первый товар, чтобы начать работу с каталогом."}</Typography></div>}
     </Paper>
@@ -68,12 +68,17 @@ function ProductRow({ product }: { product: ManagerProduct }) {
     DRAFT: "Черновик", PUBLISHED: "Опубликован", FROZEN: "Заморожен",
     ON_MODERATION: "На модерации", REJECTED: "Отклонён", HIDDEN_BY_ADMIN: "Скрыт",
   };
-  return <tr><td data-label="Товар"><div className="manager-product-cell">
+  const totalInstances = product.instances.length;
+  const availabilityTone = product.available_instances_count === 0
+    ? "empty"
+    : product.available_instances_count === totalInstances
+      ? "full"
+      : "partial";
+  const editorPath = `/manager/products/${product.id}/basic`;
+  return <tr className="manager-product-row"><td data-label="Товар"><RouterLink className="manager-row-link" to={editorPath} aria-label={`Открыть ${product.name}`}><div className="manager-product-cell">
     <div className="manager-thumb">{product.photos[0] ? <img src={product.photos.find((photo) => photo.is_primary)?.url ?? product.photos[0].url} alt="" width="56" height="56" loading="lazy" /> : <ImageIcon width="28" height="28" />}</div>
-    <div><strong>{product.name}</strong><small>{product.category_name}{product.pickup_point ? ` · ${product.pickup_point.city}, ${product.pickup_point.district}` : ""}</small></div></div></td>
-    <td data-label="Статус"><Chip size="small" color={product.status === "PUBLISHED" ? "success" : "default"} label={labels[product.status]} /></td>
+    <div><strong>{product.name}</strong><small>{product.category_name}{product.pickup_point ? ` · ${product.pickup_point.city}, ${product.pickup_point.district}` : ""}</small></div></div></RouterLink></td>
     <td data-label="Ставка">{formatRate(product.minute_rate)} ₽/мин</td>
-    <td data-label="Экземпляры">{product.instances.length} всего · {product.available_instances_count} свободно</td>
-    <td data-label="Действие">{product.status === "FROZEN" ? <Button component={RouterLink} to={`/manager/products/${product.id}/basic`}>Просмотр</Button> :
-      <Button component={RouterLink} to={`/manager/products/${product.id}/basic`} aria-label={`Редактировать ${product.name}`}>{product.status === "DRAFT" ? "Продолжить" : "Редактировать"}</Button>}</td></tr>;
+    <td data-label="Экземпляры"><span className={`manager-instances manager-instances--${availabilityTone}`} aria-label={`${product.available_instances_count} свободно из ${totalInstances}`}>{product.available_instances_count}/{totalInstances}</span></td>
+    <td data-label="Статус"><Chip size="small" color={product.status === "PUBLISHED" ? "success" : "default"} label={labels[product.status]} /></td></tr>;
 }

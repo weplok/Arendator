@@ -20,31 +20,43 @@ interface ProductCardProps {
 }
 
 export function ProductCard({ product, variant = "profile" }: ProductCardProps) {
+  if (variant === "catalog") {
+    return (
+      <Card
+        component={RouterLink}
+        to={`/products/${product.id}`}
+        aria-label={product.name}
+        className="product-card product-card--clickable"
+        elevation={0}
+      >
+        <ProductImage product={product} linked={false} />
+        <CardContent className="product-card__content">
+          <CatalogCardContent product={product} />
+        </CardContent>
+      </Card>
+    );
+  }
   return (
     <Card className="product-card" elevation={0}>
       <ProductImage product={product} />
       <CardContent className="product-card__content">
-        {variant === "catalog" ? (
-          <CatalogCardContent product={product} />
-        ) : (
-          <ProfileCardContent product={product} />
-        )}
+        <ProfileCardContent product={product} />
       </CardContent>
     </Card>
   );
 }
 
-function ProductTitle({ product }: ProductCardProps) {
+function ProductTitle({ product, linked = true }: ProductCardProps & { linked?: boolean }) {
   return (
-    <Typography component="h2" variant="h6">
-      <Link
+    <Typography component="h2" variant="h6" className={linked ? undefined : "product-card__title"}>
+      {linked ? <Link
         component={RouterLink}
         to={`/products/${product.id}`}
         className="product-card__title"
         underline="none"
       >
         {product.name}
-      </Link>
+      </Link> : product.name}
     </Typography>
   );
 }
@@ -67,10 +79,7 @@ function ProductLocation({ product }: ProductCardProps) {
 function CatalogCardContent({ product }: ProductCardProps) {
   return (
     <Stack spacing={0.75} sx={{ height: "100%" }}>
-      <Typography className="product-card__category">
-        {product.category.name}
-      </Typography>
-      <ProductTitle product={product} />
+      <ProductTitle product={product} linked={false} />
       <Typography className="product-card__rate">
         {formatRate(product.minute_rate)} ₽/мин
       </Typography>
@@ -78,7 +87,7 @@ function CatalogCardContent({ product }: ProductCardProps) {
       <Box sx={{ flexGrow: 1 }} />
       <Stack className="product-card__footer" direction="row">
         <AvailabilityLabel product={product} variant="catalog" />
-        <ManagerLink product={product} />
+        <ManagerIdentity product={product} />
       </Stack>
     </Stack>
   );
@@ -117,13 +126,9 @@ function ProfileCardContent({ product }: ProductCardProps) {
   );
 }
 
-function ProductImage({ product }: ProductCardProps) {
-  return (
-    <RouterLink
-      to={`/products/${product.id}`}
-      className="product-card__image-link"
-      aria-label={`Открыть товар «${product.name}»`}
-    >
+function ProductImage({ product, linked = true }: ProductCardProps & { linked?: boolean }) {
+  const image = (
+    <>
       {product.primary_photo ? (
         <img
           className="product-card__image"
@@ -139,8 +144,19 @@ function ProductImage({ product }: ProductCardProps) {
           <Typography variant="body2">Фотография не добавлена</Typography>
         </Box>
       )}
-    </RouterLink>
+    </>
   );
+  if (!linked) return <Box className="product-card__image-link">{image}</Box>;
+  return <RouterLink to={`/products/${product.id}`} className="product-card__image-link" aria-label={`Открыть товар «${product.name}»`}>{image}</RouterLink>;
+}
+
+function ManagerIdentity({ product }: ProductCardProps) {
+  return <Box component="span" className="manager-link">
+    <Avatar src={product.manager.avatar ?? undefined} alt="" sx={{ width: 24, height: 24 }}>
+      {product.manager.name.slice(0, 1)}
+    </Avatar>
+    {product.manager.name}
+  </Box>;
 }
 
 function ManagerLink({ product }: ProductCardProps) {

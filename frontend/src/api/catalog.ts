@@ -22,6 +22,12 @@ const pickupPointSchema = z.object({
   longitude: z.string().optional(),
   yandex_maps_url: z.string().url().optional(),
 });
+const characteristicValueSchema = z.object({
+  characteristic_id: z.number().int(),
+  option_id: z.number().int().nullable(),
+  number_value: z.string().nullable(),
+  boolean_value: z.boolean().nullable(),
+});
 const productSummarySchema = z.object({
   id: z.number().int(),
   name: z.string(),
@@ -36,6 +42,7 @@ const productSummarySchema = z.object({
 const productDetailSchema = productSummarySchema.extend({
   description: z.string(),
   photos: z.array(productPhotoSchema),
+  characteristics: z.array(characteristicValueSchema),
   created_at: z.string(),
   published_at: z.string().nullable(),
 });

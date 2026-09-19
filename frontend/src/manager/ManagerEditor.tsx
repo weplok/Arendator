@@ -1,16 +1,17 @@
 import { Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Link, Paper, TextField, Typography } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { Link as RouterLink, NavLink, useNavigate, useParams } from "react-router-dom";
 
 import { getCategories, type Category } from "../api/categories";
 import { ApiError } from "../api/client";
 import {
   addInstance, addPhoto, freezeProduct, getCharacteristicValues, getOwnProduct,
-  makePrimaryPhoto, publishProduct, removeInstance, removePhoto,
+  publishProduct, removeInstance, removePhoto, reorderPhotos,
   saveBasic, saveCharacteristicValues, savePickup,
   OWN_PRODUCTS_KEY, type CharacteristicValue, type ManagerProduct, type PickupFields, type ProductFields,
 } from "../api/manager";
+import { ArrowLeftIcon } from "../ui/Icons";
 
 type Step = "basic" | "photos" | "features" | "pickup" | "instances";
 const steps: { id: Step; label: string; title: string }[] = [
@@ -40,25 +41,26 @@ export function ManagerEditor() {
   if (!isNew && !product) return null;
   const current = steps.find((item) => item.id === step)!;
   const archived = product?.status === "FROZEN";
+  const showChecklist = product?.status !== "PUBLISHED" && product?.status !== "FROZEN";
   return <>
-    <div className="manager-crumb"><Link component={RouterLink} to="/manager/products">Мои товары</Link> / {product?.name ?? "Новый товар"}</div>
+    <Button className="manager-back-to-products" component={RouterLink} to="/manager/products" startIcon={<ArrowLeftIcon />}>Мои товары</Button>
     <div className="manager-head"><div><Typography variant="h3" component="h1">{archived ? "Просмотр товара" : product && step === "basic" ? "Редактирование товара" : current.title}</Typography>
       <Typography color="text.secondary">{product?.name ?? `Шаг ${steps.indexOf(current) + 1} из 5 · ${current.label}`}</Typography></div>
       <span className={`manager-status ${product?.status === "PUBLISHED" ? "manager-status--published" : ""}`}>{archived ? "Заморожен" : product?.status === "PUBLISHED" ? "Опубликован" : "Черновик"}</span>
     </div>
     {product?.status === "PUBLISHED" ? <Alert severity="info" sx={{ mb: 2 }}>Изменения названия, фото, ставки, характеристик и экземпляров сохраняются без повторной модерации. Точка самовывоза зафиксирована.</Alert> : null}
     {archived ? <Alert severity="info" sx={{ mb: 2 }}>Товар находится в архиве. Возврат из архива не предусмотрен.</Alert> : null}
-    <nav className="manager-tabs" aria-label="Разделы редактора">{steps.map((item, index) =>
-      product ? <NavLink key={item.id} to={`/manager/products/${product.id}/${item.id}`} aria-current={step === item.id ? "page" : undefined}>{index + 1} {item.label}</NavLink> :
-        <span key={item.id} className={step === item.id ? "active" : ""}>{index + 1} {item.label}</span>,
+    <nav className="manager-tabs" aria-label="Разделы редактора">{steps.map((item) =>
+      product ? <NavLink key={item.id} to={`/manager/products/${product.id}/${item.id}`} aria-current={step === item.id ? "page" : undefined}>{item.label}</NavLink> :
+        <span key={item.id} className={step === item.id ? "active" : ""}>{item.label}</span>,
     )}</nav>
-    <div className="manager-editor-grid"><div>
+    <div className={`manager-editor-grid${showChecklist ? "" : " manager-editor-grid--wide"}`}><div>
       {step === "basic" ? <BasicForm key={product?.id ?? "new"} product={product} categories={categoriesQuery.data ?? []} /> : null}
-      {product && step === "photos" ? <PhotosStep product={product} /> : null}
+      {product && step === "photos" ? <PhotosStep key={product.photos.map((photo) => `${photo.id}:${photo.display_order}:${photo.is_primary}`).join("|")} product={product} /> : null}
       {product && step === "features" ? <FeaturesStep product={product} categories={categoriesQuery.data ?? []} /> : null}
       {product && step === "pickup" ? <PickupStep product={product} /> : null}
       {product && step === "instances" ? <InstancesStep product={product} categories={categoriesQuery.data ?? []} /> : null}
-    </div><Checklist product={product} categories={categoriesQuery.data ?? []} values={valuesQuery.data ?? []} /></div>
+    </div>{showChecklist ? <Checklist product={product} categories={categoriesQuery.data ?? []} values={valuesQuery.data ?? []} /> : null}</div>
   </>;
 }
 
@@ -85,8 +87,12 @@ function FormError({ error }: { error: unknown }) {
 }
 
 function EditorActions({ children, next, busy }: { children?: ReactNode; next?: Step; busy?: boolean }) {
-  const { productId } = useParams();
-  return <div className="manager-actions"><Button component={RouterLink} to="/manager/products">← Мои товары</Button><div>
+  const { productId, step = "basic" } = useParams();
+  const currentIndex = steps.findIndex((item) => item.id === step);
+  const previous = currentIndex > 0 ? steps[currentIndex - 1] : undefined;
+  return <div className="manager-actions"><div>
+    {previous && productId ? <Button component={RouterLink} to={`/manager/products/${productId}/${previous.id}`} startIcon={<ArrowLeftIcon />}>Назад</Button> : null}
+  </div><div>
     {children}{next && productId ? <Button component={RouterLink} to={`/manager/products/${productId}/${next}`} disabled={busy}>Далее →</Button> : null}
   </div></div>;
 }
@@ -126,24 +132,167 @@ function BasicForm({ product, categories }: { product?: ManagerProduct; categori
 function PhotosStep({ product }: { product: ManagerProduct }) {
   const refresh = useProductAction(product.id);
   const [pendingRemoval, setPendingRemoval] = useState<number | null>(null);
+  const [draggedPhotoId, setDraggedPhotoId] = useState<number | null>(null);
+  const [announcement, setAnnouncement] = useState("");
+  const [orderedPhotos, setOrderedPhotos] = useState(() => orderPhotos(product.photos));
+  const dragOriginOrder = useRef<ManagerProduct["photos"] | null>(null);
+  const dragPreviewOrder = useRef<ManagerProduct["photos"] | null>(null);
+  const photoElements = useRef(new Map<number, HTMLDivElement>());
+  const previousPhotoPositions = useRef<Map<number, DOMRect> | null>(null);
   const action = useMutation({ mutationFn: async (operation: () => Promise<void>) => operation(), onSuccess: refresh });
+
+  useLayoutEffect(() => {
+    const previousPositions = previousPhotoPositions.current;
+    previousPhotoPositions.current = null;
+    const prefersReducedMotion = typeof window.matchMedia === "function"
+      && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!previousPositions || prefersReducedMotion) return;
+    const movements = [...photoElements.current].flatMap(([photoId, element]) => {
+      const previous = previousPositions.get(photoId);
+      if (!previous || typeof element.animate !== "function") return [];
+      const current = element.getBoundingClientRect();
+      const offsetX = previous.left - current.left;
+      const offsetY = previous.top - current.top;
+      return offsetX === 0 && offsetY === 0 ? [] : [{ element, offsetX, offsetY }];
+    });
+    movements.forEach(({ element, offsetX, offsetY }) => {
+      element.animate(
+        [{ transform: `translate(${offsetX}px, ${offsetY}px)` }, { transform: "translate(0, 0)" }],
+        { duration: 180, easing: "ease-out" },
+      );
+    });
+  }, [orderedPhotos]);
+
+  function capturePhotoPositions(): void {
+    previousPhotoPositions.current = new Map(
+      [...photoElements.current].map(([photoId, element]) => [photoId, element.getBoundingClientRect()]),
+    );
+  }
+
+  function movePhoto(photoId: number, targetIndex: number): void {
+    const nextPhotos = repositionPhoto(orderedPhotos, photoId, targetIndex);
+    if (nextPhotos === orderedPhotos) return;
+    capturePhotoPositions();
+    setOrderedPhotos(nextPhotos);
+    setAnnouncement(`Фото перемещено на позицию ${targetIndex + 1}`);
+    action.mutate(() => reorderPhotos(product.id, nextPhotos.map((photo) => photo.id)));
+  }
+
+  function previewPhotoPosition(targetIndex: number): void {
+    if (draggedPhotoId === null) return;
+    const currentOrder = dragPreviewOrder.current ?? orderedPhotos;
+    const nextPhotos = repositionPhoto(currentOrder, draggedPhotoId, targetIndex);
+    if (nextPhotos === currentOrder) return;
+    capturePhotoPositions();
+    dragPreviewOrder.current = nextPhotos;
+    setOrderedPhotos(nextPhotos);
+  }
+
+  function finishPhotoDrag(): void {
+    const nextPhotos = dragPreviewOrder.current;
+    const originalPhotos = dragOriginOrder.current;
+    dragOriginOrder.current = null;
+    dragPreviewOrder.current = null;
+    setDraggedPhotoId(null);
+    if (!nextPhotos || !originalPhotos || haveSamePhotoOrder(nextPhotos, originalPhotos)) return;
+    const finalIndex = nextPhotos.findIndex((photo) => photo.id === draggedPhotoId);
+    setAnnouncement(`Фото перемещено на позицию ${finalIndex + 1}`);
+    action.mutate(() => reorderPhotos(product.id, nextPhotos.map((photo) => photo.id)));
+  }
+
+  function cancelPhotoDrag(): void {
+    const originalPhotos = dragOriginOrder.current;
+    dragOriginOrder.current = null;
+    dragPreviewOrder.current = null;
+    setDraggedPhotoId(null);
+    if (!originalPhotos || haveSamePhotoOrder(originalPhotos, orderedPhotos)) return;
+    capturePhotoPositions();
+    setOrderedPhotos(originalPhotos);
+  }
+
   return <Paper variant="outlined" className="manager-surface"><Typography variant="h6" component="h2">Публичные фотографии</Typography>
     <Typography color="text.secondary" sx={{ mb: 2 }}>PNG или JPEG, до 15 МБ на файл. Фотоакты здесь не размещаются.</Typography><FormError error={action.error} />
-    {product.status !== "FROZEN" ? <label className="manager-upload">Добавить фотографии
-      <input type="file" accept="image/png,image/jpeg,.jpg,.jpeg,.png" multiple onChange={(event) => {
+    {product.status !== "FROZEN" ? <div className="manager-upload"><Typography>Перетащите фотографии для изменения порядка</Typography>
+      <Button component="label" variant="outlined">Выбрать файлы
+      <input className="visually-hidden" type="file" accept="image/png,image/jpeg,.jpg,.jpeg,.png" multiple onChange={(event) => {
         const files = Array.from(event.target.files ?? []);
         if (files.length) action.mutate(async () => { for (const file of files) await addPhoto(product.id, file); });
         event.target.value = "";
-      }} disabled={action.isPending} /></label> : null}
-    <div className="manager-photo-grid">{product.photos.map((photo, index) => <div className="manager-photo" key={photo.id}>
+      }} disabled={action.isPending} /></Button></div> : null}
+    <p id="photo-order-instructions" className="visually-hidden">Для изменения порядка с клавиатуры выберите фото и нажмите Alt со стрелкой влево или вправо.</p>
+    <div className="manager-photo-grid" role="list" aria-label="Фотографии товара">{orderedPhotos.map((photo, index) => <div
+      className="manager-photo"
+      data-dragging={draggedPhotoId === photo.id || undefined}
+      draggable={product.status !== "FROZEN" && !action.isPending}
+      key={photo.id}
+      ref={(element) => {
+        if (element) photoElements.current.set(photo.id, element);
+        else photoElements.current.delete(photo.id);
+      }}
+      role="listitem"
+      tabIndex={product.status !== "FROZEN" ? 0 : undefined}
+      aria-label={`Фото ${index + 1} товара ${product.name}`}
+      aria-describedby={product.status !== "FROZEN" ? "photo-order-instructions" : undefined}
+      onDragStart={() => {
+        dragOriginOrder.current = orderedPhotos;
+        dragPreviewOrder.current = orderedPhotos;
+        setDraggedPhotoId(photo.id);
+      }}
+      onDragEnd={cancelPhotoDrag}
+      onDragEnter={() => previewPhotoPosition(index)}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={(event) => {
+        event.preventDefault();
+        finishPhotoDrag();
+      }}
+      onKeyDown={(event) => {
+        if (!event.altKey || action.isPending || product.status === "FROZEN") return;
+        if (event.key === "ArrowLeft" && index > 0) {
+          event.preventDefault();
+          movePhoto(photo.id, index - 1);
+        }
+        if (event.key === "ArrowRight" && index < orderedPhotos.length - 1) {
+          event.preventDefault();
+          movePhoto(photo.id, index + 1);
+        }
+      }}
+    >
       <img src={photo.url} alt={`Фото ${index + 1} товара ${product.name}`} loading="lazy" width="240" height="180" />
-      <div>{photo.is_primary ? <strong>Главное фото</strong> : <Button disabled={action.isPending || product.status === "FROZEN"} onClick={() => action.mutate(() => makePrimaryPhoto(product.id, photo.id))}>Сделать главным</Button>}
+      <div>{index === 0 ? <strong>Главное фото</strong> : <Button disabled={action.isPending || product.status === "FROZEN"} onClick={() => movePhoto(photo.id, 0)}>Сделать главным</Button>}
         <Button color="error" disabled={action.isPending || product.status === "FROZEN"} onClick={() => setPendingRemoval(photo.id)}>Удалить</Button></div>
     </div>)}</div>
+    <span className="visually-hidden" aria-live="polite">{announcement}</span>
     {product.photos.length === 0 ? <p className="manager-muted">Добавьте хотя бы одну фотографию перед публикацией.</p> : null}
     <EditorActions next="features" busy={action.isPending} />
     <Dialog open={pendingRemoval !== null} onClose={() => setPendingRemoval(null)} aria-labelledby="remove-photo-title"><DialogTitle id="remove-photo-title">Удалить фотографию?</DialogTitle><DialogActions><Button onClick={() => setPendingRemoval(null)}>Отмена</Button><Button color="error" onClick={() => { if (pendingRemoval !== null) action.mutate(() => removePhoto(product.id, pendingRemoval)); setPendingRemoval(null); }}>Удалить</Button></DialogActions></Dialog>
   </Paper>;
+}
+
+function orderPhotos(photos: ManagerProduct["photos"]): ManagerProduct["photos"] {
+  return [...photos].sort((left, right) => {
+    if (left.is_primary !== right.is_primary) return left.is_primary ? -1 : 1;
+    return left.display_order - right.display_order;
+  });
+}
+
+function repositionPhoto(
+  photos: ManagerProduct["photos"],
+  photoId: number,
+  targetIndex: number,
+): ManagerProduct["photos"] {
+  const sourceIndex = photos.findIndex((photo) => photo.id === photoId);
+  if (sourceIndex < 0 || sourceIndex === targetIndex) return photos;
+  const nextPhotos = [...photos];
+  const [movedPhoto] = nextPhotos.splice(sourceIndex, 1);
+  nextPhotos.splice(targetIndex, 0, movedPhoto);
+  return nextPhotos;
+}
+
+function haveSamePhotoOrder(
+  left: ManagerProduct["photos"],
+  right: ManagerProduct["photos"],
+): boolean {
+  return left.length === right.length && left.every((photo, index) => photo.id === right[index]?.id);
 }
 
 function FeaturesStep({ product, categories }: { product: ManagerProduct; categories: Category[] }) {
@@ -156,9 +305,18 @@ function FeaturesStep({ product, categories }: { product: ManagerProduct; catego
 
 function FeatureForm({ product, category, initial }: { product: ManagerProduct; category?: Category; initial: CharacteristicValue[] }) {
   const client = useQueryClient();
-  const [values, setValues] = useState<Record<number, string>>(() => Object.fromEntries(initial.map((item) => [item.characteristic_id, String(item.option_id ?? item.number_value ?? (item.boolean_value === null ? "" : item.boolean_value))])));
+  const navigate = useNavigate();
+  const [values, setValues] = useState<Record<number, string>>(() => Object.fromEntries(initial.map((item) => [
+    item.characteristic_id,
+    item.number_value === null
+      ? String(item.option_id ?? (item.boolean_value === null ? "" : item.boolean_value))
+      : trimDecimalZeros(item.number_value),
+  ])));
   const mutation = useMutation({ mutationFn: (items: CharacteristicValue[]) => saveCharacteristicValues(product.id, items),
-    onSuccess: async () => { await client.invalidateQueries({ queryKey: ["manager", "characteristics", product.id] }); },
+    onSuccess: async () => {
+      await client.invalidateQueries({ queryKey: ["manager", "characteristics", product.id] });
+      navigate(`/manager/products/${product.id}/pickup`);
+    },
   });
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -172,12 +330,16 @@ function FeatureForm({ product, category, initial }: { product: ManagerProduct; 
   }
   return <Paper component="form" onSubmit={submit} variant="outlined" className="manager-surface"><Typography variant="h6" component="h2" sx={{ mb: 1 }}>Характеристики категории</Typography>
     <Typography color="text.secondary" sx={{ mb: 2 }}>Поля зависят от выбранной категории, включая унаследованные.</Typography><FormError error={mutation.error} />
-    <div className="manager-form-grid">{category?.characteristics.map((definition) => <TextField key={definition.id} label={`${definition.name}${definition.unit ? `, ${definition.unit}` : ""}`} required={definition.is_required} select={definition.type !== "NUMBER"} slotProps={definition.type !== "NUMBER" ? { select: { native: true } } : { htmlInput: { step: "any" } }} type={definition.type === "NUMBER" ? "number" : undefined} value={values[definition.id] ?? ""} onChange={(event) => setValues({ ...values, [definition.id]: event.target.value })} disabled={product.status === "FROZEN"}>
-      {definition.type !== "NUMBER" ? [<option value="" key="empty">Выберите значение</option>, ...(definition.type === "BOOLEAN" ? [<option value="true" key="true">Да</option>, <option value="false" key="false">Нет</option>] : definition.options.map((option) => <option key={option.id} value={option.id}>{option.value}</option>))] : undefined}
+    <div className="manager-form-grid">{category?.characteristics.map((definition) => <TextField key={definition.id} name={`characteristic-${definition.id}`} label={`${definition.name}${definition.unit ? `, ${definition.unit}` : ""}`} required={definition.is_required} select={definition.type !== "NUMBER"} slotProps={definition.type !== "NUMBER" ? { select: { native: true } } : { htmlInput: { step: "any" } }} type={definition.type === "NUMBER" ? "number" : undefined} value={values[definition.id] ?? ""} onChange={(event) => setValues({ ...values, [definition.id]: event.target.value })} disabled={product.status === "FROZEN"}>
+      {definition.type !== "NUMBER" ? [<option value="" key="empty">—</option>, ...(definition.type === "BOOLEAN" ? [<option value="true" key="true">Да</option>, <option value="false" key="false">Нет</option>] : definition.options.map((option) => <option key={option.id} value={option.id}>{option.value}</option>))] : undefined}
     </TextField>)}</div>
     {!category?.characteristics.length ? <Typography color="text.secondary">У этой категории нет характеристик.</Typography> : null}
-    <EditorActions next="pickup" busy={mutation.isPending}>{product.status !== "FROZEN" ? <Button type="submit" variant="contained" disabled={mutation.isPending}>Сохранить характеристики</Button> : null}</EditorActions>
+    <EditorActions busy={mutation.isPending}>{product.status !== "FROZEN" ? <Button type="submit" variant="contained" disabled={mutation.isPending}>Сохранить характеристики</Button> : null}</EditorActions>
   </Paper>;
+}
+
+function trimDecimalZeros(value: string): string {
+  return value.includes(".") ? value.replace(/\.?0+$/, "") : value;
 }
 
 function PickupStep({ product }: { product: ManagerProduct }) {

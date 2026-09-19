@@ -78,6 +78,14 @@ export async function makePrimaryPhoto(id: number, photoId: number): Promise<voi
   await mutateJson(`${path(id)}photos/${photoId}/`, "PUT");
 }
 
+export async function reorderPhotos(id: number, photoIds: number[]): Promise<void> {
+  await mutateJson(
+    `${path(id)}photos/order/`,
+    "PUT",
+    JSON.stringify({ photo_ids: photoIds }),
+  );
+}
+
 export async function addInstance(id: number, inventoryNumber: string): Promise<void> {
   await postJson(`${path(id)}instances/`, JSON.stringify({ inventory_number: inventoryNumber }));
 }

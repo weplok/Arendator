@@ -14,6 +14,7 @@ import { Link as RouterLink, useParams } from "react-router-dom";
 
 import type { CurrentUser } from "../api/auth";
 import { getProduct, type ProductDetail } from "../api/catalog";
+import { getCategories, type Category } from "../api/categories";
 import { LaunchIcon, LocationIcon } from "../ui/Icons";
 import { CatalogError, CatalogLoading } from "./CatalogState";
 import { formatRate } from "./formatting";
@@ -30,6 +31,11 @@ export function ProductDetailPage({ user }: ProductDetailPageProps) {
     queryFn: () => getProduct(productId),
     enabled: Number.isInteger(productId) && productId > 0,
   });
+  const categoriesQuery = useQuery({
+    queryKey: ["catalog", "categories"],
+    queryFn: getCategories,
+    staleTime: 60_000,
+  });
 
   if (productQuery.isPending) {
     return <CatalogLoading label="Загрузка товара…" />;
@@ -42,18 +48,31 @@ export function ProductDetailPage({ user }: ProductDetailPageProps) {
       />
     );
   }
-  return <ProductDetailContent product={productQuery.data} user={user} />;
+  return (
+    <ProductDetailContent
+      product={productQuery.data}
+      user={user}
+      categories={categoriesQuery.data ?? []}
+    />
+  );
 }
 
 interface ProductDetailContentProps {
   product: ProductDetail;
   user: CurrentUser | null;
+  categories: Category[];
 }
 
-function ProductDetailContent({ product, user }: ProductDetailContentProps) {
+type ProductUserProps = Pick<ProductDetailContentProps, "product" | "user">;
+
+function ProductDetailContent({ product, user, categories }: ProductDetailContentProps) {
   return (
     <Container maxWidth="lg" className="product-page">
-      <Breadcrumbs aria-label="Навигационная цепочка" className="product-breadcrumbs">
+      <Breadcrumbs
+        aria-label="Навигационная цепочка"
+        className="product-breadcrumbs"
+        separator=">"
+      >
         <Link component={RouterLink} to="/" color="inherit">Каталог</Link>
         <Typography color="text.secondary">{product.category.name}</Typography>
         <Typography color="text.primary">{product.name}</Typography>
@@ -68,7 +87,7 @@ function ProductDetailContent({ product, user }: ProductDetailContentProps) {
           <Typography component="h1" className="product-title">{product.name}</Typography>
           <ProductGallery photos={product.photos} productName={product.name} />
           <PickupPoint product={product} user={user} />
-          <Characteristics />
+          <Characteristics product={product} categories={categories} />
           <Paper component="section" className="product-information" elevation={0}>
             <Typography component="h2" variant="h6">Описание</Typography>
             <Typography className="product-description">
@@ -118,7 +137,7 @@ function ProductAvailability({ product }: { product: ProductDetail }) {
   );
 }
 
-function PickupPoint({ product, user }: ProductDetailContentProps) {
+function PickupPoint({ product, user }: ProductUserProps) {
   const pickup = product.pickup_point;
   return (
     <Paper component="section" className="product-information pickup-point" elevation={0}>
@@ -149,16 +168,60 @@ function PickupPoint({ product, user }: ProductDetailContentProps) {
   );
 }
 
-function Characteristics() {
+function Characteristics({
+  product,
+  categories,
+}: Pick<ProductDetailContentProps, "product" | "categories">) {
+  const definitions = categories.find(
+    (category) => category.id === product.category.id,
+  )?.characteristics ?? [];
+  const definitionsById = new Map(
+    definitions.map((definition) => [definition.id, definition]),
+  );
+  const rows = product.characteristics.flatMap((value) => {
+    const definition = definitionsById.get(value.characteristic_id);
+    return definition
+      ? [{
+          id: value.characteristic_id,
+          name: definition.name,
+          value: formatCharacteristicValue(definition, value),
+        }]
+      : [];
+  });
+
   return (
     <Paper component="section" className="product-information" elevation={0}>
       <Typography component="h2" variant="h6">Характеристики</Typography>
       <table className="product-characteristics">
         <thead><tr><th scope="col">Параметр</th><th scope="col">Значение</th></tr></thead>
-        <tbody><tr><td colSpan={2}>Характеристики пока недоступны</td></tr></tbody>
+        <tbody>
+          {rows.length ? rows.map((row) => (
+            <tr key={row.id}><th scope="row">{row.name}</th><td>{row.value}</td></tr>
+          )) : <tr><td colSpan={2}>Характеристики не указаны</td></tr>}
+        </tbody>
       </table>
     </Paper>
   );
+}
+
+type CharacteristicDefinition = Category["characteristics"][number];
+type CharacteristicValue = ProductDetail["characteristics"][number];
+
+function formatCharacteristicValue(
+  definition: CharacteristicDefinition,
+  value: CharacteristicValue,
+): string {
+  if (definition.type === "LIST") {
+    return definition.options.find((option) => option.id === value.option_id)?.value ?? "—";
+  }
+  if (definition.type === "BOOLEAN") {
+    return value.boolean_value ? "Да" : "Нет";
+  }
+  if (value.number_value === null) return "—";
+  const formattedNumber = new Intl.NumberFormat("ru-RU", {
+    maximumFractionDigits: 6,
+  }).format(Number(value.number_value));
+  return definition.unit ? `${formattedNumber} ${definition.unit}` : formattedNumber;
 }
 
 function ManagerSummary({ product }: { product: ProductDetail }) {
@@ -180,7 +243,7 @@ function ManagerSummary({ product }: { product: ProductDetail }) {
   );
 }
 
-function RequestAction({ product, user }: ProductDetailContentProps) {
+function RequestAction({ product, user }: ProductUserProps) {
   if (product.status === "FROZEN") {
     return <Typography color="text.secondary">Новые заявки не принимаются</Typography>;
   }

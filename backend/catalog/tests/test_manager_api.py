@@ -151,3 +151,38 @@ def test_published_product_requires_photo_and_keeps_category_and_pickup(
     assert client.put(base + "pickup/", {}).status_code == 400
     assert client.patch(base, {"minute_rate": "4.50"}).status_code == 200
     assert product.photos.count() == 1
+
+
+def test_manager_can_reorder_photos_and_first_photo_becomes_primary(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product()
+    client = manager_client(product.manager)
+    base = f"/api/v1/manager/products/{product.pk}/photos/"
+    created = client.post(
+        base,
+        {
+            "image": SimpleUploadedFile(
+                "second.png",
+                make_png(),
+                content_type="image/png",
+            )
+        },
+        format="multipart",
+    )
+    assert created.status_code == 201
+    first_photo = product.photos.order_by("display_order", "id").first()
+    assert first_photo is not None
+    second_photo_id = created.json()["id"]
+
+    reordered = client.put(
+        base + "order/",
+        {"photo_ids": [second_photo_id, first_photo.pk]},
+        format="json",
+    )
+
+    assert reordered.status_code == 204
+    ordered_photos = list(product.photos.order_by("display_order", "id"))
+    assert [photo.pk for photo in ordered_photos] == [second_photo_id, first_photo.pk]
+    assert [photo.is_primary for photo in ordered_photos] == [True, False]

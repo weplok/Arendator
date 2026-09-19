@@ -34,6 +34,11 @@ const publicProductDetail = {
       is_primary: false,
     },
   ],
+  characteristics: [
+    { characteristic_id: 11, option_id: 101, number_value: null, boolean_value: null },
+    { characteristic_id: 12, option_id: null, number_value: "26.000000", boolean_value: null },
+    { characteristic_id: 13, option_id: null, number_value: null, boolean_value: false },
+  ],
   created_at: "2026-09-10T10:00:00+03:00",
   published_at: "2026-09-12T10:00:00+03:00",
 };
@@ -56,17 +61,27 @@ describe("public catalog", () => {
 
     renderApp("/");
 
-    expect(
-      await screen.findByRole("heading", { name: "Каталог оборудования" }),
-    ).toBeInTheDocument();
-    expect(
-      await screen.findByRole("link", { name: "Перфоратор Bosch GBH 2-26" }),
-    ).toBeInTheDocument();
+    const productCard = await screen.findByRole(
+      "link",
+      { name: publicProduct.name },
+      { timeout: 3_000 },
+    );
+    expect(productCard).toHaveClass("product-card", "product-card--clickable");
+    expect(productCard).toHaveAttribute("href", "/products/7");
+    expect(screen.queryByText(publicProduct.category.name)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Каталог оборудования" })).not.toBeInTheDocument();
     expect(screen.getByText("Москва · Хамовники")).toBeInTheDocument();
     expect(screen.getByText("Свободно: 3")).toBeInTheDocument();
     expect(screen.getAllByRole("textbox", { name: "Поиск по названию" })[0]).toBeDisabled();
-    expect(screen.getByText("Найдено объявлений: 1")).toBeInTheDocument();
-    expect(await screen.findByLabelText("Дерево категорий")).toHaveTextContent("Перфораторы");
+    expect(screen.getByText("Найдено 1 объявление")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Показать 1 объявление" })).toBeDisabled();
+    const categoryTree = await screen.findByLabelText("Дерево категорий");
+    expect(categoryTree).toHaveTextContent("Инструменты");
+    expect(categoryTree).not.toHaveTextContent("Электроинструменты");
+    fireEvent.click(screen.getByRole("button", { name: "Инструменты" }));
+    expect(categoryTree).toHaveTextContent("Электроинструменты");
+    fireEvent.click(screen.getByRole("button", { name: "Электроинструменты" }));
+    expect(categoryTree).toHaveTextContent("Перфораторы");
     expect(screen.queryByText("ул. Усачёва, 22")).not.toBeInTheDocument();
   });
 
@@ -110,9 +125,10 @@ describe("public catalog", () => {
     expect(
       screen.getByRole("heading", { name: "Характеристики" }),
     ).toBeInTheDocument();
-    expect(
-      screen.getByText("Характеристики пока недоступны"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Bosch")).toBeInTheDocument();
+    expect(screen.getByText("26 дюйм")).toBeInTheDocument();
+    expect(screen.getByText("Нет")).toBeInTheDocument();
+    expect(screen.getAllByText(">").length).toBeGreaterThan(0);
   });
 
   it("shows the exact address and request action to an authenticated renter", async () => {
@@ -159,12 +175,44 @@ function stubCatalogApi(currentUser: typeof renter | null = null): void {
       return paginatedResponse([publicProduct]);
     }
     if (path === "/api/v1/categories/") {
-      return jsonResponse([{
-        id: 3,
-        name: "Перфораторы",
-        parent_id: null,
-        characteristics: [],
-      }]);
+      return jsonResponse([
+        { id: 1, name: "Инструменты", parent_id: null, characteristics: [] },
+        { id: 2, name: "Электроинструменты", parent_id: 1, characteristics: [] },
+        {
+          id: 3,
+          name: "Перфораторы",
+          parent_id: 2,
+          characteristics: [
+            {
+              id: 11,
+              name: "Производитель",
+              type: "LIST",
+              is_required: false,
+              unit: "",
+              display_order: 0,
+              options: [{ id: 101, value: "Bosch", display_order: 0 }],
+            },
+            {
+              id: 12,
+              name: "Диаметр",
+              type: "NUMBER",
+              is_required: false,
+              unit: "дюйм",
+              display_order: 1,
+              options: [],
+            },
+            {
+              id: 13,
+              name: "Реверс",
+              type: "BOOLEAN",
+              is_required: false,
+              unit: "",
+              display_order: 2,
+              options: [],
+            },
+          ],
+        },
+      ]);
     }
     if (path === "/api/v1/products/7/") {
       const pickupPoint = currentUser
