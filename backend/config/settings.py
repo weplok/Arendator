@@ -2,6 +2,7 @@
 
 import os
 from pathlib import Path
+from typing import Any
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -132,7 +133,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STORAGES = {
+STORAGES: dict[str, dict[str, Any]] = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
@@ -140,8 +141,23 @@ STORAGES = {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+YANDEX_S3_BUCKET = os.getenv("YANDEX_S3_BUCKET", "")
+if YANDEX_S3_BUCKET:
+    STORAGES["default"] = {
+        "BACKEND": "storages.backends.s3.S3Storage",
+        "OPTIONS": {
+            "bucket_name": YANDEX_S3_BUCKET,
+            "access_key": os.getenv("YANDEX_S3_ACCESS_KEY_ID", ""),
+            "secret_key": os.getenv("YANDEX_S3_SECRET_ACCESS_KEY", ""),
+            "endpoint_url": "https://storage.yandexcloud.net",
+            "region_name": "ru-central1",
+            "addressing_style": "path",
+            "querystring_auth": False,
+            "file_overwrite": False,
+        },
+    }
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+MEDIA_ROOT = Path(os.getenv("DJANGO_MEDIA_ROOT", str(BASE_DIR / "media")))
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 

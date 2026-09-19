@@ -187,6 +187,8 @@ class Product(models.Model):
         verbose_name="точка самовывоза",
         on_delete=models.PROTECT,
         related_name="products",
+        null=True,
+        blank=True,
     )
     catalog_number = models.PositiveIntegerField(
         "номер в каталоге менеджера",
@@ -262,6 +264,7 @@ class Product(models.Model):
         if (
             self.manager_id
             and self.pickup_point_id
+            and self.pickup_point is not None
             and self.pickup_point.manager_id != self.manager_id
         ):
             errors["pickup_point"] = (
@@ -323,7 +326,13 @@ class Product(models.Model):
                 errors["characteristics"] = (
                     "Заполните все обязательные характеристики категории."
                 )
-        if self.pk and self.status == self.Status.PUBLISHED:
+        if (
+            self.pk
+            and self.status == self.Status.PUBLISHED
+            and original_status != self.Status.PUBLISHED
+        ):
+            if not self.pickup_point_id:
+                errors["pickup_point"] = "Укажите точку самовывоза."
             if not self.instances.filter(is_deleted=False).exists():
                 errors["status"] = "Для первой публикации нужен хотя бы один экземпляр."
             if not self.photos.exists():

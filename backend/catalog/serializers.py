@@ -118,7 +118,7 @@ class ProductCharacteristicValuesInputSerializer(serializers.Serializer):
 class ProductSummarySerializer(serializers.ModelSerializer[Product]):
     category = ProductCategorySerializer(read_only=True)
     manager = PublicManagerSerializer(read_only=True)
-    pickup_point = PickupPointSerializer(read_only=True)
+    pickup_point = PickupPointSerializer(read_only=True, allow_null=True)
     primary_photo = serializers.SerializerMethodField()
     available_instances_count = serializers.IntegerField(read_only=True)
 

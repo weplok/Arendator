@@ -11,6 +11,8 @@ import { ProductDetailPage } from "./catalog/ProductDetailPage";
 import { CategoriesPage } from "./categories/CategoriesPage";
 import { HomePage } from "./HomePage";
 import { AppShell } from "./layout/AppShell";
+import { ManagerEditor } from "./manager/ManagerEditor";
+import { ManagerLayout, ManagerListPage } from "./manager/ManagerPage";
 
 export default function App() {
   return (
@@ -68,8 +70,16 @@ function SessionApp() {
               <Route path="/managers/:managerId" element={<ManagerProfilePage />} />
               <Route
                 path="/account"
-                element={user ? <HomePage user={user} /> : <Navigate to="/" replace />}
-              />
+                element={user?.role === "MANAGER" ? <ManagerLayout /> : user ? <HomePage user={user} /> : <Navigate to="/login" replace />}
+              >
+                {user?.role === "MANAGER" ? <Route index element={<ManagerListPage section="overview" />} /> : null}
+              </Route>
+              {user?.role === "MANAGER" ? <Route path="/manager" element={<ManagerLayout />}>
+                <Route path="products" element={<ManagerListPage section="products" />} />
+                <Route path="archive" element={<ManagerListPage section="archive" />} />
+                <Route path="products/new" element={<ManagerEditor />} />
+                <Route path="products/:productId/:step" element={<ManagerEditor />} />
+              </Route> : null}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
           </AppShell>

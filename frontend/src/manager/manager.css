@@ -1,0 +1,65 @@
+.manager-layout { display: grid !important; grid-template-columns: 220px minmax(0, 1fr); min-height: calc(100vh - 72px); padding: 0 !important; }
+.manager-layout a, .manager-layout button, .manager-layout input { scroll-margin-top: 96px; }
+.manager-sidebar { padding: 26px 14px; border-right: 1px solid var(--color-border); background: var(--color-surface); }
+.manager-sidebar__caption { display: block; padding: 8px 14px 16px; color: var(--color-text-muted); font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .07em; }
+.manager-sidebar a { display: block; padding: 12px 14px; min-height: 46px; border-radius: 10px; color: var(--color-text); text-decoration: none; }
+.manager-sidebar a[aria-current="page"] { color: var(--color-primary-dark); background: var(--green-50); font-weight: 700; }
+.manager-sidebar p { margin: 26px 12px; padding-top: 16px; border-top: 1px solid var(--color-border); font-size: .8rem; line-height: 1.5; color: var(--color-text-muted); }
+.manager-main { min-width: 0; width: 100%; max-width: 1360px; padding: 40px clamp(24px, 4vw, 64px) 64px; }
+.manager-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
+.manager-head h1 { font-size: clamp(1.8rem, 3vw, 2.25rem); line-height: 1.15; margin-bottom: 6px; }
+.manager-head > a { flex-shrink: 0; }
+.manager-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
+.manager-stat { padding: 18px 20px; border-radius: var(--card-radius) !important; }
+.manager-stat span { display: block; color: var(--color-text-muted); font-size: .85rem; }
+.manager-stat strong { display: block; margin-top: 9px; font-size: 1.9rem; font-variant-numeric: tabular-nums; }
+.manager-surface { padding: 24px; border-radius: var(--card-radius) !important; margin-bottom: 18px; }
+.manager-surface__head, .manager-actions { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.manager-surface__head { margin-bottom: 16px; }
+.manager-actions { flex-wrap: wrap; margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--color-border); }
+.manager-actions > div { display: flex; flex-wrap: wrap; gap: 10px; }
+.manager-filters { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; align-items: center; }
+.manager-filters .MuiTextField-root { width: 230px; margin-left: auto; }
+.manager-table-wrap { overflow-x: auto; }
+.manager-table { width: 100%; border-collapse: collapse; text-align: left; }
+.manager-table th { background: var(--color-background); color: var(--color-text-muted); font-size: .8rem; }
+.manager-table th, .manager-table td { padding: 12px; }
+.manager-table td { border-bottom: 1px solid var(--color-border); }
+.manager-table tr:last-child td { border-bottom: 0; }
+.manager-product-cell { display: flex; align-items: center; gap: 13px; min-width: 220px; }
+.manager-product-cell strong { display: block; line-height: 1.35; }
+.manager-product-cell small { display: block; color: var(--color-text-muted); margin-top: 4px; }
+.manager-thumb { flex: 0 0 56px; width: 56px; height: 56px; display: grid; place-items: center; background: var(--gray-100); border-radius: 10px; overflow: hidden; color: var(--color-primary); }
+.manager-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.manager-empty { padding: 36px 20px; text-align: center; }
+.manager-state { display: flex; align-items: center; gap: 16px; padding: 48px; }
+.manager-crumb { color: var(--color-text-muted); margin-bottom: 18px; font-size: .9rem; }
+.manager-status { display: inline-flex; align-items: center; padding: 6px 12px; border-radius: 50px; background: var(--gray-100); font-weight: 700; font-size: .8rem; white-space: nowrap; }
+.manager-status--published { color: var(--color-success-text); background: var(--green-50); }
+.manager-tabs { display: flex; gap: 4px; padding: 5px; border: 1px solid var(--color-border); border-radius: 12px; background: var(--color-surface); overflow-x: auto; margin-bottom: 18px; }
+.manager-tabs a, .manager-tabs span { flex: 1 0 auto; min-height: 42px; display: grid; place-items: center; border-radius: 8px; padding: 8px 13px; text-decoration: none; color: var(--color-text-muted); font-weight: 700; font-size: .85rem; }
+.manager-tabs a[aria-current="page"], .manager-tabs .active { color: var(--color-primary); background: var(--green-50); }
+.manager-editor-grid { display: grid; grid-template-columns: minmax(0, 1fr) 278px; gap: 18px; align-items: start; }
+.manager-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.manager-form-grid > :nth-child(-n+3) { grid-column: 1 / -1; }
+.manager-checklist { padding: 22px; border-radius: var(--card-radius) !important; }
+.manager-checklist h6 { font-size: 1rem; }
+.manager-checklist ul { list-style: none; padding: 0; }
+.manager-checklist li { padding: 10px 0; border-bottom: 1px solid var(--color-border); color: var(--color-text-muted); font-size: .85rem; }
+.manager-checklist li.done { color: var(--color-success-text); font-weight: 700; }
+.manager-checklist p { padding: 14px; background: var(--gray-100); border-radius: 12px; color: var(--color-text-muted); font-size: .8rem; line-height: 1.5; }
+.manager-upload { display: block; border: 2px dashed var(--color-border); border-radius: 14px; background: var(--green-50); text-align: center; padding: 30px; color: var(--color-primary); font-weight: 700; cursor: pointer; }
+.manager-upload input { display: block; margin: 12px auto 0; max-width: 100%; font-weight: 400; }
+.manager-photo-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 15px; margin-top: 20px; }
+.manager-photo { overflow: hidden; border: 1px solid var(--color-border); border-radius: 12px; }
+.manager-photo img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; display: block; }
+.manager-photo div { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; padding: 8px; font-size: .8rem; }
+.manager-instance-form { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.manager-instance-form .MuiTextField-root { flex: 1 1 220px; }
+.manager-map { margin-top: 20px; min-height: 170px; display: grid; place-content: center; text-align: center; border-radius: 12px; background: repeating-linear-gradient(25deg, var(--green-50) 0 23px, var(--gray-100) 24px 26px, var(--green-50) 27px 45px); }
+.manager-map > span { font-size: 2rem; color: var(--color-primary); }
+.manager-map p { margin: 2px; }
+.manager-muted { color: var(--color-text-muted); font-size: .85rem; }
+@media (max-width: 1120px) { .manager-editor-grid { grid-template-columns: 1fr; } .manager-stats { grid-template-columns: repeat(2, 1fr); } .manager-checklist { display: none; } }
+@media (max-width: 800px) { .manager-layout { grid-template-columns: 1fr; } .manager-sidebar { padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--color-border); display: flex; overflow-x: auto; } .manager-sidebar a { white-space: nowrap; } .manager-sidebar p, .manager-sidebar__caption { display: none; } .manager-main { padding: 28px 24px 48px; } }
+@media (max-width: 600px) { .manager-main { padding: 24px 16px 48px; } .manager-head { flex-wrap: wrap; } .manager-head > a { width: 100%; } .manager-stats, .manager-form-grid, .manager-photo-grid { grid-template-columns: 1fr; } .manager-form-grid > * { grid-column: auto !important; } .manager-surface { padding: 18px 16px; } .manager-filters .MuiTextField-root { margin-left: 0; width: 100%; } .manager-table, .manager-table thead, .manager-table tbody, .manager-table tr, .manager-table td { display: block; width: 100%; } .manager-table thead { display: none; } .manager-table tr { border-bottom: 1px solid var(--color-border); padding: 12px 0; } .manager-table td { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border: 0; } .manager-table td::before { content: attr(data-label); flex: 0 0 85px; color: var(--color-text-muted); font-size: .75rem; font-weight: 700; } .manager-table td:first-child { display: block; } .manager-table td:first-child::before { display: block; margin-bottom: 8px; } }

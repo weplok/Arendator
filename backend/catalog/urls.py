@@ -2,6 +2,17 @@
 
 from django.urls import path
 
+from catalog.manager_views import (
+    ManagerFreezeView,
+    ManagerInstancesView,
+    ManagerInstanceView,
+    ManagerPhotosView,
+    ManagerPhotoView,
+    ManagerPickupView,
+    ManagerProductsView,
+    ManagerProductView,
+    ManagerPublishView,
+)
 from catalog.views import (
     ManagerActiveProductListView,
     ManagerFrozenProductListView,
@@ -14,6 +25,47 @@ from catalog.views import (
 app_name = "catalog"
 
 urlpatterns = [
+    path("manager/products/", ManagerProductsView.as_view(), name="manager-products"),
+    path(
+        "manager/products/<int:pk>/",
+        ManagerProductView.as_view(),
+        name="manager-product",
+    ),
+    path(
+        "manager/products/<int:pk>/pickup/",
+        ManagerPickupView.as_view(),
+        name="manager-pickup",
+    ),
+    path(
+        "manager/products/<int:pk>/photos/",
+        ManagerPhotosView.as_view(),
+        name="manager-photos",
+    ),
+    path(
+        "manager/products/<int:pk>/photos/<int:photo_id>/",
+        ManagerPhotoView.as_view(),
+        name="manager-photo",
+    ),
+    path(
+        "manager/products/<int:pk>/instances/",
+        ManagerInstancesView.as_view(),
+        name="manager-instances",
+    ),
+    path(
+        "manager/products/<int:pk>/instances/<uuid:instance_id>/",
+        ManagerInstanceView.as_view(),
+        name="manager-instance",
+    ),
+    path(
+        "manager/products/<int:pk>/publish/",
+        ManagerPublishView.as_view(),
+        name="manager-publish",
+    ),
+    path(
+        "manager/products/<int:pk>/freeze/",
+        ManagerFreezeView.as_view(),
+        name="manager-freeze",
+    ),
     path("products/", ProductListView.as_view(), name="product-list"),
     path("products/<int:pk>/", ProductDetailView.as_view(), name="product-detail"),
     path(

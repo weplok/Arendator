@@ -32,6 +32,14 @@ export async function postJson(
   path: string,
   body?: BodyInit,
 ): Promise<unknown> {
+  return mutateJson(path, "POST", body);
+}
+
+export async function mutateJson(
+  path: string,
+  method: "POST" | "PUT" | "PATCH" | "DELETE",
+  body?: BodyInit,
+): Promise<unknown> {
   const csrfToken = await getCsrfToken();
   const headers = new Headers({
     Accept: "application/json",
@@ -40,7 +48,7 @@ export async function postJson(
   if (typeof body === "string") {
     headers.set("Content-Type", "application/json");
   }
-  return requestJson(path, { method: "POST", body, headers });
+  return requestJson(path, { method, body, headers });
 }
 
 async function requestJson(

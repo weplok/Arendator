@@ -122,6 +122,7 @@ def test_published_pickup_point_is_immutable(
     settings.MEDIA_ROOT = tmp_path
     product = create_product(status=Product.Status.PUBLISHED)
     pickup_point = product.pickup_point
+    assert pickup_point is not None
     pickup_point.full_address = "Новый адрес"
 
     with pytest.raises(ValidationError):

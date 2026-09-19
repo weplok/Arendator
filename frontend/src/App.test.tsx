@@ -29,6 +29,16 @@ describe("authentication flow", () => {
     ).toBeInTheDocument();
   });
 
+  it("redirects a guest from the account page to login", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(unauthenticatedResponse()));
+
+    renderApp("/account");
+
+    expect(
+      await screen.findByRole("heading", { name: "Вход в аккаунт" }),
+    ).toBeInTheDocument();
+  });
+
   it("restores the current user from the cookie session", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(renter)));
 
@@ -73,6 +83,7 @@ describe("authentication flow", () => {
     const manager = { ...renter, role: "MANAGER", name: "Илья Петров" };
     const fetchMock = vi.fn().mockResolvedValueOnce(unauthenticatedResponse());
     fetchMock.mockResolvedValueOnce(jsonResponse(manager, 201));
+    fetchMock.mockResolvedValue(jsonResponse([]));
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/register");
 
@@ -88,11 +99,7 @@ describe("authentication flow", () => {
     fireEvent.click(screen.getByLabelText("Менеджер"));
     fireEvent.click(screen.getByRole("button", { name: "Создать аккаунт" }));
 
-    expect(
-      await screen.findByRole("heading", {
-        name: "Добро пожаловать, Илья Петров",
-      }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "Кабинет менеджера" })).toBeInTheDocument();
     const registrationOptions = fetchMock.mock.calls[1]?.[1] as RequestInit;
     const body = registrationOptions.body as FormData;
     expect(body.get("role")).toBe("MANAGER");
@@ -121,7 +128,7 @@ describe("authentication flow", () => {
     expect(screen.getByDisplayValue("не-email")).toBeInTheDocument();
   });
 
-  it("logs out and returns to the public catalog", async () => {
+  it("logs out and shows the login page from the account", async () => {
     document.cookie = "csrftoken=logout-token; path=/";
     const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(renter));
     fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
@@ -138,7 +145,7 @@ describe("authentication flow", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByRole("heading", { name: "Каталог оборудования" }),
+        screen.getByRole("heading", { name: "Вход в аккаунт" }),
       ).toBeInTheDocument();
     });
   });

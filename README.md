@@ -20,7 +20,12 @@
    Администратор будет создан с адресом `DJANGO_SUPERUSER_EMAIL` и именем
    `DJANGO_SUPERUSER_NAME`. Файл `.env` не добавляется в Git. Для production также
    замените `POSTGRES_PASSWORD`, настройте домены и CSRF origins, укажите
-   `DJANGO_DEBUG=false` и `DJANGO_COOKIE_SECURE=true`.
+  `DJANGO_DEBUG=false` и `DJANGO_COOKIE_SECURE=true`.
+   Для публичных фото товара и аватаров настройте бакет Yandex Object Storage
+   с публичным чтением объектов и задайте `YANDEX_S3_BUCKET`,
+   `YANDEX_S3_ACCESS_KEY_ID`, `YANDEX_S3_SECRET_ACCESS_KEY`. Без этих переменных
+   локальная разработка и тесты используют файловое хранилище. Не публикуйте
+   ключи и не размещайте приватные фотоакты в этом публичном бакете.
 
 3. Соберите и запустите сервисы:
 

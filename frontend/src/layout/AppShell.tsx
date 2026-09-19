@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
-import { Link as RouterLink, useLocation, useNavigate } from "react-router-dom";
+import { Link as RouterLink, useLocation } from "react-router-dom";
 
 import {
   CURRENT_USER_QUERY_KEY,
@@ -29,7 +29,6 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, user }: AppShellProps) {
-  const navigate = useNavigate();
   const location = useLocation();
   const [menuAnchor, setMenuAnchor] = useState<HTMLElement | null>(null);
   const marketplacePage =
@@ -38,7 +37,6 @@ export function AppShell({ children, user }: AppShellProps) {
   const logoutMutation = useMutation({
     mutationFn: logout,
     onSuccess: () => {
-      navigate("/", { replace: true, flushSync: true });
       queryClient.setQueryData(CURRENT_USER_QUERY_KEY, null);
     },
   });
