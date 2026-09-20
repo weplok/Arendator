@@ -1,4 +1,4 @@
-"""Manager-owned catalog mutations for the stage-four editor."""
+"""Manager-owned catalog mutations for the product editor."""
 
 from decimal import Decimal
 from typing import Any
@@ -16,6 +16,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from catalog.models import PickupPoint, Product, ProductInstance, ProductPhoto
+from catalog.moderation import submit_product_for_moderation
 from catalog.serializers import ProductPhotoSerializer
 from categories.models import Category
 from users.models import User
@@ -104,6 +105,7 @@ def product_data(product: Product) -> dict[str, Any]:
         "description": product.description,
         "minute_rate": str(product.minute_rate),
         "status": product.status,
+        "rejection_reason": product.rejection_reason,
         "published_at": product.published_at,
         "pickup_point": manager_pickup_data(product.pickup_point),
         "photos": ProductPhotoSerializer(photos, many=True).data,
@@ -138,7 +140,11 @@ def manager_pickup_data(point: PickupPoint | None) -> dict[str, str] | None:
 
 
 def editable_product(product: Product) -> None:
-    if product.status not in (Product.Status.DRAFT, Product.Status.PUBLISHED):
+    if product.status not in (
+        Product.Status.DRAFT,
+        Product.Status.PUBLISHED,
+        Product.Status.REJECTED,
+    ):
         raise ValidationError({"status": "Товар в этом статусе нельзя изменять."})
 
 
@@ -191,13 +197,49 @@ class ManagerProductView(APIView):
             raise model_error(exc) from exc
         return Response(product_data(product))
 
+    def delete(self, request: Request, pk: int) -> Response:
+        product = owned_product(request, pk)
+        if product.published_at is not None or product.status not in (
+            Product.Status.DRAFT,
+            Product.Status.REJECTED,
+        ):
+            raise ValidationError(
+                {
+                    "status": (
+                        "Удалить можно только неопубликованный черновик "
+                        "или отклонённый товар."
+                    )
+                }
+            )
+        stored_images: list[tuple[Any, str]] = []
+        for photo in product.photos.all():
+            if photo.image.name:
+                stored_images.append((photo.image.storage, photo.image.name))
+        with transaction.atomic():
+            product.instances.all().delete()
+            product.delete()
+            transaction.on_commit(lambda: _delete_stored_images(stored_images))
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
+def _delete_stored_images(stored_images: list[tuple[Any, str]]) -> None:
+    for storage, name in stored_images:
+        storage.delete(name)
+
 
 class ManagerPickupView(APIView):
     permission_classes = [IsAuthenticated]
 
     def put(self, request: Request, pk: int) -> Response:
         product = owned_product(request, pk)
-        if product.status != Product.Status.DRAFT or product.published_at:
+        if (
+            product.status
+            not in (
+                Product.Status.DRAFT,
+                Product.Status.REJECTED,
+            )
+            or product.published_at
+        ):
             raise ValidationError(
                 {"pickup_point": "Точка после публикации не изменяется."}
             )
@@ -353,24 +395,16 @@ class ManagerInstanceView(APIView):
         return Response(status=204)
 
 
-class ManagerPublishView(APIView):
+class ManagerSubmitView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request: Request, pk: int) -> Response:
-        with transaction.atomic():
-            product = owned_product(request, pk)
-            Product.objects.select_for_update().get(pk=product.pk)
-            if product.status != Product.Status.DRAFT:
-                raise ValidationError({"status": "Опубликовать можно только черновик."})
-            if not product.pickup_point_id:
-                raise ValidationError({"pickup_point": "Укажите точку самовывоза."})
-            try:
-                product.status = Product.Status.ON_MODERATION
-                product.save()
-                product.status = Product.Status.PUBLISHED
-                product.save()
-            except ModelValidationError as exc:
-                raise model_error(exc) from exc
+        product = owned_product(request, pk)
+        try:
+            product = submit_product_for_moderation(product.pk)
+        except ModelValidationError as exc:
+            raise model_error(exc) from exc
+        product = owned_product(request, product.pk)
         return Response(product_data(product))
 
 

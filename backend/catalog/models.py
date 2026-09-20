@@ -74,6 +74,8 @@ def validate_product_photo(image: Any) -> None:
 
 
 class PickupPoint(models.Model):
+    _allow_admin_edit: bool
+
     manager = models.ForeignKey(
         User,
         verbose_name="менеджер",
@@ -137,6 +139,7 @@ class PickupPoint(models.Model):
             if (
                 location_changed
                 and original.products.filter(published_at__isnull=False).exists()
+                and not getattr(self, "_allow_admin_edit", False)
             ):
                 errors["full_address"] = (
                     "Точку самовывоза нельзя менять после публикации товара."
@@ -153,6 +156,8 @@ class PickupPoint(models.Model):
 
 
 class Product(models.Model):
+    _allow_admin_edit: bool
+
     class Status(models.TextChoices):
         DRAFT = "DRAFT", "Черновик"
         ON_MODERATION = "ON_MODERATION", "На модерации"
@@ -284,7 +289,9 @@ class Product(models.Model):
                 "published_at",
             ).get(pk=self.pk)
             original_status = original.status
-            if self.category_id != original.category_id:
+            if self.category_id != original.category_id and not getattr(
+                self, "_allow_admin_edit", False
+            ):
                 errors["category"] = "Категорию созданного товара менять нельзя."
             if (
                 self.status != original_status
@@ -297,6 +304,7 @@ class Product(models.Model):
             if (
                 original.published_at is not None
                 and self.pickup_point_id != original.pickup_point_id
+                and not getattr(self, "_allow_admin_edit", False)
             ):
                 errors["pickup_point"] = (
                     "Точку самовывоза нельзя менять после публикации товара."
@@ -312,6 +320,12 @@ class Product(models.Model):
             and self.status == self.Status.ON_MODERATION
             and original_status != self.Status.ON_MODERATION
         ):
+            if not self.pickup_point_id:
+                errors["pickup_point"] = "Укажите точку самовывоза."
+            if not self.instances.filter(is_deleted=False).exists():
+                errors["status"] = "Для модерации нужен хотя бы один экземпляр."
+            if not self.photos.exists():
+                errors["status"] = "Для модерации нужна хотя бы одна фотография."
             required_ids = set(
                 self.category.applicable_characteristics()
                 .filter(is_required=True)
@@ -359,6 +373,90 @@ class Product(models.Model):
 
     def __str__(self) -> str:
         return self.name
+
+
+class ModerationSettings(models.Model):
+    """Singleton switch controlling automatic approval of new submissions."""
+
+    singleton_id = models.PositiveSmallIntegerField(
+        primary_key=True,
+        default=1,
+        editable=False,
+    )
+    auto_approve_new_submissions = models.BooleanField(
+        "автоматически одобрять новые заявки",
+        default=False,
+        help_text=(
+            "Действует только на заявки, отправленные после включения. "
+            "Текущая очередь не изменяется."
+        ),
+    )
+
+    class Meta:
+        verbose_name = "настройка модерации"
+        verbose_name_plural = "настройка модерации"
+
+    @classmethod
+    def load(cls) -> "ModerationSettings":
+        settings, _ = cls.objects.get_or_create(singleton_id=1)
+        return settings
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.singleton_id = 1
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return "Автомодерация"
+
+
+class ModerationDecision(models.Model):
+    """Immutable audit record used for manager moderation statistics."""
+
+    class Decision(models.TextChoices):
+        APPROVED = "APPROVED", "Одобрено"
+        REJECTED = "REJECTED", "Отклонено"
+
+    product = models.ForeignKey(
+        Product,
+        verbose_name="товар",
+        on_delete=models.SET_NULL,
+        related_name="moderation_decisions",
+        null=True,
+        blank=True,
+    )
+    manager = models.ForeignKey(
+        User,
+        verbose_name="менеджер",
+        on_delete=models.PROTECT,
+        related_name="moderation_decisions",
+    )
+    decided_by = models.ForeignKey(
+        User,
+        verbose_name="администратор",
+        on_delete=models.PROTECT,
+        related_name="made_moderation_decisions",
+        null=True,
+        blank=True,
+    )
+    product_name = models.CharField("название товара", max_length=200)
+    decision = models.CharField("решение", max_length=16, choices=Decision.choices)
+    reason = models.TextField("причина", blank=True)
+    is_automatic = models.BooleanField("автоматическое решение", default=False)
+    created_at = models.DateTimeField("дата решения", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "решение модерации"
+        verbose_name_plural = "решения модерации"
+        ordering = ("-created_at", "-pk")
+        indexes = [
+            models.Index(
+                fields=("manager", "decision"),
+                name="moderation_mgr_decision_idx",
+            )
+        ]
+
+    def __str__(self) -> str:
+        return f"{self.get_decision_display()}: {self.product_name}"
 
 
 class ProductCharacteristicValue(models.Model):

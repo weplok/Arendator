@@ -17,10 +17,23 @@ class User(AbstractBaseUser, PermissionsMixin):
         RENTER = "RENTER", "Арендатор"
         MANAGER = "MANAGER", "Менеджер"
 
+    class ModerationLabel(models.TextChoices):
+        NONE = "", "Без метки"
+        TRUSTED = "TRUSTED", "Проверенный"
+        UNTRUSTWORTHY = "UNTRUSTWORTHY", "Недобросовестный"
+
     email = models.EmailField("email", unique=True)
     name = models.CharField("имя", max_length=150)
     avatar = models.ImageField("аватар", upload_to="avatars/", blank=True)
     role = models.CharField("роль", max_length=16, choices=Role.choices)
+    moderation_label = models.CharField(
+        "метка модерации",
+        max_length=16,
+        choices=ModerationLabel.choices,
+        blank=True,
+        default=ModerationLabel.NONE,
+        help_text="Служебная визуальная метка, не влияющая на права менеджера.",
+    )
     is_staff = models.BooleanField("статус персонала", default=False)
     is_active = models.BooleanField("активен", default=True)
     date_joined = models.DateTimeField("дата регистрации", default=timezone.now)
@@ -48,6 +61,12 @@ class User(AbstractBaseUser, PermissionsMixin):
         self.email = self.__class__.objects.normalize_email(self.email).lower()
         if self.role not in self.Role.values:
             raise ValidationError({"role": "Недопустимая роль пользователя."})
+        if self.moderation_label not in self.ModerationLabel.values:
+            raise ValidationError({"moderation_label": "Недопустимая метка модерации."})
+        if self.role != self.Role.MANAGER and self.moderation_label:
+            raise ValidationError(
+                {"moderation_label": "Метка доступна только менеджеру."}
+            )
 
         if self.pk:
             original = self.__class__.objects.only("email", "role").get(pk=self.pk)

@@ -16,7 +16,7 @@ const managerProductSchema = z.object({
   id: z.number(), catalog_number: z.number(), category: z.number(),
   category_name: z.string(), name: z.string(), description: z.string(),
   minute_rate: z.string(), status: z.enum(["DRAFT", "PUBLISHED", "FROZEN", "ON_MODERATION", "REJECTED", "HIDDEN_BY_ADMIN"]),
-  published_at: z.string().nullable(), pickup_point: pickupSchema.nullable(),
+  rejection_reason: z.string(), published_at: z.string().nullable(), pickup_point: pickupSchema.nullable(),
   photos: z.array(photoSchema), instances: z.array(instanceSchema),
   available_instances_count: z.number(),
 });
@@ -51,6 +51,10 @@ export async function getOwnProducts(): Promise<ManagerProduct[]> {
 
 export async function getOwnProduct(id: number): Promise<ManagerProduct> {
   return managerProductSchema.parse(await getJson(path(id)));
+}
+
+export async function deleteProduct(id: number): Promise<void> {
+  await mutateJson(path(id), "DELETE");
 }
 
 export async function saveBasic(fields: ProductFields, id?: number): Promise<ManagerProduct> {
@@ -94,8 +98,8 @@ export async function removeInstance(id: number, instanceId: string): Promise<vo
   await mutateJson(`${path(id)}instances/${instanceId}/`, "DELETE");
 }
 
-export async function publishProduct(id: number): Promise<ManagerProduct> {
-  return managerProductSchema.parse(await postJson(`${path(id)}publish/`));
+export async function submitProduct(id: number): Promise<ManagerProduct> {
+  return managerProductSchema.parse(await postJson(`${path(id)}submit/`));
 }
 
 export async function freezeProduct(id: number): Promise<ManagerProduct> {

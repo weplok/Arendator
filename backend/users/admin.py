@@ -11,12 +11,22 @@ from users.models import User
 class CustomUserAdmin(UserAdmin):
     model = User
     ordering = ("email",)
-    list_display = ("email", "name", "role", "is_staff", "is_active")
+    list_display = (
+        "email",
+        "name",
+        "role",
+        "moderation_label",
+        "is_staff",
+        "is_active",
+    )
     search_fields = ("email", "name")
-    list_filter = ("role", "is_staff", "is_active")
+    list_filter = ("role", "moderation_label", "is_staff", "is_active")
     fieldsets = (
         (None, {"fields": ("email", "password")}),
-        ("Профиль", {"fields": ("name", "avatar", "role")}),
+        (
+            "Профиль",
+            {"fields": ("name", "avatar", "role", "moderation_label")},
+        ),
         (
             "Доступ",
             {

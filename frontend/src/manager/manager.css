@@ -7,7 +7,7 @@
 .manager-sidebar p { margin: 26px 12px; padding-top: 16px; border-top: 1px solid var(--color-border); font-size: .8rem; line-height: 1.5; color: var(--color-text-muted); }
 .manager-main { min-width: 0; width: 100%; max-width: 1360px; padding: 40px clamp(24px, 4vw, 64px) 64px; }
 .manager-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 26px; }
-.manager-head h1 { font-size: clamp(1.8rem, 3vw, 2.25rem); line-height: 1.15; margin-bottom: 6px; }
+.manager-head h1 { font-size: clamp(1.8rem, 3vw, 2.25rem); line-height: 1.15; margin-bottom: 6px; text-wrap: balance; }
 .manager-head > a { flex-shrink: 0; }
 .manager-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin-bottom: 18px; }
 .manager-stat { padding: 18px 20px; border-radius: var(--card-radius) !important; }
@@ -79,6 +79,8 @@
 .manager-map > span { font-size: 2rem; color: var(--color-primary); }
 .manager-map p { margin: 2px; }
 .manager-muted { color: var(--color-text-muted); font-size: .85rem; }
+.MuiDialog-paper { overscroll-behavior: contain; }
+.MuiDialogContent-root { overflow-wrap: anywhere; }
 @media (max-width: 1120px) { .manager-editor-grid { grid-template-columns: 1fr; } .manager-stats { grid-template-columns: repeat(2, 1fr); } .manager-checklist { display: none; } }
 @media (max-width: 800px) { .manager-layout { grid-template-columns: 1fr; } .manager-sidebar { padding: 8px 16px; border-right: 0; border-bottom: 1px solid var(--color-border); display: flex; overflow-x: auto; } .manager-sidebar a { white-space: nowrap; } .manager-sidebar p, .manager-sidebar__caption { display: none; } .manager-main { padding: 28px 24px 48px; } }
 @media (max-width: 600px) { .manager-main { padding: 24px 16px 48px; } .manager-head { flex-wrap: wrap; } .manager-head > a { width: 100%; } .manager-stats, .manager-form-grid, .manager-photo-grid { grid-template-columns: 1fr; } .manager-form-grid > * { grid-column: auto !important; } .manager-surface { padding: 18px 16px; } .manager-filters .MuiTextField-root { margin-left: 0; width: 100%; } .manager-table, .manager-table thead, .manager-table tbody, .manager-table tr, .manager-table td { display: block; width: 100%; } .manager-table thead { display: none; } .manager-table tr { border-bottom: 1px solid var(--color-border); padding: 12px 0; } .manager-table td { display: flex; justify-content: space-between; gap: 12px; padding: 5px 0; border: 0; } .manager-table td::before { content: attr(data-label); flex: 0 0 85px; color: var(--color-text-muted); font-size: .75rem; font-weight: 700; } .manager-table td:first-child { display: block; } .manager-table td:first-child::before { display: block; margin-bottom: 8px; } }

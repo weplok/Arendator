@@ -12,7 +12,7 @@ from catalog.manager_views import (
     ManagerPickupView,
     ManagerProductsView,
     ManagerProductView,
-    ManagerPublishView,
+    ManagerSubmitView,
 )
 from catalog.views import (
     ManagerActiveProductListView,
@@ -63,9 +63,9 @@ urlpatterns = [
         name="manager-instance",
     ),
     path(
-        "manager/products/<int:pk>/publish/",
-        ManagerPublishView.as_view(),
-        name="manager-publish",
+        "manager/products/<int:pk>/submit/",
+        ManagerSubmitView.as_view(),
+        name="manager-submit",
     ),
     path(
         "manager/products/<int:pk>/freeze/",

@@ -1,0 +1,19 @@
+{% extends "admin/base_site.html" %}
+{% load i18n %}
+
+{% block content %}
+  <h1>Одобрить все заявки</h1>
+  <p>
+    Будут одобрены все карточки, которые сейчас находятся на модерации:
+    <strong>{{ pending_count }}</strong>.
+  </p>
+  <p>Карточки, отправленные позднее, этим действием не затрагиваются.</p>
+  <form method="post">
+    {% csrf_token %}
+    <input type="hidden" name="confirm" value="yes">
+    <input type="submit" value="Да, одобрить все" class="default">
+    <a href="{% url 'admin:catalog_product_changelist' %}" class="button cancel-link">
+      Отмена
+    </a>
+  </form>
+{% endblock %}

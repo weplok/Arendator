@@ -7,7 +7,12 @@ from django.test import Client
 from django.urls import reverse
 import pytest
 
-from catalog.models import PickupPoint, Product, ProductInstance
+from catalog.models import (
+    ModerationDecision,
+    PickupPoint,
+    Product,
+    ProductInstance,
+)
 from catalog.tests.factories import (
     create_manager,
     create_product,
@@ -130,6 +135,10 @@ def test_product_add_form_creates_inline_instance_with_generated_number(
             "photos-MAX_NUM_FORMS": "1000",
             "photos-0-image": "",
             "photos-0-display_order": "0",
+            "characteristic_values-TOTAL_FORMS": "0",
+            "characteristic_values-INITIAL_FORMS": "0",
+            "characteristic_values-MIN_NUM_FORMS": "0",
+            "characteristic_values-MAX_NUM_FORMS": "1000",
             "instances-TOTAL_FORMS": "1",
             "instances-INITIAL_FORMS": "0",
             "instances-MIN_NUM_FORMS": "0",
@@ -146,3 +155,111 @@ def test_product_add_form_creates_inline_instance_with_generated_number(
     instance = product.instances.get()
     assert instance.manager == manager
     assert instance.inventory_number == "1-1"
+
+
+def test_product_change_form_places_moderation_after_inlines_before_save(
+    tmp_path: Any,
+    settings: Any,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.ON_MODERATION)
+    client = create_admin_client()
+
+    response = client.get(reverse("admin:catalog_product_change", args=(product.pk,)))
+
+    content = response.content.decode()
+    assert response.status_code == 200
+    assert content.index('id="instances-group"') < content.index("Модерация")
+    assert content.index("Модерация") < content.index('name="_save"')
+
+
+def test_admin_approves_all_pending_products_after_confirmation(
+    tmp_path: Any,
+    settings: Any,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    first = create_product(status=Product.Status.ON_MODERATION, name="Дрель")
+    second = create_product(
+        manager=create_manager("second@example.com"),
+        status=Product.Status.ON_MODERATION,
+        name="Пила",
+    )
+    client = create_admin_client()
+    url = reverse("admin:catalog_product_approve_all")
+
+    confirmation = client.get(url)
+    response = client.post(url, {"confirm": "yes"})
+
+    assert confirmation.status_code == 200
+    assert "Одобрить все заявки" in confirmation.content.decode()
+    assert response.status_code == 302
+    assert not Product.objects.filter(status=Product.Status.ON_MODERATION).exists()
+    assert (
+        Product.objects.filter(
+            pk__in=(first.pk, second.pk), status=Product.Status.PUBLISHED
+        ).count()
+        == 2
+    )
+    assert (
+        ModerationDecision.objects.filter(
+            decision=ModerationDecision.Decision.APPROVED
+        ).count()
+        == 2
+    )
+
+
+def test_admin_rejects_product_with_reason_and_marks_manager(
+    tmp_path: Any,
+    settings: Any,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.ON_MODERATION)
+    photo = product.photos.get()
+    instance = product.instances.get()
+    client = create_admin_client()
+
+    response = client.post(
+        reverse("admin:catalog_product_change", args=(product.pk,)),
+        {
+            "manager": product.manager_id,
+            "category": product.category_id,
+            "pickup_point": product.pickup_point_id,
+            "name": product.name,
+            "description": product.description,
+            "minute_rate": str(product.minute_rate),
+            "moderation_action": "REJECT",
+            "moderation_reason": "Нужна фотография серийного номера.",
+            "manager_moderation_label": User.ModerationLabel.TRUSTED,
+            "photos-TOTAL_FORMS": "1",
+            "photos-INITIAL_FORMS": "1",
+            "photos-MIN_NUM_FORMS": "0",
+            "photos-MAX_NUM_FORMS": "1000",
+            "photos-0-id": photo.pk,
+            "photos-0-display_order": photo.display_order,
+            "photos-0-is_primary": "on",
+            "characteristic_values-TOTAL_FORMS": "0",
+            "characteristic_values-INITIAL_FORMS": "0",
+            "characteristic_values-MIN_NUM_FORMS": "0",
+            "characteristic_values-MAX_NUM_FORMS": "1000",
+            "instances-TOTAL_FORMS": "1",
+            "instances-INITIAL_FORMS": "1",
+            "instances-MIN_NUM_FORMS": "0",
+            "instances-MAX_NUM_FORMS": "1000",
+            "instances-0-id": instance.pk,
+            "instances-0-inventory_number": instance.inventory_number,
+            "instances-0-status": instance.status,
+            "_save": "Сохранить",
+        },
+    )
+
+    product.refresh_from_db()
+    product.manager.refresh_from_db()
+    assert response.status_code == 302
+    assert product.status == Product.Status.REJECTED
+    assert product.rejection_reason == "Нужна фотография серийного номера."
+    assert product.manager.moderation_label == User.ModerationLabel.TRUSTED
+    assert ModerationDecision.objects.filter(
+        product=product,
+        decision=ModerationDecision.Decision.REJECTED,
+        reason="Нужна фотография серийного номера.",
+    ).exists()

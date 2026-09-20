@@ -76,6 +76,7 @@ function SessionApp() {
               </Route>
               {user?.role === "MANAGER" ? <Route path="/manager" element={<ManagerLayout />}>
                 <Route path="products" element={<ManagerListPage section="products" />} />
+                <Route path="rejected" element={<ManagerListPage section="rejected" />} />
                 <Route path="archive" element={<ManagerListPage section="archive" />} />
                 <Route path="products/new" element={<ManagerEditor />} />
                 <Route path="products/:productId/:step" element={<ManagerEditor />} />

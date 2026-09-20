@@ -6,7 +6,12 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 import pytest
 from rest_framework.test import APIClient
 
-from catalog.models import Product, ProductInstance
+from catalog.models import (
+    ModerationDecision,
+    ModerationSettings,
+    Product,
+    ProductInstance,
+)
 from catalog.tests.factories import create_manager, create_product, make_png
 from categories.models import Category
 from users.models import User
@@ -20,7 +25,9 @@ def manager_client(manager: User) -> APIClient:
     return client
 
 
-def test_draft_to_catalog_workflow(tmp_path: Any, settings: Any) -> None:
+def test_completed_draft_is_sent_to_moderation_and_hidden_from_catalog(
+    tmp_path: Any, settings: Any
+) -> None:
     settings.MEDIA_ROOT = tmp_path
     manager = create_manager()
     client = manager_client(manager)
@@ -38,8 +45,7 @@ def test_draft_to_catalog_workflow(tmp_path: Any, settings: Any) -> None:
     product_id = created.json()["id"]
     assert created.json()["pickup_point"] is None
     assert (
-        client.post(f"/api/v1/manager/products/{product_id}/publish/").status_code
-        == 400
+        client.post(f"/api/v1/manager/products/{product_id}/submit/").status_code == 400
     )
     assert Product.objects.get(pk=product_id).status == Product.Status.DRAFT
     pickup_response = client.put(
@@ -70,11 +76,78 @@ def test_draft_to_catalog_workflow(tmp_path: Any, settings: Any) -> None:
         client.post(f"/api/v1/manager/products/{product_id}/instances/", {}).status_code
         == 201
     )
-    published = client.post(f"/api/v1/manager/products/{product_id}/publish/")
-    assert published.status_code == 200, published.json()
-    assert published.json()["status"] == "PUBLISHED"
-    assert Product.objects.get(pk=product_id).published_at is not None
-    assert APIClient().get("/api/v1/products/").json()["count"] == 1
+    submitted = client.post(f"/api/v1/manager/products/{product_id}/submit/")
+    assert submitted.status_code == 200, submitted.json()
+    assert submitted.json()["status"] == "ON_MODERATION"
+    assert Product.objects.get(pk=product_id).published_at is None
+    assert APIClient().get("/api/v1/products/").json()["count"] == 0
+
+
+def test_rejected_product_can_be_resubmitted_without_changes(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.REJECTED)
+    client = manager_client(product.manager)
+
+    response = client.post(f"/api/v1/manager/products/{product.pk}/submit/")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == Product.Status.ON_MODERATION
+    assert response.json()["rejection_reason"] == ""
+
+
+def test_auto_moderation_approves_only_new_submission(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    previous = create_product(status=Product.Status.ON_MODERATION, name="Старая")
+    incoming = create_product(
+        manager=create_manager("incoming@example.com"),
+        name="Новая",
+    )
+    moderation_settings = ModerationSettings.load()
+    moderation_settings.auto_approve_new_submissions = True
+    moderation_settings.save()
+
+    response = manager_client(incoming.manager).post(
+        f"/api/v1/manager/products/{incoming.pk}/submit/"
+    )
+
+    previous.refresh_from_db()
+    assert response.status_code == 200
+    assert response.json()["status"] == Product.Status.PUBLISHED
+    assert previous.status == Product.Status.ON_MODERATION
+    assert ModerationDecision.objects.filter(
+        product=incoming,
+        decision=ModerationDecision.Decision.APPROVED,
+        is_automatic=True,
+    ).exists()
+
+
+def test_manager_physically_deletes_rejected_unpublished_product(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.REJECTED)
+    client = manager_client(product.manager)
+
+    response = client.delete(f"/api/v1/manager/products/{product.pk}/")
+
+    assert response.status_code == 204
+    assert not Product.objects.filter(pk=product.pk).exists()
+
+
+def test_manager_cannot_delete_published_product(tmp_path: Any, settings: Any) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.PUBLISHED)
+
+    response = manager_client(product.manager).delete(
+        f"/api/v1/manager/products/{product.pk}/"
+    )
+
+    assert response.status_code == 400
+    assert Product.objects.filter(pk=product.pk).exists()
 
 
 def test_manager_cannot_read_or_modify_another_catalog(
@@ -87,7 +160,7 @@ def test_manager_cannot_read_or_modify_another_catalog(
     base = f"/api/v1/manager/products/{product.pk}/"
     assert client.get(base).status_code == 404
     assert client.patch(base, {"name": "Чужой"}).status_code == 404
-    assert client.post(base + "publish/").status_code == 404
+    assert client.post(base + "submit/").status_code == 404
     assert client.post(base + "instances/").status_code == 404
     assert client.put(base + "pickup/", {}).status_code == 404
     assert client.post(base + "photos/", {}).status_code == 404
@@ -116,8 +189,7 @@ def test_freeze_and_instance_soft_delete(tmp_path: Any, settings: Any) -> None:
     )
     assert APIClient().get("/api/v1/products/").json()["count"] == 0
     assert (
-        client.post(f"/api/v1/manager/products/{product.pk}/publish/").status_code
-        == 400
+        client.post(f"/api/v1/manager/products/{product.pk}/submit/").status_code == 400
     )
 
 

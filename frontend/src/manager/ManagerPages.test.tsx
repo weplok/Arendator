@@ -10,7 +10,7 @@ const category = { id: 1, parent_id: null, name: "Инструменты", chara
 const product = {
   id: 8, catalog_number: 1, category: 1, category_name: "Инструменты",
   name: "Дрель", description: "Для ремонта", minute_rate: "3.00", status: "DRAFT",
-  published_at: null, pickup_point: null, photos: [], instances: [], available_instances_count: 0,
+  rejection_reason: "", published_at: null, pickup_point: null, photos: [], instances: [], available_instances_count: 0,
 };
 
 afterEach(() => {
@@ -67,6 +67,56 @@ it("creates a draft then opens its photo step", async () => {
   )).toBe(true));
 });
 
+it("shows rejected products in a separate section", async () => {
+  const rejected = {
+    ...product,
+    status: "REJECTED",
+    rejection_reason: "Добавьте фото серийного номера.",
+  };
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => Promise.resolve(
+    Response.json(url.includes("auth/me") ? manager : [rejected]),
+  )));
+
+  renderPage("/manager/rejected");
+
+  expect(await screen.findByRole("heading", { name: "Отклонённые товары" })).toBeInTheDocument();
+  expect(screen.getByText("Дрель")).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: /Отклонённые/ })).toHaveAttribute("aria-current", "page");
+});
+
+it("shows the rejection reason and confirms permanent deletion in the same dialog", async () => {
+  document.cookie = "csrftoken=manager-token; path=/";
+  const rejected = {
+    ...product,
+    status: "REJECTED",
+    rejection_reason: "Добавьте фото серийного номера.",
+  };
+  let deleted = false;
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options?: RequestInit) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("categories")) return Promise.resolve(Response.json([category]));
+    if (url.includes("characteristics")) return Promise.resolve(Response.json([]));
+    if (url.endsWith("/8/") && options?.method === "DELETE") {
+      deleted = true;
+      return Promise.resolve(new Response(null, { status: 204 }));
+    }
+    if (url.endsWith("/8/")) return Promise.resolve(Response.json(rejected));
+    return Promise.resolve(Response.json(deleted ? [] : [rejected]));
+  }));
+
+  renderPage("/manager/products/8/basic");
+
+  expect(await screen.findByRole("dialog", { name: "Карточка отклонена" })).toHaveTextContent(
+    "Добавьте фото серийного номера.",
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Удалить карточку" }));
+  expect(screen.getByRole("dialog", { name: "Удалить карточку безвозвратно?" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "Удалить безвозвратно" }));
+
+  expect(await screen.findByRole("heading", { name: "Отклонённые товары" })).toBeInTheDocument();
+  expect(deleted).toBe(true);
+});
+
 it("confirms freezing and moves the product into the archive", async () => {
   document.cookie = "csrftoken=manager-token; path=/";
   const published = { ...product, status: "PUBLISHED", published_at: "2026-09-17T10:00:00Z" };
@@ -93,6 +143,40 @@ it("confirms freezing and moves the product into the archive", async () => {
   fireEvent.click(screen.getByRole("button", { name: "Заморозить товар" }));
   expect(await screen.findByRole("heading", { name: "Архив товаров" })).toBeInTheDocument();
   expect(frozen).toBe(true);
+});
+
+it("sends a completed draft to moderation without publishing it", async () => {
+  document.cookie = "csrftoken=manager-token; path=/";
+  const completeDraft = {
+    ...product,
+    pickup_point: {
+      city: "Москва", district: "Центр", full_address: "Тверская, 1",
+      latitude: "55.750000", longitude: "37.610000", yandex_maps_url: "https://yandex.ru/maps/",
+    },
+    photos: [{ id: 20, url: "/drill.jpg", display_order: 0, is_primary: true }],
+    instances: [{ id: "instance-1", inventory_number: "1-1", status: "AVAILABLE" }],
+    available_instances_count: 1,
+  };
+  const pending = { ...completeDraft, status: "ON_MODERATION" };
+  let submitted = false;
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("categories")) return Promise.resolve(Response.json([category]));
+    if (url.includes("characteristics")) return Promise.resolve(Response.json([]));
+    if (url.endsWith("submit/")) {
+      submitted = true;
+      return Promise.resolve(Response.json(pending));
+    }
+    if (url.endsWith("/8/")) return Promise.resolve(Response.json(submitted ? pending : completeDraft));
+    return Promise.resolve(Response.json([submitted ? pending : completeDraft]));
+  }));
+
+  renderPage("/manager/products/8/instances");
+  fireEvent.click(await screen.findByRole("button", { name: "Отправить на модерацию" }));
+
+  expect(await screen.findByRole("heading", { name: "Мои товары" })).toBeInTheDocument();
+  expect(screen.getByText("На модерации")).toBeInTheDocument();
+  expect(submitted).toBe(true);
 });
 
 it("formats characteristic numbers and continues to the pickup step after saving", async () => {

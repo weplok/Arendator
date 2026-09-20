@@ -197,6 +197,12 @@ class ProductCharacteristicValuesView(APIView):
     )
     def put(self, request: Request, pk: int) -> Response:
         product = self.get_product(pk)
+        if product.status not in (
+            Product.Status.DRAFT,
+            Product.Status.PUBLISHED,
+            Product.Status.REJECTED,
+        ):
+            raise ValidationError({"status": "Товар в этом статусе нельзя изменять."})
         values_data = request.data.get("values")
         if not isinstance(values_data, list):
             raise ValidationError({"values": "Укажите список значений."})
