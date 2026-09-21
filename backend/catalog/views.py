@@ -1,10 +1,12 @@
 """Public catalog and manager profile API views."""
 
 from decimal import Decimal, InvalidOperation
+import re
 
 from django.core.exceptions import ValidationError as DjangoValidationError
-from django.db import transaction
+from django.db import connection, transaction
 from django.db.models import Count, Prefetch, Q, QuerySet
+from django.http import QueryDict
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -32,6 +34,13 @@ from categories.models import (
 )
 from users.models import User
 
+CATALOG_ORDER_FIELDS = {
+    "newest": ("-created_at", "-id"),
+    "oldest": ("created_at", "id"),
+    "rate_asc": ("minute_rate", "id"),
+    "rate_desc": ("-minute_rate", "id"),
+}
+
 
 def public_product_queryset() -> QuerySet[Product]:
     """Build the optimized queryset shared by public product endpoints."""
@@ -52,10 +61,191 @@ def public_product_queryset() -> QuerySet[Product]:
     )
 
 
+def parse_decimal_parameter(params: QueryDict, key: str) -> Decimal | None:
+    value = params.get(key)
+    if value is None:
+        return None
+    try:
+        number = Decimal(value)
+    except InvalidOperation as exc:
+        raise ValidationError({key: "Укажите число."}) from exc
+    if not number.is_finite():
+        raise ValidationError({key: "Укажите конечное число."})
+    return number
+
+
+def validate_range(
+    minimum: Decimal | None,
+    maximum: Decimal | None,
+    error_key: str,
+) -> None:
+    if minimum is not None and maximum is not None and minimum > maximum:
+        raise ValidationError({error_key: "Значение «от» не может быть больше «до»."})
+
+
+def apply_price_filter(
+    queryset: QuerySet[Product], params: QueryDict
+) -> QuerySet[Product]:
+    minimum = parse_decimal_parameter(params, "price_min")
+    maximum = parse_decimal_parameter(params, "price_max")
+    validate_range(minimum, maximum, "price")
+    if minimum is not None:
+        queryset = queryset.filter(minute_rate__gte=minimum)
+    if maximum is not None:
+        queryset = queryset.filter(minute_rate__lte=maximum)
+    return queryset
+
+
+def parse_characteristic_filter_key(key: str) -> tuple[int, str]:
+    parts = key.split("_")
+    if len(parts) not in (2, 3) or not parts[1].isdigit():
+        raise ValidationError({key: "Неверный фильтр характеристики."})
+    return int(parts[1]), parts[2] if len(parts) == 3 else ""
+
+
+def filter_by_list_characteristic(
+    queryset: QuerySet[Product],
+    characteristic: Characteristic,
+    key: str,
+    value: str,
+) -> QuerySet[Product]:
+    try:
+        option_ids = [int(item) for item in value.split(",")]
+    except ValueError as exc:
+        raise ValidationError({key: "Укажите ID вариантов."}) from exc
+    valid_ids = set(
+        characteristic.options.filter(pk__in=option_ids).values_list("pk", flat=True)
+    )
+    if not option_ids or set(option_ids) != valid_ids:
+        raise ValidationError({key: "Недопустимый вариант."})
+    matches = ProductCharacteristicValue.objects.filter(
+        characteristic=characteristic,
+        option_id__in=option_ids,
+    )
+    return queryset.filter(pk__in=matches.values("product_id"))
+
+
+def filter_by_boolean_characteristic(
+    queryset: QuerySet[Product],
+    characteristic: Characteristic,
+    key: str,
+    value: str,
+) -> QuerySet[Product]:
+    if value.lower() not in ("true", "false"):
+        raise ValidationError({key: "Укажите true или false."})
+    matches = ProductCharacteristicValue.objects.filter(
+        characteristic=characteristic,
+        boolean_value=value.lower() == "true",
+    )
+    return queryset.filter(pk__in=matches.values("product_id"))
+
+
+def filter_by_number_characteristic(
+    queryset: QuerySet[Product],
+    characteristic: Characteristic,
+    key: str,
+    suffix: str,
+    params: QueryDict,
+) -> QuerySet[Product]:
+    minimum_key = f"characteristic_{characteristic.pk}_min"
+    maximum_key = f"characteristic_{characteristic.pk}_max"
+    minimum = parse_decimal_parameter(params, minimum_key)
+    maximum = parse_decimal_parameter(params, maximum_key)
+    validate_range(minimum, maximum, f"characteristic_{characteristic.pk}")
+    threshold = minimum if suffix == "min" else maximum
+    if threshold is None:
+        raise ValidationError({key: "Укажите число."})
+    lookup = "number_value__gte" if suffix == "min" else "number_value__lte"
+    matches = ProductCharacteristicValue.objects.filter(
+        characteristic=characteristic,
+        **{lookup: threshold},
+    )
+    return queryset.filter(pk__in=matches.values("product_id"))
+
+
+def apply_characteristic_filter(
+    queryset: QuerySet[Product],
+    characteristic: Characteristic,
+    key: str,
+    suffix: str,
+    params: QueryDict,
+) -> QuerySet[Product]:
+    value = params.get(key)
+    if not isinstance(value, str):
+        raise ValidationError({key: "Укажите значение фильтра."})
+    if characteristic.type == Characteristic.Type.LIST and not suffix:
+        return filter_by_list_characteristic(queryset, characteristic, key, value)
+    if characteristic.type == Characteristic.Type.BOOLEAN and not suffix:
+        return filter_by_boolean_characteristic(queryset, characteristic, key, value)
+    if characteristic.type == Characteristic.Type.NUMBER and suffix in ("min", "max"):
+        return filter_by_number_characteristic(
+            queryset, characteristic, key, suffix, params
+        )
+    raise ValidationError({key: "Фильтр не соответствует типу."})
+
+
+def get_selected_category(params: QueryDict) -> Category | None:
+    category_value = params.get("category")
+    if not category_value:
+        return None
+    try:
+        return Category.objects.get(pk=int(category_value))
+    except (ValueError, Category.DoesNotExist) as exc:
+        raise ValidationError({"category": "Категория не найдена."}) from exc
+
+
+def apply_category_filters(
+    queryset: QuerySet[Product], params: QueryDict
+) -> QuerySet[Product]:
+    filter_names = [key for key in params if key.startswith("characteristic_")]
+    category = get_selected_category(params)
+    if filter_names and category is None:
+        raise ValidationError({"category": "Укажите категорию для фильтрации."})
+    if category is None:
+        return queryset
+    queryset = queryset.filter(category_id__in=descendant_ids(category))
+    applicable = {item.pk: item for item in category.applicable_characteristics()}
+    for key in filter_names:
+        characteristic_id, suffix = parse_characteristic_filter_key(key)
+        characteristic = applicable.get(characteristic_id)
+        if characteristic is None:
+            raise ValidationError({key: "Характеристика не доступна."})
+        queryset = apply_characteristic_filter(
+            queryset, characteristic, key, suffix, params
+        )
+    return queryset
+
+
+def filter_and_order_catalog(
+    queryset: QuerySet[Product], params: QueryDict
+) -> QuerySet[Product]:
+    search = params.get("search", "").strip()
+    if search:
+        if connection.vendor == "sqlite":
+            escaped_search = re.escape(search)
+            queryset = queryset.filter(
+                Q(name__iregex=escaped_search) | Q(description__iregex=escaped_search)
+            )
+        else:
+            queryset = queryset.filter(
+                Q(name__icontains=search) | Q(description__icontains=search)
+            )
+    queryset = apply_price_filter(queryset, params)
+    queryset = apply_category_filters(queryset, params)
+    ordering = params.get("ordering", "newest")
+    if ordering not in CATALOG_ORDER_FIELDS:
+        raise ValidationError({"ordering": "Неверный порядок сортировки."})
+    return queryset.order_by(*CATALOG_ORDER_FIELDS[ordering])
+
+
 @extend_schema(
     parameters=[
         OpenApiParameter("category", int, description="Категория и все её потомки"),
-        OpenApiParameter("search", str, description="Поиск по названию"),
+        OpenApiParameter("search", str, description="Поиск по названию и описанию"),
+        OpenApiParameter("price_min", float, description="Минимальная минутная ставка"),
+        OpenApiParameter(
+            "price_max", float, description="Максимальная минутная ставка"
+        ),
         OpenApiParameter(
             "ordering", str, description="newest, oldest, rate_asc или rate_desc"
         ),
@@ -76,81 +266,7 @@ class ProductListView(ListAPIView):
 
     def get_queryset(self) -> QuerySet[Product]:
         queryset = public_product_queryset().filter(status=Product.Status.PUBLISHED)
-        params = self.request.query_params
-        search = params.get("search", "").strip()
-        if search:
-            queryset = queryset.filter(name__icontains=search)
-        category_value = params.get("category")
-        filter_names = [key for key in params if key.startswith("characteristic_")]
-        if filter_names and not category_value:
-            raise ValidationError({"category": "Укажите категорию для фильтрации."})
-        if category_value:
-            try:
-                category = Category.objects.get(pk=int(category_value))
-            except (ValueError, Category.DoesNotExist) as exc:
-                raise ValidationError({"category": "Категория не найдена."}) from exc
-            queryset = queryset.filter(category_id__in=descendant_ids(category))
-            applicable = {
-                item.pk: item for item in category.applicable_characteristics()
-            }
-            for key in filter_names:
-                parts = key.split("_")
-                if len(parts) not in (2, 3) or not parts[1].isdigit():
-                    raise ValidationError({key: "Неверный фильтр характеристики."})
-                characteristic = applicable.get(int(parts[1]))
-                if characteristic is None:
-                    raise ValidationError({key: "Характеристика не доступна."})
-                suffix = parts[2] if len(parts) == 3 else ""
-                value = params[key]
-                matches = ProductCharacteristicValue.objects.filter(
-                    characteristic=characteristic
-                )
-                if characteristic.type == Characteristic.Type.LIST and not suffix:
-                    try:
-                        option_ids = [int(item) for item in value.split(",")]
-                    except ValueError as exc:
-                        raise ValidationError({key: "Укажите ID вариантов."}) from exc
-                    valid_ids = set(
-                        characteristic.options.filter(pk__in=option_ids).values_list(
-                            "pk", flat=True
-                        )
-                    )
-                    if not option_ids or set(option_ids) != valid_ids:
-                        raise ValidationError({key: "Недопустимый вариант."})
-                    matches = matches.filter(option_id__in=option_ids)
-                elif characteristic.type == Characteristic.Type.BOOLEAN and not suffix:
-                    if value.lower() not in ("true", "false"):
-                        raise ValidationError({key: "Укажите true или false."})
-                    matches = matches.filter(boolean_value=value.lower() == "true")
-                elif characteristic.type == Characteristic.Type.NUMBER and suffix in (
-                    "min",
-                    "max",
-                ):
-                    try:
-                        threshold = Decimal(value)
-                    except InvalidOperation as exc:
-                        raise ValidationError({key: "Укажите число."}) from exc
-                    if not threshold.is_finite():
-                        raise ValidationError({key: "Укажите конечное число."})
-                    lookup = (
-                        "number_value__gte" if suffix == "min" else "number_value__lte"
-                    )
-                    matches = matches.filter(**{lookup: threshold})
-                else:
-                    raise ValidationError({key: "Фильтр не соответствует типу."})
-                queryset = queryset.filter(pk__in=matches.values("product_id"))
-        ordering = params.get("ordering", "")
-        order_fields = {
-            "newest": ("-created_at", "-id"),
-            "oldest": ("created_at", "id"),
-            "rate_asc": ("minute_rate", "id"),
-            "rate_desc": ("-minute_rate", "id"),
-        }
-        if ordering:
-            if ordering not in order_fields:
-                raise ValidationError({"ordering": "Неверный порядок сортировки."})
-            queryset = queryset.order_by(*order_fields[ordering])
-        return queryset
+        return filter_and_order_catalog(queryset, self.request.query_params)
 
 
 class ProductDetailView(RetrieveAPIView):

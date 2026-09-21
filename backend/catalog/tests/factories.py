@@ -48,14 +48,18 @@ def create_product(
         district="Тверской",
         full_address="Тверская улица, 1",
     )
+    description = overrides.pop(
+        "description", "Профессиональный инструмент для ремонта."
+    )
+    minute_rate = overrides.pop("minute_rate", Decimal("1.25"))
     target_status = status
     product = Product.objects.create(
         manager=manager,
         category=category,
         pickup_point=pickup_point,
         name=name,
-        description="Профессиональный инструмент для ремонта.",
-        minute_rate=Decimal("1.25"),
+        description=description,
+        minute_rate=minute_rate,
         status=Product.Status.DRAFT,
         **overrides,
     )

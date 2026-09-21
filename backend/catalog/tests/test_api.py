@@ -1,8 +1,11 @@
 """Public product catalog API acceptance tests."""
 
+from datetime import timedelta
+from decimal import Decimal
 from typing import Any
 
 from django.urls import reverse
+from django.utils import timezone
 import pytest
 from rest_framework import status
 from rest_framework.test import APIClient
@@ -221,6 +224,158 @@ def test_root_characteristic_filter_matches_products_across_child_branches(
     }
     products[2].refresh_from_db()
     assert products[2].status == Product.Status.PUBLISHED
+
+
+def test_catalog_search_matches_name_and_description_case_insensitively(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    manager = create_manager()
+    name_match = create_product(
+        manager=manager,
+        name="Профессиональный Перфоратор",
+        status=Product.Status.PUBLISHED,
+    )
+    description_match = create_product(
+        manager=manager,
+        name="Монтажный инструмент",
+        description="Подходит для БЕТОННЫХ стен.",
+        status=Product.Status.PUBLISHED,
+    )
+    create_product(
+        manager=manager,
+        name="Лобзик",
+        description="Для работы по дереву.",
+        status=Product.Status.PUBLISHED,
+    )
+    url = reverse("catalog:product-list")
+
+    by_name = APIClient().get(url, {"search": "перфорат"})
+    by_description = APIClient().get(url, {"search": "бетонных"})
+
+    assert [item["id"] for item in by_name.json()["results"]] == [name_match.pk]
+    assert [item["id"] for item in by_description.json()["results"]] == [
+        description_match.pk
+    ]
+
+
+def test_catalog_filters_by_open_price_range_and_rejects_reversed_range(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    manager = create_manager()
+    cheap = create_product(
+        manager=manager,
+        name="Дешёвый",
+        minute_rate=Decimal("5.00"),
+        status=Product.Status.PUBLISHED,
+    )
+    middle = create_product(
+        manager=manager,
+        name="Средний",
+        minute_rate=Decimal("10.00"),
+        status=Product.Status.PUBLISHED,
+    )
+    expensive = create_product(
+        manager=manager,
+        name="Дорогой",
+        minute_rate=Decimal("15.00"),
+        status=Product.Status.PUBLISHED,
+    )
+    url = reverse("catalog:product-list")
+
+    from_price = APIClient().get(url, {"price_min": "10"})
+    to_price = APIClient().get(url, {"price_max": "10"})
+    reversed_range = APIClient().get(url, {"price_min": "11", "price_max": "10"})
+
+    assert {item["id"] for item in from_price.json()["results"]} == {
+        middle.pk,
+        expensive.pk,
+    }
+    assert {item["id"] for item in to_price.json()["results"]} == {
+        cheap.pk,
+        middle.pk,
+    }
+    assert reversed_range.status_code == status.HTTP_400_BAD_REQUEST
+
+
+def test_catalog_supports_all_newness_and_price_orderings(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    manager = create_manager()
+    older = create_product(
+        manager=manager,
+        name="Старый",
+        minute_rate=Decimal("20.00"),
+        status=Product.Status.PUBLISHED,
+    )
+    newer = create_product(
+        manager=manager,
+        name="Новый",
+        minute_rate=Decimal("5.00"),
+        status=Product.Status.PUBLISHED,
+    )
+    Product.objects.filter(pk=older.pk).update(
+        created_at=timezone.now() - timedelta(days=1)
+    )
+    url = reverse("catalog:product-list")
+
+    orders = {
+        ordering: [
+            item["id"]
+            for item in APIClient().get(url, {"ordering": ordering}).json()["results"]
+        ]
+        for ordering in ("newest", "oldest", "rate_asc", "rate_desc")
+    }
+
+    assert orders == {
+        "newest": [newer.pk, older.pk],
+        "oldest": [older.pk, newer.pk],
+        "rate_asc": [newer.pk, older.pk],
+        "rate_desc": [older.pk, newer.pk],
+    }
+
+
+def test_list_filter_accepts_multiple_options(tmp_path: Any, settings: Any) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    category = Category.objects.create(name="Инструменты")
+    brand = Characteristic.objects.create(
+        category=category,
+        name="Бренд",
+        type=Characteristic.Type.LIST,
+    )
+    bosch = CharacteristicOption.objects.create(characteristic=brand, value="Bosch")
+    makita = CharacteristicOption.objects.create(characteristic=brand, value="Makita")
+    dewalt = CharacteristicOption.objects.create(characteristic=brand, value="DeWalt")
+    manager = create_manager()
+    products = []
+    for name, option in (("Первый", bosch), ("Второй", makita), ("Третий", dewalt)):
+        product = create_product(
+            manager=manager,
+            category=category,
+            name=name,
+            status=Product.Status.PUBLISHED,
+        )
+        ProductCharacteristicValue.objects.create(
+            product=product,
+            characteristic=brand,
+            option=option,
+        )
+        products.append(product)
+
+    response = APIClient().get(
+        reverse("catalog:product-list"),
+        {
+            "category": category.pk,
+            f"characteristic_{brand.pk}": f"{bosch.pk},{makita.pk}",
+        },
+    )
+
+    assert {item["id"] for item in response.json()["results"]} == {
+        products[0].pk,
+        products[1].pk,
+    }
 
 
 def test_manager_replaces_values_and_must_include_inherited_required_value(

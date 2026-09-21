@@ -1,64 +1,101 @@
 import {
   Box,
-  Button,
   Container,
   FormControl,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
-  Stack,
   Typography,
+  type SelectChangeEvent,
 } from "@mui/material";
 import { useQuery, type UseQueryResult } from "@tanstack/react-query";
-import { useState } from "react";
+import { useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 
-import { getProducts, type PaginatedProducts } from "../api/catalog";
-import { buildCategoryTree, getCategories, type CategoryNode } from "../api/categories";
-import { ArrowRightIcon } from "../ui/Icons";
+import {
+  getProducts,
+  type CatalogOrdering,
+  type PaginatedProducts,
+} from "../api/catalog";
 import { CatalogEmpty, CatalogError, CatalogLoading } from "./CatalogState";
+import { CatalogFilters } from "./CatalogFilters";
+import { CatalogSearchForm } from "./CatalogSearchForm";
 import { formatAdvertisementCount } from "./formatting";
 import { ProductGrid } from "./ProductGrid";
+
+const ORDERING_LABELS: Record<CatalogOrdering, string> = {
+  newest: "Сначала новые",
+  oldest: "Сначала старые",
+  rate_asc: "Сначала дешевле",
+  rate_desc: "Сначала дороже",
+};
 
 export function CatalogPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = readPage(searchParams.get("page"));
+  const ordering = readOrdering(searchParams.get("ordering"));
+  const requestParams = useMemo(
+    () => buildRequestParams(searchParams, page, ordering),
+    [ordering, page, searchParams],
+  );
   const productsQuery = useQuery({
-    queryKey: ["catalog", "products", page],
-    queryFn: () => getProducts(page),
+    queryKey: ["catalog", "products", requestParams.toString()],
+    queryFn: () => getProducts(requestParams),
     staleTime: 60_000,
   });
 
   function changePage(nextPage: number): void {
-    setSearchParams(nextPage === 1 ? {} : { page: String(nextPage) });
+    const nextParams = new URLSearchParams(searchParams);
+    if (nextPage === 1) nextParams.delete("page");
+    else nextParams.set("page", String(nextPage));
+    setSearchParams(nextParams);
     window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function changeOrdering(event: SelectChangeEvent): void {
+    const nextParams = new URLSearchParams(searchParams);
+    nextParams.set("ordering", event.target.value);
+    nextParams.delete("page");
+    setSearchParams(nextParams);
   }
 
   return (
     <Container maxWidth="lg" className="catalog-page">
+      <CatalogSearchForm className="catalog-search" />
       <Box className="catalog-layout">
-        <CatalogFilters resultCount={productsQuery.data?.count} />
+        <CatalogFilters
+          appliedParams={searchParams}
+          onApply={(filters) => {
+            setSearchParams(replaceCatalogFilters(searchParams, filters));
+          }}
+        />
         <section className="catalog-results" aria-label="Результаты каталога">
           <div className="catalog-results__toolbar">
-            <Typography component="h2" variant="body1">
+            <Typography component="h1" variant="body1">
               {productsQuery.data
                 ? `Найдено ${formatAdvertisementCount(productsQuery.data.count)}`
                 : "Объявления"}
             </Typography>
-            <FormControl size="small" className="catalog-sort" disabled>
+            <FormControl size="small" className="catalog-sort">
               <InputLabel id="catalog-sort-label">Сортировка</InputLabel>
-              <Select labelId="catalog-sort-label" label="Сортировка" value="new">
-                <MenuItem value="new">Сначала новые</MenuItem>
-                <MenuItem value="old">Сначала старые</MenuItem>
-                <MenuItem value="cheap">Сначала дешевле</MenuItem>
-                <MenuItem value="expensive">Сначала дороже</MenuItem>
+              <Select
+                labelId="catalog-sort-label"
+                label="Сортировка"
+                value={ordering}
+                onChange={changeOrdering}
+              >
+                {Object.entries(ORDERING_LABELS).map(([value, label]) => (
+                  <MenuItem key={value} value={value}>
+                    {label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
           </div>
           <CatalogContent
             query={productsQuery}
             page={page}
+            hasCriteria={hasCatalogCriteria(searchParams)}
             onPageChange={changePage}
           />
         </section>
@@ -67,130 +104,32 @@ export function CatalogPage() {
   );
 }
 
-function CatalogFilters({ resultCount }: { resultCount?: number }) {
-  const [expandedCategories, setExpandedCategories] = useState<Set<number>>(new Set());
-  const [selectedCategory, setSelectedCategory] = useState<number | null>(null);
-  const categoriesQuery = useQuery({
-    queryKey: ["catalog", "categories"],
-    queryFn: getCategories,
-    staleTime: 60_000,
-  });
-
-  return (
-    <Paper component="aside" className="catalog-filters" elevation={0}>
-      <Stack direction="row" className="catalog-filters__heading">
-        <Typography component="h2" variant="h6">Фильтры</Typography>
-        <button
-          className="catalog-filters__reset"
-          type="button"
-          onClick={() => {
-            setExpandedCategories(new Set());
-            setSelectedCategory(null);
-          }}
-        >
-          Сбросить
-        </button>
-      </Stack>
-      {categoriesQuery.data?.length ? (
-        <div className="catalog-filters__tree" aria-label="Дерево категорий">
-          {buildCategoryTree(categoriesQuery.data).map((category) => (
-            <CategoryBranch
-              key={category.id}
-              category={category}
-              expandedCategories={expandedCategories}
-              selectedCategory={selectedCategory}
-              onSelect={(categoryId, hasChildren) => {
-                setSelectedCategory(categoryId);
-                if (hasChildren) {
-                  setExpandedCategories((current) => {
-                    const next = new Set(current);
-                    if (next.has(categoryId)) next.delete(categoryId);
-                    else next.add(categoryId);
-                    return next;
-                  });
-                }
-              }}
-            />
-          ))}
-        </div>
-      ) : null}
-      <div className="catalog-filters__characteristics">
-        <Typography component="h3" variant="body2">Характеристики</Typography>
-        <Typography color="text.secondary" variant="body2">
-          Появятся после выбора категории
-        </Typography>
-      </div>
-      <Typography className="catalog-filters__note" variant="caption">
-        Поиск, фильтры и сортировка пока недоступны
-      </Typography>
-      <Button className="catalog-filters__apply" variant="contained" disabled>
-        {resultCount === undefined
-          ? "Показать — объявлений"
-          : `Показать ${formatAdvertisementCount(resultCount)}`}
-      </Button>
-    </Paper>
-  );
-}
-
-interface CategoryBranchProps {
-  category: CategoryNode;
-  expandedCategories: Set<number>;
-  selectedCategory: number | null;
-  onSelect: (categoryId: number, hasChildren: boolean) => void;
-}
-
-function CategoryBranch({
-  category,
-  expandedCategories,
-  selectedCategory,
-  onSelect,
-}: CategoryBranchProps) {
-  const hasChildren = category.children.length > 0;
-  const expanded = expandedCategories.has(category.id);
-  return (
-    <div className="catalog-filters__branch">
-      <button
-        aria-expanded={hasChildren ? expanded : undefined}
-        aria-pressed={selectedCategory === category.id}
-        className="catalog-filters__category"
-        type="button"
-        onClick={() => onSelect(category.id, hasChildren)}
-      >
-        {hasChildren ? <ArrowRightIcon className={expanded ? "is-expanded" : ""} /> : <span />}
-        {category.name}
-      </button>
-      {expanded ? (
-        <div className="catalog-filters__children">
-          {category.children.map((child) => (
-            <CategoryBranch
-              key={child.id}
-              category={child}
-              expandedCategories={expandedCategories}
-              selectedCategory={selectedCategory}
-              onSelect={onSelect}
-            />
-          ))}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
 interface CatalogContentProps {
   query: UseQueryResult<PaginatedProducts, Error>;
   page: number;
+  hasCriteria: boolean;
   onPageChange: (page: number) => void;
 }
 
-function CatalogContent({ query, page, onPageChange }: CatalogContentProps) {
-  if (query.isPending) {
+function CatalogContent(props: CatalogContentProps) {
+  if (props.query.isPending) {
     return <CatalogLoading label="Загрузка каталога…" />;
   }
-  if (query.isError) {
-    return <CatalogError message="Не удалось загрузить каталог." onRetry={() => query.refetch()} />;
-  }
-  if (query.data.results.length === 0) {
+  if (props.query.isError) {
     return (
+      <CatalogError
+        message="Не удалось загрузить каталог."
+        onRetry={() => props.query.refetch()}
+      />
+    );
+  }
+  if (props.query.data.results.length === 0) {
+    return props.hasCriteria ? (
+      <CatalogEmpty
+        title="Ничего не найдено"
+        description="Измените поисковый запрос или фильтры и попробуйте снова."
+      />
+    ) : (
       <CatalogEmpty
         title="Каталог пока пуст"
         description="Опубликованные товары появятся здесь."
@@ -199,15 +138,65 @@ function CatalogContent({ query, page, onPageChange }: CatalogContentProps) {
   }
   return (
     <ProductGrid
-      products={query.data}
-      page={page}
-      onPageChange={onPageChange}
+      products={props.query.data}
+      page={props.page}
+      onPageChange={props.onPageChange}
       variant="catalog"
     />
   );
 }
 
+function buildRequestParams(
+  searchParams: URLSearchParams,
+  page: number,
+  ordering: CatalogOrdering,
+): URLSearchParams {
+  const params = new URLSearchParams(searchParams);
+  params.set("page", String(page));
+  params.set("ordering", ordering);
+  return params;
+}
+
 function readPage(value: string | null): number {
   const page = Number(value);
   return Number.isInteger(page) && page > 0 ? page : 1;
+}
+
+function readOrdering(value: string | null): CatalogOrdering {
+  return value && value in ORDERING_LABELS
+    ? (value as CatalogOrdering)
+    : "newest";
+}
+
+function hasCatalogCriteria(params: URLSearchParams): boolean {
+  return [...params.keys()].some(
+    (key) =>
+      key === "search" ||
+      key === "category" ||
+      key === "price_min" ||
+      key === "price_max" ||
+      key.startsWith("characteristic_"),
+  );
+}
+
+function replaceCatalogFilters(
+  appliedParams: URLSearchParams,
+  filters: URLSearchParams,
+): URLSearchParams {
+  const next = new URLSearchParams(appliedParams);
+  for (const key of [...next.keys()]) {
+    if (isFilterKey(key)) next.delete(key);
+  }
+  for (const [key, value] of filters) next.set(key, value);
+  next.delete("page");
+  return next;
+}
+
+function isFilterKey(key: string): boolean {
+  return (
+    key === "category" ||
+    key === "price_min" ||
+    key === "price_max" ||
+    key.startsWith("characteristic_")
+  );
 }

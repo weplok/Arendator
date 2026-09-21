@@ -8,7 +8,7 @@ const characteristicOptionSchema = z.object({
   display_order: z.number(),
 });
 
-const characteristicSchema = z.object({
+export const characteristicSchema = z.object({
   id: z.number(),
   name: z.string(),
   type: z.enum(["LIST", "NUMBER", "BOOLEAN"]),
@@ -27,6 +27,7 @@ const categorySchema = z.object({
 
 export type Category = z.infer<typeof categorySchema>;
 export type CategoryNode = Category & { children: CategoryNode[] };
+export type Characteristic = z.infer<typeof characteristicSchema>;
 
 export async function getCategories(): Promise<Category[]> {
   return z.array(categorySchema).parse(await getJson("/api/v1/categories/"));

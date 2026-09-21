@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -72,10 +72,16 @@ describe("public catalog", () => {
     expect(screen.queryByRole("heading", { name: "Каталог оборудования" })).not.toBeInTheDocument();
     expect(screen.getByText("Москва · Хамовники")).toBeInTheDocument();
     expect(screen.getByText("Свободно: 3")).toBeInTheDocument();
-    expect(screen.getAllByRole("textbox", { name: "Поиск по названию" })[0]).toBeDisabled();
+    expect(
+      screen.getAllByRole("searchbox", {
+        name: "Поиск по названию и описанию",
+      })[0],
+    ).toBeEnabled();
     expect(screen.getByText("Найдено 1 объявление")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Показать 1 объявление" })).toBeDisabled();
-    const categoryTree = await screen.findByLabelText("Дерево категорий");
+    expect(
+      await screen.findByRole("button", { name: "Показать 1 объявление" }),
+    ).toBeEnabled();
+    const categoryTree = await screen.findByLabelText("Категории");
     expect(categoryTree).toHaveTextContent("Инструменты");
     expect(categoryTree).not.toHaveTextContent("Электроинструменты");
     fireEvent.click(screen.getByRole("button", { name: "Инструменты" }));
@@ -83,6 +89,75 @@ describe("public catalog", () => {
     fireEvent.click(screen.getByRole("button", { name: "Электроинструменты" }));
     expect(categoryTree).toHaveTextContent("Перфораторы");
     expect(screen.queryByText("ул. Усачёва, 22")).not.toBeInTheDocument();
+  });
+
+  it("runs search only after explicit form submission", async () => {
+    const fetchMock = stubCatalogApi();
+    renderApp("/");
+    await screen.findByRole("link", { name: publicProduct.name });
+    const search = screen.getAllByRole("searchbox", {
+      name: "Поиск по названию и описанию",
+    })[0];
+    const requestsBeforeTyping = productRequests(fetchMock);
+
+    fireEvent.change(search, { target: { value: "монтаж" } });
+
+    expect(productRequests(fetchMock)).toEqual(requestsBeforeTyping);
+    fireEvent.submit(search.closest("form")!);
+    await waitFor(() => {
+      expect(productRequests(fetchMock).some((url) => url.includes("search=%D0%BC%D0%BE%D0%BD%D1%82%D0%B0%D0%B6"))).toBe(true);
+    });
+  });
+
+  it("previews filter count and applies category, price and characteristics on click", async () => {
+    const fetchMock = stubCatalogApi();
+    renderApp("/");
+    await screen.findByRole("link", { name: publicProduct.name });
+
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Цена от" }), {
+      target: { value: "5" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Инструменты" }));
+    fireEvent.click(screen.getByRole("button", { name: "Электроинструменты" }));
+    fireEvent.click(screen.getByRole("button", { name: "Перфораторы" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Bosch" }));
+    fireEvent.click(screen.getByRole("checkbox", { name: "Makita" }));
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Диаметр от" }), {
+      target: { value: "20" },
+    });
+    fireEvent.click(screen.getByRole("checkbox", { name: "Реверс" }));
+
+    expect(screen.getByText("Найдено 1 объявление")).toBeInTheDocument();
+    const applyButton = await screen.findByRole("button", {
+      name: "Показать 2 объявления",
+    });
+    expect(productRequests(fetchMock).some((url) => url.includes("category=3"))).toBe(true);
+
+    fireEvent.click(applyButton);
+
+    expect(await screen.findByText("Найдено 2 объявления")).toBeInTheDocument();
+    expect(
+      productRequests(fetchMock).some(
+        (url) =>
+          url.includes("price_min=5") &&
+          url.includes("characteristic_11=101%2C102") &&
+          url.includes("characteristic_12_min=20") &&
+          url.includes("characteristic_13=true"),
+      ),
+    ).toBe(true);
+  });
+
+  it("requests each selected catalog ordering", async () => {
+    const fetchMock = stubCatalogApi();
+    renderApp("/");
+    await screen.findByRole("link", { name: publicProduct.name });
+
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: "Сортировка" }));
+    fireEvent.click(screen.getByRole("option", { name: "Сначала дороже" }));
+
+    await waitFor(() => {
+      expect(productRequests(fetchMock).some((url) => url.includes("ordering=rate_desc"))).toBe(true);
+    });
   });
 
   it("opens marketplace navigation from the mobile menu", async () => {
@@ -165,14 +240,16 @@ describe("manager profile", () => {
   });
 });
 
-function stubCatalogApi(currentUser: typeof renter | null = null): void {
-  vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+function stubCatalogApi(currentUser: typeof renter | null = null) {
+  const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const path = String(input);
     if (path === "/api/v1/auth/me/") {
       return currentUser ? jsonResponse(currentUser) : unauthenticatedResponse();
     }
-    if (path === "/api/v1/products/?page=1") {
-      return paginatedResponse([publicProduct]);
+    if (path.startsWith("/api/v1/products/?")) {
+      const url = new URL(path, "http://localhost");
+      const count = url.searchParams.has("category") ? 2 : 1;
+      return paginatedResponse([publicProduct], count);
     }
     if (path === "/api/v1/categories/") {
       return jsonResponse([
@@ -190,7 +267,10 @@ function stubCatalogApi(currentUser: typeof renter | null = null): void {
               is_required: false,
               unit: "",
               display_order: 0,
-              options: [{ id: 101, value: "Bosch", display_order: 0 }],
+              options: [
+                { id: 101, value: "Bosch", display_order: 0 },
+                { id: 102, value: "Makita", display_order: 1 },
+              ],
             },
             {
               id: 12,
@@ -243,7 +323,9 @@ function stubCatalogApi(currentUser: typeof renter | null = null): void {
       return paginatedResponse([{ ...publicProduct, status: "FROZEN" }]);
     }
     return new Response(null, { status: 404 });
-  }));
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  return fetchMock;
 }
 
 function renderApp(initialEntry: string): void {
@@ -259,8 +341,14 @@ function renderApp(initialEntry: string): void {
   );
 }
 
-function paginatedResponse(results: unknown[]): Response {
-  return jsonResponse({ count: results.length, next: null, previous: null, results });
+function paginatedResponse(results: unknown[], count = results.length): Response {
+  return jsonResponse({ count, next: null, previous: null, results });
+}
+
+function productRequests(fetchMock: ReturnType<typeof vi.fn>): string[] {
+  return fetchMock.mock.calls
+    .map(([input]) => String(input))
+    .filter((path) => path.startsWith("/api/v1/products/?"));
 }
 
 function jsonResponse(data: unknown, status = 200): Response {

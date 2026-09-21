@@ -8,7 +8,6 @@ import {
   Menu,
   MenuItem,
   Stack,
-  TextField,
   Toolbar,
   Typography,
 } from "@mui/material";
@@ -21,6 +20,7 @@ import {
   type CurrentUser,
   logout,
 } from "../api/auth";
+import { CatalogSearchForm } from "../catalog/CatalogSearchForm";
 import { MenuIcon } from "../ui/Icons";
 
 interface AppShellProps {
@@ -77,12 +77,7 @@ export function AppShell({ children, user }: AppShellProps) {
             </Button>
             <Box sx={{ flexGrow: 1 }} />
             {marketplacePage ? (
-              <TextField
-                className="site-header-search"
-                size="small"
-                label="Поиск по названию"
-                disabled
-              />
+              <CatalogSearchForm className="site-header-search" />
             ) : null}
             {user ? (
               <Stack

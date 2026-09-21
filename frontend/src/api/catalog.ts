@@ -63,12 +63,15 @@ export type ProductPhoto = z.infer<typeof productPhotoSchema>;
 export type ManagerProfile = z.infer<typeof managerProfileSchema>;
 export type PaginatedProducts = z.infer<typeof paginatedProductsSchema>;
 export type ManagerProductSection = "active" | "frozen";
+export type CatalogOrdering = "newest" | "oldest" | "rate_asc" | "rate_desc";
 
 export const CATALOG_PAGE_SIZE = 12;
 
-export async function getProducts(page: number): Promise<PaginatedProducts> {
+export async function getProducts(
+  searchParams: URLSearchParams,
+): Promise<PaginatedProducts> {
   return paginatedProductsSchema.parse(
-    await getJson(`/api/v1/products/?page=${page}`),
+    await getJson(`/api/v1/products/?${searchParams.toString()}`),
   );
 }
 
