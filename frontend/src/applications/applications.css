@@ -1,0 +1,575 @@
+.application-page {
+  padding-top: 36px;
+  padding-bottom: 64px;
+}
+
+.application-heading,
+.application-list-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+.application-heading h1,
+.application-list-heading h1 {
+  margin-bottom: 6px;
+  font-size: clamp(1.9rem, 3vw, 2.5rem);
+  line-height: 1.12;
+  text-wrap: balance;
+}
+
+.application-timezone {
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  color: var(--color-primary-dark);
+  background: var(--green-50);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.application-form-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 350px;
+  align-items: start;
+  gap: 20px;
+}
+
+.application-form {
+  padding: 26px;
+  border-radius: 16px !important;
+}
+
+.application-form fieldset {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.application-form fieldset + fieldset {
+  margin-top: 28px;
+  padding-top: 25px;
+  border-top: 1px solid var(--color-border);
+}
+
+.application-form legend {
+  margin-bottom: 5px;
+  font-size: 19px;
+  font-weight: 750;
+}
+
+.application-date-grid {
+  display: grid;
+  grid-template-columns: 1.35fr 0.8fr;
+  gap: 14px;
+  margin-top: 17px;
+}
+
+.application-sync-note {
+  margin-top: 18px !important;
+  color: var(--color-text-muted);
+}
+
+.application-notices {
+  display: grid;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.application-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.application-summary {
+  position: sticky;
+  top: 96px;
+}
+
+.application-product-summary {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  gap: 14px;
+  padding: 18px;
+  border-radius: 16px !important;
+}
+
+.application-product-summary img {
+  width: 84px;
+  height: 84px;
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.application-product-summary dl,
+.application-detail-card dl {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: 110px 1fr;
+  gap: 10px 14px;
+  margin: 5px 0 0;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.application-product-summary dt,
+.application-detail-card dt {
+  color: var(--color-text-muted);
+}
+
+.application-product-summary dd,
+.application-detail-card dd {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-weight: 650;
+}
+
+.application-cost-summary {
+  margin-top: 14px;
+  padding: 20px;
+  border-radius: 16px;
+  color: #fff;
+  background: var(--color-primary-dark);
+}
+
+.application-cost-summary strong,
+.application-cost-summary small {
+  display: block;
+}
+
+.application-cost-summary strong {
+  margin: 8px 0 4px;
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.application-cost-summary small {
+  color: #d3e5dd;
+  line-height: 1.45;
+}
+
+.application-counter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--gray-100);
+  font-size: 13px;
+}
+
+.renter-layout {
+  display: grid !important;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: calc(100vh - 72px);
+  padding: 0 !important;
+}
+
+.renter-sidebar {
+  padding: 26px 14px;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.renter-sidebar__caption {
+  display: block;
+  padding: 8px 14px 16px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.renter-sidebar a,
+.renter-sidebar__disabled {
+  display: block;
+  min-height: 46px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.renter-sidebar a[aria-current="page"] {
+  color: var(--color-primary-dark);
+  background: var(--green-50);
+  font-weight: 700;
+}
+
+.renter-sidebar__disabled {
+  color: var(--color-text-muted);
+}
+
+.renter-sidebar p {
+  margin: 26px 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.renter-main {
+  width: 100%;
+  max-width: 1360px;
+  min-width: 0;
+  padding: 40px clamp(24px, 4vw, 64px) 64px;
+}
+
+.application-state {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 48px;
+}
+
+.application-empty {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  padding: 48px 24px;
+  border-radius: 16px !important;
+  text-align: center;
+}
+
+.application-table-surface {
+  padding: 22px;
+  border-radius: 16px !important;
+  margin-bottom: 18px;
+}
+
+.application-table-surface > h2 {
+  margin-bottom: 14px;
+}
+
+.application-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.application-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.application-table th,
+.application-table td {
+  padding: 13px 12px;
+}
+
+.application-table th {
+  color: var(--color-text-muted);
+  background: var(--color-background);
+  font-size: 13px;
+}
+
+.application-table td {
+  border-bottom: 1px solid var(--color-border);
+  font-size: 14px;
+}
+
+.application-product-cell,
+.application-person-cell,
+.application-renter-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.application-product-cell {
+  min-width: 220px;
+}
+
+.application-product-cell strong,
+.application-product-cell small,
+.application-person-cell strong,
+.application-person-cell time,
+.application-table td > small,
+.application-renter-card strong,
+.application-renter-card small {
+  display: block;
+}
+
+.application-product-cell small,
+.application-person-cell time,
+.application-table td > small,
+.application-renter-card small {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.application-thumb {
+  width: 56px;
+  height: 56px;
+  flex: 0 0 56px;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--gray-100);
+}
+
+.application-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.application-row-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.application-crumb {
+  margin-bottom: 16px !important;
+}
+
+.application-detail-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 310px;
+  align-items: start;
+  gap: 18px;
+}
+
+.application-detail-card {
+  padding: 24px;
+  border-radius: 16px !important;
+}
+
+.application-detail-card + .application-detail-card {
+  margin-top: 18px;
+}
+
+.application-detail-card dl {
+  grid-template-columns: 190px 1fr;
+  margin-top: 22px;
+}
+
+.application-timeline {
+  margin: 20px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.application-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 16px 1fr;
+  gap: 12px;
+  padding-bottom: 20px;
+}
+
+.application-timeline li > span {
+  width: 14px;
+  height: 14px;
+  margin-top: 3px;
+  border: 3px solid #fff;
+  border-radius: 50%;
+  background: var(--color-primary);
+  box-shadow: 0 0 0 1px var(--color-primary);
+}
+
+.application-timeline strong,
+.application-timeline small {
+  display: block;
+}
+
+.application-timeline small {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+}
+
+.application-renter-card {
+  padding: 16px;
+  border-radius: 14px !important;
+}
+
+.application-queue-controls {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 18px;
+  border-radius: 14px !important;
+}
+
+.application-queue-controls .MuiTextField-root {
+  min-width: 210px;
+}
+
+.application-queue-surface {
+  margin-top: 14px;
+  padding: 0;
+  overflow: hidden;
+}
+
+.application-group-row td {
+  padding: 9px 12px;
+  color: var(--color-text-muted);
+  background: var(--color-background);
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.application-available {
+  color: var(--color-success-text) !important;
+}
+
+@media (max-width: 1023px) {
+  .application-form-layout,
+  .application-detail-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .application-summary {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .application-cost-summary {
+    margin-top: 0;
+  }
+
+  .application-counter {
+    grid-column: 1 / -1;
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 800px) {
+  .renter-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .renter-sidebar {
+    display: flex;
+    padding: 8px 16px;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .renter-sidebar a,
+  .renter-sidebar__disabled {
+    white-space: nowrap;
+  }
+
+  .renter-sidebar p,
+  .renter-sidebar__caption {
+    display: none;
+  }
+
+  .renter-main {
+    padding: 28px 24px 48px;
+  }
+
+  .application-queue-controls {
+    align-items: stretch;
+    flex-direction: column;
+    gap: 14px;
+  }
+}
+
+@media (max-width: 600px) {
+  .application-page,
+  .renter-main {
+    padding: 24px 16px 48px;
+  }
+
+  .application-heading,
+  .application-list-heading,
+  .application-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .application-form {
+    padding: 22px 17px;
+  }
+
+  .application-date-grid,
+  .application-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .application-counter {
+    grid-column: auto;
+  }
+
+  .application-product-summary dl,
+  .application-detail-card dl {
+    grid-template-columns: 1fr;
+    gap: 3px;
+  }
+
+  .application-product-summary dd,
+  .application-detail-card dd {
+    margin-bottom: 9px;
+  }
+
+  .application-table,
+  .application-table thead,
+  .application-table tbody,
+  .application-table tr,
+  .application-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .application-table thead {
+    display: none;
+  }
+
+  .application-table tr {
+    padding: 14px 0;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .application-table td {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 0;
+    border: 0;
+  }
+
+  .application-table td::before {
+    flex: 0 0 88px;
+    color: var(--color-text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    content: attr(data-label);
+  }
+
+  .application-table td:first-child,
+  .application-group-row td {
+    display: block;
+  }
+
+  .application-table td:first-child::before,
+  .application-group-row td::before {
+    display: none;
+  }
+
+  .application-product-cell {
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .application-table * {
+    scroll-behavior: auto;
+  }
+}

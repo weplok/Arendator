@@ -20,6 +20,7 @@ const publicProduct = {
     is_primary: true,
   },
   available_instances_count: 3,
+  total_instances_count: 3,
 };
 
 const publicProductDetail = {
@@ -41,6 +42,7 @@ const publicProductDetail = {
   ],
   created_at: "2026-09-10T10:00:00+03:00",
   published_at: "2026-09-12T10:00:00+03:00",
+  current_user_pending_applications_count: 1,
 };
 
 const renter = {
@@ -196,7 +198,13 @@ describe("public catalog", () => {
       await screen.findByRole("heading", { name: publicProduct.name }),
     ).toBeInTheDocument();
     expect(screen.getByText("Точный адрес доступен после входа")).toBeInTheDocument();
-    expect(screen.getAllByRole("button", { name: "Подать заявку" })[0]).toBeDisabled();
+    expect(screen.getAllByRole("link", { name: "Подать заявку" })[0]).toHaveAttribute(
+      "href",
+      "/login?next=/products/7&notice=application",
+    );
+    expect(
+      screen.getAllByText("Подать заявку может только авторизованный арендатор")[0],
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("heading", { name: "Характеристики" }),
     ).toBeInTheDocument();
@@ -216,10 +224,10 @@ describe("public catalog", () => {
       screen.getByRole("link", { name: "Открыть в Яндекс.Картах" }),
     ).toHaveAttribute("href", "https://yandex.ru/maps/?pt=37.56,55.73&z=16&l=map");
     expect(
-      screen.getAllByRole("button", { name: "Подать заявку" })[0],
-    ).toBeDisabled();
+      screen.getAllByRole("link", { name: "Подать заявку" })[0],
+    ).toHaveAttribute("href", "/products/7/apply");
     expect(
-      screen.getAllByText("Подача заявки пока недоступна")[0],
+      screen.getAllByText("Ваши ожидающие заявки: 1 из 3")[0],
     ).toBeInTheDocument();
   });
 });

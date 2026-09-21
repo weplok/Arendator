@@ -35,9 +35,10 @@ export function ManagerLayout() {
       <span className="manager-sidebar__caption">Управление</span>
       <NavLink to="/account" end>Обзор</NavLink>
       <NavLink to="/manager/products">Мои товары</NavLink>
+      <NavLink to="/manager/applications">Заявки</NavLink>
       <NavLink to="/manager/rejected">Отклонённые</NavLink>
       <NavLink to="/manager/archive">Архив</NavLink>
-      <p>Здесь вы управляете только своим каталогом. Заявки и аналитика появятся позже.</p>
+      <p>Здесь вы управляете только своим каталогом и заявками на свои товары.</p>
     </nav>
     <div className="manager-main" key={location.pathname}><Outlet /></div>
   </Container>;
@@ -82,7 +83,7 @@ export function ManagerListPage({ section }: { section: ManagerSection }) {
     {section === "archive" ? <Alert severity="info" sx={{ mb: 2 }}>Замороженный товар не виден в общем каталоге. Его карточка доступна в отдельном архиве публичного профиля.</Alert> : null}
     {section === "rejected" ? <Alert severity="warning" sx={{ mb: 2 }}>Откройте карточку, чтобы увидеть причину отклонения. После исправлений её можно отправить повторно без обязательных изменений.</Alert> : null}
     <ProductTable filter={filter} products={visible} search={search} section={section} />
-    {section === "overview" ? <Alert severity="info" sx={{ mt: 2 }}>В каталог попадают только товары, одобренные модератором. Приём заявок пока недоступен.</Alert> : null}
+    {section === "overview" ? <Alert severity="info" sx={{ mt: 2 }}>В каталог попадают только товары, одобренные модератором. Новые заявки доступны в отдельной очереди.</Alert> : null}
   </>;
 }
 

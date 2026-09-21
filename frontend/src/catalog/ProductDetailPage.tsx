@@ -128,8 +128,10 @@ function ProductAvailability({ product }: { product: ProductDetail }) {
   const label = archived
     ? "В архиве"
     : available
-      ? `Свободно: ${product.available_instances_count}`
-      : "Сейчас нет свободных экземпляров";
+      ? `Свободно: ${product.available_instances_count} из ${product.total_instances_count}`
+      : product.total_instances_count > 0
+        ? `Свободно: 0 из ${product.total_instances_count}`
+        : "Сейчас нет доступных экземпляров";
   return (
     <span className={`availability ${available ? "availability--available" : "availability--empty"}`}>
       {label}
@@ -247,14 +249,64 @@ function RequestAction({ product, user }: ProductUserProps) {
   if (product.status === "FROZEN") {
     return <Typography color="text.secondary">Новые заявки не принимаются</Typography>;
   }
+  if (product.total_instances_count === 0) {
+    return (
+      <div className="product-request-unavailable">
+        <Button variant="contained" disabled>Подать заявку</Button>
+        <Typography variant="caption" color="text.secondary">
+          У товара пока нет экземпляров
+        </Typography>
+      </div>
+    );
+  }
+  if (!user) {
+    return (
+      <div className="product-request-unavailable">
+        <Button
+          component={RouterLink}
+          to={`/login?next=/products/${product.id}&notice=application`}
+          variant="contained"
+        >
+          Подать заявку
+        </Button>
+        <Typography variant="caption" color="text.secondary">
+          Подать заявку может только авторизованный арендатор
+        </Typography>
+      </div>
+    );
+  }
   if (user && user.role !== "RENTER") {
     return <Typography color="text.secondary">Заявки доступны арендаторам</Typography>;
   }
+  if (
+    product.current_user_pending_applications_count >=
+    product.total_instances_count
+  ) {
+    return (
+      <div className="product-request-unavailable">
+        <Button component={RouterLink} to="/account" variant="outlined">
+          Посмотреть мои заявки
+        </Button>
+        <Typography variant="caption" color="text.secondary">
+          Достигнут лимит: {product.current_user_pending_applications_count} из{" "}
+          {product.total_instances_count}
+        </Typography>
+      </div>
+    );
+  }
   return (
     <div className="product-request-unavailable">
-      <Button variant="contained" disabled>Подать заявку</Button>
+      <Button
+        component={RouterLink}
+        to={`/products/${product.id}/apply`}
+        variant="contained"
+      >
+        Подать заявку
+      </Button>
       <Typography variant="caption" color="text.secondary">
-        Подача заявки пока недоступна
+        {product.available_instances_count === 0
+          ? "Свободных экземпляров пока нет — заявка встанет в очередь"
+          : `Ваши ожидающие заявки: ${product.current_user_pending_applications_count} из ${product.total_instances_count}`}
       </Typography>
     </div>
   );

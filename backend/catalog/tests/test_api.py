@@ -113,6 +113,8 @@ def test_authenticated_product_card_exposes_address_and_yandex_maps_link(
     assert pickup["yandex_maps_url"] == (
         "https://yandex.ru/maps/?pt=37.618423,55.751244&z=16&l=map"
     )
+    assert response.json()["total_instances_count"] == 1
+    assert response.json()["current_user_pending_applications_count"] == 0
 
 
 def test_product_card_returns_ordered_carousel_photos(

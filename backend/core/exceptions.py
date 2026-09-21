@@ -64,11 +64,12 @@ def _get_error_message(data: Any, status_code: int) -> str:
 
 
 def _get_field_errors(exc: Exception, data: Any) -> dict[str, list[str]]:
-    if not isinstance(exc, ValidationError) or not isinstance(data, Mapping):
+    if not isinstance(data, Mapping):
         return {}
     return {
         str(field): _stringify_error_messages(messages)
         for field, messages in data.items()
+        if field != "detail"
     }
 
 

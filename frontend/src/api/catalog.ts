@@ -38,6 +38,7 @@ const productSummarySchema = z.object({
   pickup_point: pickupPointSchema,
   primary_photo: productPhotoSchema.nullable(),
   available_instances_count: z.number().int().nonnegative(),
+  total_instances_count: z.number().int().nonnegative(),
 });
 const productDetailSchema = productSummarySchema.extend({
   description: z.string(),
@@ -45,6 +46,7 @@ const productDetailSchema = productSummarySchema.extend({
   characteristics: z.array(characteristicValueSchema),
   created_at: z.string(),
   published_at: z.string().nullable(),
+  current_user_pending_applications_count: z.number().int().nonnegative(),
 });
 const managerProfileSchema = publicManagerSchema.extend({
   active_products_count: z.number().int().nonnegative(),

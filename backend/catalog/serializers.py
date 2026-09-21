@@ -121,6 +121,7 @@ class ProductSummarySerializer(serializers.ModelSerializer[Product]):
     pickup_point = PickupPointSerializer(read_only=True, allow_null=True)
     primary_photo = serializers.SerializerMethodField()
     available_instances_count = serializers.IntegerField(read_only=True)
+    total_instances_count = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = Product
@@ -134,6 +135,7 @@ class ProductSummarySerializer(serializers.ModelSerializer[Product]):
             "pickup_point",
             "primary_photo",
             "available_instances_count",
+            "total_instances_count",
         )
 
     @extend_schema_field(ProductPhotoSerializer(allow_null=True))
@@ -164,12 +166,16 @@ class ProductDetailSerializer(ProductSummarySerializer):
             "pickup_point",
             "primary_photo",
             "available_instances_count",
+            "total_instances_count",
+            "current_user_pending_applications_count",
             "description",
             "photos",
             "characteristics",
             "created_at",
             "published_at",
         )
+
+    current_user_pending_applications_count = serializers.IntegerField(read_only=True)
 
     @extend_schema_field(ProductPhotoSerializer(many=True))
     def get_photos(self, product: Product) -> list[dict[str, Any]]:

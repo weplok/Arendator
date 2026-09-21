@@ -5,9 +5,10 @@ import re
 
 from django.core.exceptions import ValidationError as DjangoValidationError
 from django.db import connection, transaction
-from django.db.models import Count, Prefetch, Q, QuerySet
+from django.db.models import Count, IntegerField, Prefetch, Q, QuerySet, Value
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.generics import ListAPIView, RetrieveAPIView
@@ -48,13 +49,19 @@ def public_product_queryset() -> QuerySet[Product]:
     return (
         Product.objects.select_related("category", "manager", "pickup_point")
         .annotate(
+            total_instances_count=Count(
+                "instances",
+                filter=Q(instances__is_deleted=False),
+                distinct=True,
+            ),
             available_instances_count=Count(
                 "instances",
                 filter=Q(
                     instances__status="AVAILABLE",
                     instances__is_deleted=False,
                 ),
-            )
+                distinct=True,
+            ),
         )
         .prefetch_related(Prefetch("photos", queryset=photos, to_attr="catalog_photos"))
         .order_by("id")
@@ -277,7 +284,7 @@ class ProductDetailView(RetrieveAPIView):
 
     def get_queryset(self) -> QuerySet[Product]:
         values = ProductCharacteristicValue.objects.order_by("characteristic_id")
-        return (
+        queryset = (
             public_product_queryset()
             .filter(status__in=(Product.Status.PUBLISHED, Product.Status.FROZEN))
             .prefetch_related(
@@ -286,6 +293,24 @@ class ProductDetailView(RetrieveAPIView):
                     queryset=values,
                     to_attr="catalog_characteristics",
                 )
+            )
+        )
+        user = self.request.user
+        if user.is_authenticated and user.role == User.Role.RENTER:
+            return queryset.annotate(
+                current_user_pending_applications_count=Count(
+                    "rental_applications",
+                    filter=Q(
+                        rental_applications__renter=user,
+                        rental_applications__status="WAITING",
+                        rental_applications__pickup_deadline_at__gt=timezone.now(),
+                    ),
+                    distinct=True,
+                )
+            )
+        return queryset.annotate(
+            current_user_pending_applications_count=Value(
+                0, output_field=IntegerField()
             )
         )
 

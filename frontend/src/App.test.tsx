@@ -40,22 +40,23 @@ describe("authentication flow", () => {
   });
 
   it("restores the current user from the cookie session", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(renter)));
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) =>
+      String(input) === "/api/v1/auth/me/" ? jsonResponse(renter) : jsonResponse([]),
+    ));
 
     renderApp("/account");
 
     expect(
-      await screen.findByRole("heading", {
-        name: "Добро пожаловать, Анна Смирнова",
-      }),
+      await screen.findByRole("heading", { name: "Мои заявки" }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Сессия активна")).toBeInTheDocument();
+    expect(screen.getByText("У вас пока нет заявок")).toBeInTheDocument();
   });
 
   it("logs in and sends the CSRF token", async () => {
     document.cookie = "csrftoken=login-token; path=/";
     const fetchMock = vi.fn().mockResolvedValueOnce(unauthenticatedResponse());
     fetchMock.mockResolvedValueOnce(jsonResponse(renter));
+    fetchMock.mockResolvedValue(jsonResponse([]));
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/login");
 
@@ -68,9 +69,7 @@ describe("authentication flow", () => {
     fireEvent.click(screen.getByRole("button", { name: "Войти" }));
 
     expect(
-      await screen.findByRole("heading", {
-        name: "Добро пожаловать, Анна Смирнова",
-      }),
+      await screen.findByRole("heading", { name: "Мои заявки" }),
     ).toBeInTheDocument();
     const loginOptions = fetchMock.mock.calls[1]?.[1] as RequestInit;
     expect(new Headers(loginOptions.headers).get("X-CSRFToken")).toBe(
@@ -130,15 +129,15 @@ describe("authentication flow", () => {
 
   it("logs out and shows the login page from the account", async () => {
     document.cookie = "csrftoken=logout-token; path=/";
-    const fetchMock = vi.fn().mockResolvedValueOnce(jsonResponse(renter));
-    fetchMock.mockResolvedValueOnce(new Response(null, { status: 204 }));
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      const path = String(input);
+      if (path === "/api/v1/auth/me/") return jsonResponse(renter);
+      if (path === "/api/v1/auth/logout/" && options?.method === "POST") {
+        return new Response(null, { status: 204 });
+      }
+      return jsonResponse([]);
+    });
     vi.stubGlobal("fetch", fetchMock);
-    fetchMock.mockResolvedValueOnce(jsonResponse({
-      count: 0,
-      next: null,
-      previous: null,
-      results: [],
-    }));
     renderApp("/account");
 
     fireEvent.click(await screen.findByRole("button", { name: "Выйти" }));

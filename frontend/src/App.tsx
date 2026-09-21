@@ -5,11 +5,20 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { CURRENT_USER_QUERY_KEY, getCurrentUser } from "./api/auth";
 import { LoginPage } from "./auth/LoginPage";
 import { RegisterPage } from "./auth/RegisterPage";
+import { ApplicationFormPage } from "./applications/ApplicationFormPage";
+import {
+  ManagerApplicationDetailPage,
+  ManagerApplicationsPage,
+} from "./applications/ManagerApplications";
+import {
+  RenterApplicationDetailPage,
+  RenterApplicationsPage,
+  RenterLayout,
+} from "./applications/RenterApplications";
 import { CatalogPage } from "./catalog/CatalogPage";
 import { ManagerProfilePage } from "./catalog/ManagerProfilePage";
 import { ProductDetailPage } from "./catalog/ProductDetailPage";
 import { CategoriesPage } from "./categories/CategoriesPage";
-import { HomePage } from "./HomePage";
 import { AppShell } from "./layout/AppShell";
 import { ManagerEditor } from "./manager/ManagerEditor";
 import { ManagerLayout, ManagerListPage } from "./manager/ManagerPage";
@@ -67,14 +76,21 @@ function SessionApp() {
                 path="/products/:productId"
                 element={<ProductDetailPage user={user} />}
               />
+              <Route
+                path="/products/:productId/apply"
+                element={user?.role === "RENTER" ? <ApplicationFormPage /> : <Navigate to="/login" replace />}
+              />
               <Route path="/managers/:managerId" element={<ManagerProfilePage />} />
               <Route
                 path="/account"
-                element={user?.role === "MANAGER" ? <ManagerLayout /> : user ? <HomePage user={user} /> : <Navigate to="/login" replace />}
+                element={user?.role === "MANAGER" ? <ManagerLayout /> : user?.role === "RENTER" ? <RenterLayout /> : <Navigate to="/login" replace />}
               >
-                {user?.role === "MANAGER" ? <Route index element={<ManagerListPage section="overview" />} /> : null}
+                {user?.role === "MANAGER" ? <Route index element={<ManagerListPage section="overview" />} /> : <Route index element={<RenterApplicationsPage />} />}
+                {user?.role === "RENTER" ? <Route path="applications/:applicationId" element={<RenterApplicationDetailPage />} /> : null}
               </Route>
               {user?.role === "MANAGER" ? <Route path="/manager" element={<ManagerLayout />}>
+                <Route path="applications" element={<ManagerApplicationsPage />} />
+                <Route path="applications/:applicationId" element={<ManagerApplicationDetailPage />} />
                 <Route path="products" element={<ManagerListPage section="products" />} />
                 <Route path="rejected" element={<ManagerListPage section="rejected" />} />
                 <Route path="archive" element={<ManagerListPage section="archive" />} />

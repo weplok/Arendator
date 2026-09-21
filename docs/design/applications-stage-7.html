@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Этап №7 — заявки и очередь менеджера</title>
+  <link rel="stylesheet" href="manager-stage-4.css">
+  <link rel="stylesheet" href="applications-stage-7.css">
+</head>
+<body>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 10 9-5M12 12 3 7m9 5v10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-request" viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v16H5V5a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-drill" viewBox="0 0 90 90"><path d="M18 24h48l9 10-8 9H44l-7 8H24V40h-6zM47 43v25l-9 7h-9V48M18 28h-8v10h8M66 29v12M51 68h-9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></symbol>
+    <symbol id="i-ladder" viewBox="0 0 90 90"><path d="M30 12 18 78M60 12l12 66M26 28h38M23 43h44M20 58h50" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="3"/></symbol>
+    <symbol id="i-washer" viewBox="0 0 90 90"><path d="M24 20h42l5 58H19l5-58Zm4 10h34M34 45h22v18H34zM66 27l10-10M76 17l4 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7 3v4M17 3v4M3 10h18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 8h13l-3-3M20 16H7l3 3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></symbol>
+  </svg>
+
+  <div class="prototype-bar">
+    <div class="prototype-head"><strong>Этап №7 · заявки</strong><span>Интерактивные эскизы без backend и сохранения продуктовых данных.</span></div>
+    <nav class="prototype-nav" aria-label="Экраны эскизов">
+      <a href="#product-guest">01 Товар · гость</a>
+      <a href="#login-return">02 Вход</a>
+      <a href="#product-renter">03 Товар · арендатор</a>
+      <a href="#request-limit">04 Лимит</a>
+      <a href="#request-form">05 Форма</a>
+      <a href="#request-success">06 Успех</a>
+      <a href="#renter-requests">07 Мои заявки</a>
+      <a href="#renter-detail">08 Детали арендатора</a>
+      <a href="#cancel-request">09 Отмена</a>
+      <a href="#manager-queue">10 Очередь</a>
+      <a href="#manager-detail">11 Детали менеджера</a>
+    </nav>
+  </div>
+
+  <div class="app">
+    <header class="app-header">
+      <a class="brand" href="#product-guest"><span class="brand-mark" aria-hidden="true"></span>Арентатор</a>
+      <label class="catalog-search"><span class="sr-only">Поиск по каталогу</span><input placeholder="Найти инструмент или оборудование"><button type="button">Найти</button></label>
+      <div class="header-right">
+        <div class="header-profile" data-role="guest"><a class="text-link" href="#login-return">Войти</a><a class="btn btn-primary btn-small" href="#login-return">Регистрация</a></div>
+        <div class="header-profile" data-role="renter"><a class="text-link" href="#renter-requests">Мои заявки</a><span class="account"><span class="avatar">М</span><span>Марина<small>Арендатор</small></span></span></div>
+        <div class="header-profile" data-role="manager"><a class="text-link" href="#manager-queue">Заявки</a><span class="account"><span class="avatar">А</span><span>Алексей<small>Менеджер</small></span></span></div>
+      </div>
+    </header>
+
+    <main id="content" class="prototype-content">
+      <section class="screen public-screen" id="product-guest" data-role="guest" aria-labelledby="product-guest-title">
+        <div class="public-content">
+          <div class="crumb">Каталог / Электроинструмент / Дрели</div>
+          <div class="product-layout">
+            <div>
+              <h1 id="product-guest-title">Аккумуляторная дрель Makita DDF482</h1>
+              <div class="product-gallery-card"><svg aria-label="Схематичное изображение аккумуляторной дрели" role="img"><use href="#i-drill"/></svg><span>Главное фото товара</span></div>
+              <div class="surface compact"><div class="surface-head"><h2>Точка самовывоза</h2><span class="status neutral">Точный адрес после входа</span></div><p><svg class="inline-icon" aria-hidden="true"><use href="#i-pin"/></svg>Москва, Хамовники</p></div>
+              <div class="surface compact"><h2>Описание</h2><p class="body-copy">Компактная аккумуляторная дрель для сборки мебели и небольших ремонтных работ. Кейс и зарядка в комплекте.</p></div>
+            </div>
+            <aside class="apply-card">
+              <div class="rate">3 ₽/мин</div>
+              <a class="btn btn-primary btn-wide" href="#login-return">Войти, чтобы подать заявку</a>
+              <p class="helper">Подать заявку может только авторизованный арендатор.</p>
+              <div class="divider"></div>
+              <div class="manager-row"><span class="avatar">А</span><span><small>Менеджер</small><strong>Алексей Морозов</strong></span></div>
+              <div class="availability good">Свободно: 2 из 3</div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen public-screen" id="login-return" data-role="guest" aria-labelledby="login-title">
+        <div class="login-wrap">
+          <div class="notice info" role="status">Подать заявку может только авторизованный арендатор.</div>
+          <div class="surface login-card">
+            <div class="back-context"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><strong>После входа вернём вас к товару</strong><small>Аккумуляторная дрель Makita DDF482</small></span></div>
+            <h1 id="login-title">Вход</h1>
+            <div class="field"><label for="login-email">Email</label><input id="login-email" type="email" autocomplete="email" placeholder="name@example.ru"></div>
+            <div class="field"><label for="login-password">Пароль</label><input id="login-password" type="password" autocomplete="current-password" value="password"></div>
+            <a class="btn btn-primary btn-wide" href="#product-renter">Войти и вернуться к товару</a>
+            <p class="centered fine">Нет аккаунта? <a href="#login-return">Зарегистрироваться как арендатор</a></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen public-screen" id="product-renter" data-role="renter" aria-labelledby="product-renter-title">
+        <div class="public-content">
+          <div class="crumb">Каталог / Электроинструмент / Дрели</div>
+          <div class="product-layout">
+            <div>
+              <h1 id="product-renter-title">Аккумуляторная дрель Makita DDF482</h1>
+              <div class="product-gallery-card"><svg aria-label="Схематичное изображение аккумуляторной дрели" role="img"><use href="#i-drill"/></svg><span>Главное фото товара</span></div>
+              <div class="surface compact"><div class="surface-head"><h2>Точка самовывоза</h2><a class="text-link" href="#product-renter">Открыть в Яндекс.Картах</a></div><p><svg class="inline-icon" aria-hidden="true"><use href="#i-pin"/></svg>Москва, Хамовники · Комсомольский проспект, 25, подъезд 2</p></div>
+              <div class="surface compact"><h2>Описание</h2><p class="body-copy">Компактная аккумуляторная дрель для сборки мебели и небольших ремонтных работ. Кейс и зарядка в комплекте.</p></div>
+            </div>
+            <aside class="apply-card">
+              <div class="rate">3 ₽/мин</div>
+              <a class="btn btn-primary btn-wide" href="#request-form">Подать заявку</a>
+              <div class="notice warning small-notice">Свободных экземпляров сейчас нет. Заявку можно оставить: менеджер рассмотрит её, когда экземпляр освободится.</div>
+              <div class="request-counter"><span>Ваши ожидающие заявки</span><strong>1 из 3</strong></div>
+              <div class="divider"></div>
+              <div class="manager-row"><span class="avatar">А</span><span><small>Менеджер</small><strong>Алексей Морозов</strong></span></div>
+              <div class="availability neutral">Свободно: 0 из 3</div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen public-screen" id="request-limit" data-role="renter" aria-labelledby="limit-title">
+        <div class="public-content narrow-public">
+          <div class="crumb"><a href="#product-renter">Аккумуляторная дрель Makita DDF482</a> / Новая заявка</div>
+          <div class="surface limit-card">
+            <span class="status warn">Лимит достигнут</span>
+            <h1 id="limit-title">Новая заявка пока недоступна</h1>
+            <p>У товара 3 экземпляра, и у вас уже есть 3 ожидающие заявки. Это максимальное допустимое количество.</p>
+            <div class="limit-meter"><span style="width:100%"></span></div>
+            <div class="request-counter"><span>Ожидающие заявки</span><strong>3 из 3</strong></div>
+            <div class="notice info">Брони и активные аренды в этот лимит не входят. После отмены или обработки одной из ожидающих заявок можно будет подать новую.</div>
+            <div class="form-actions"><a class="btn btn-secondary" href="#product-renter">Вернуться к товару</a><a class="btn btn-primary" href="#renter-requests">Посмотреть мои заявки</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen public-screen" id="request-form" data-role="renter" aria-labelledby="request-form-title">
+        <div class="public-content">
+          <div class="crumb"><a href="#product-renter">Аккумуляторная дрель Makita DDF482</a> / Новая заявка</div>
+          <div class="page-head"><div><h1 id="request-form-title">Подать заявку</h1><p>Укажите, до какого момента сможете забрать товар и когда планируете вернуть его.</p></div><span class="status neutral">Время по Москве</span></div>
+          <div class="request-layout">
+            <form class="surface request-form-card" id="request-demo-form">
+              <fieldset>
+                <legend>Крайний срок получения</legend>
+                <p class="fine">До этого времени нужно успеть приехать за товаром, если менеджер создаст бронь.</p>
+                <div class="date-time-grid">
+                  <div class="field"><label for="pickup-date">Дата <span class="required">*</span></label><input id="pickup-date" type="date" value="2026-09-25" required></div>
+                  <div class="field"><label for="pickup-time">Время <span class="required">*</span></label><input id="pickup-time" type="time" value="18:00" required><span class="field-help">МСК</span></div>
+                </div>
+              </fieldset>
+              <fieldset>
+                <legend>Плановый срок возврата</legend>
+                <div class="date-time-grid">
+                  <div class="field"><label for="return-date">Дата <span class="required">*</span></label><input id="return-date" type="date" value="2026-09-26" required></div>
+                  <div class="field"><label for="return-time">Время <span class="required">*</span></label><input id="return-time" type="time" value="18:00" required><span class="field-help">МСК</span></div>
+                </div>
+                <div class="duration-sync"><svg aria-hidden="true"><use href="#i-arrow"/></svg><span>или задайте длительность — срок возврата пересчитается автоматически</span></div>
+                <div class="date-time-grid">
+                  <div class="field"><label for="duration-days">Дней</label><input id="duration-days" type="number" min="0" value="1" inputmode="numeric"></div>
+                  <div class="field"><label for="duration-hours">Часов</label><input id="duration-hours" type="number" min="0" max="23" value="0" inputmode="numeric"></div>
+                </div>
+                <p class="field-error" id="schedule-error" role="alert" hidden>Плановый срок возврата не может быть раньше крайнего срока получения.</p>
+              </fieldset>
+              <div class="info-stack">
+                <div class="notice info"><strong>Это заявка, а не бронь.</strong> Подача ничего не гарантирует: дождитесь решения менеджера.</div>
+                <div class="notice warning"><strong>Просрочка оплачивается дороже.</strong> После планового срока каждая минута рассчитывается по двойной ставке, пока менеджер не примет возврат.</div>
+              </div>
+              <label class="consent-row"><input type="checkbox" checked><span>Я понимаю, что товар нужно забрать до крайнего срока и что заявка не гарантирует бронь.</span></label>
+              <div class="form-actions"><a class="text-link" href="#product-renter">Отменить и вернуться</a><button class="btn btn-primary" type="submit">Подать заявку</button></div>
+            </form>
+
+            <aside class="request-summary">
+              <div class="surface product-summary-card">
+                <div class="product-cell"><span class="thumb large-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Аккумуляторная дрель Makita DDF482</span><span class="product-sub">Компактная дрель для сборки мебели и небольшого ремонта…</span></span></div>
+                <dl class="summary-list"><dt>Ставка</dt><dd>3 ₽/мин</dd><dt>Менеджер</dt><dd>Алексей Морозов</dd><dt>Выдача</dt><dd>Москва, Комсомольский проспект, 25</dd></dl>
+              </div>
+              <div class="cost-summary" aria-live="polite"><span>Примерная стоимость</span><strong id="estimated-cost">4 350 ₽</strong><small id="estimated-details">1 день (1 440 мин) × 3 ₽/мин + 30 ₽ стартовая стоимость</small><p>Фактический расчёт начнётся только после выдачи и зависит от реального времени использования.</p></div>
+              <div class="request-counter"><span>После подачи</span><strong>2 из 3 заявок</strong></div>
+            </aside>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen public-screen" id="request-success" data-role="renter" aria-labelledby="success-title">
+        <div class="public-content narrow-public">
+          <div class="success-panel surface">
+            <span class="success-icon"><svg aria-hidden="true"><use href="#i-check"/></svg></span>
+            <span class="status good">Ожидает решения</span>
+            <h1 id="success-title">Заявка подана</h1>
+            <p>Менеджер получил заявку на «Аккумуляторную дрель Makita DDF482». Пока конкретный экземпляр не назначен.</p>
+            <dl class="success-data"><dt>Забрать до</dt><dd>25 сен 2026, 18:00 МСК</dd><dt>Плановый возврат</dt><dd>26 сен 2026, 18:00 МСК</dd><dt>Примерная стоимость</dt><dd>4 350 ₽</dd></dl>
+            <div class="notice info">Дождитесь подтверждения брони во внутренних уведомлениях. До этого момента заявка ничего не гарантирует.</div>
+            <div class="button-row"><a class="btn btn-primary" href="#renter-detail">Открыть заявку</a><a class="btn btn-secondary" href="#product-renter">Вернуться к товару</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen dashboard-screen" id="renter-requests" data-role="renter" aria-labelledby="renter-requests-title">
+        <div class="app-body dashboard-body">
+          <aside class="sidebar">
+            <div class="sidebar-label">Кабинет арендатора</div>
+            <nav aria-label="Навигация арендатора"><a class="side-link" href="#renter-requests" aria-current="page"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки <span class="nav-count">3</span></a><span class="side-link muted"><svg aria-hidden="true"><use href="#i-calendar"/></svg>Брони</span><span class="side-link muted"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды</span></nav>
+            <p class="side-note">На этапе №7 работают только заявки. Брони и аренды показаны как следующие разделы.</p>
+          </aside>
+          <div class="workspace-main">
+            <div class="page-head"><div><h1 id="renter-requests-title">Мои заявки</h1><p>Ожидающие и завершённые заявки на аренду</p></div><a class="btn btn-secondary" href="#product-renter">Перейти в каталог</a></div>
+            <div class="tabs" role="tablist"><a class="active" href="#renter-requests">Ожидают · 2</a><a href="#renter-requests">Завершены · 1</a></div>
+            <div class="surface"><div class="table-wrap"><table><thead><tr><th>Товар</th><th>Срок получения</th><th>Плановый возврат</th><th>Статус</th><th>Действия</th></tr></thead><tbody>
+              <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Аккумуляторная дрель Makita DDF482</span><span class="product-sub">Алексей Морозов · 3 ₽/мин</span></span></div></td><td data-label="Получить до" class="num">25 сен, 18:00</td><td data-label="Вернуть" class="num">26 сен, 18:00</td><td data-label="Статус"><span class="status neutral">Ожидает решения</span></td><td data-label="Действия"><div class="row-actions"><a class="text-link" href="#renter-detail">Открыть</a><a class="danger-link" href="#cancel-request">Отменить</a></div></td></tr>
+              <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-ladder"/></svg></span><span><span class="product-title">Алюминиевая стремянка, 6 ступеней</span><span class="product-sub">Ирина Соколова · 1 ₽/мин</span></span></div></td><td data-label="Получить до" class="num">27 сен, 12:00</td><td data-label="Вернуть" class="num">29 сен, 12:00</td><td data-label="Статус"><span class="status neutral">Ожидает решения</span></td><td data-label="Действия"><div class="row-actions"><a class="text-link" href="#renter-detail">Открыть</a><a class="danger-link" href="#cancel-request">Отменить</a></div></td></tr>
+            </tbody></table></div></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen dashboard-screen" id="renter-detail" data-role="renter" aria-labelledby="renter-detail-title">
+        <div class="app-body dashboard-body">
+          <aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav aria-label="Навигация арендатора"><a class="side-link" href="#renter-requests" aria-current="page"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки</a><span class="side-link muted"><svg aria-hidden="true"><use href="#i-calendar"/></svg>Брони</span><span class="side-link muted"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды</span></nav></aside>
+          <div class="workspace-main">
+            <div class="crumb"><a href="#renter-requests">Мои заявки</a> / Заявка №AR-1048</div>
+            <div class="page-head"><div><h1 id="renter-detail-title">Заявка №AR-1048</h1><p>Создана 21 сен 2026, 14:12 МСК</p></div><span class="status neutral">Ожидает решения</span></div>
+            <div class="detail-layout">
+              <div>
+                <div class="surface"><div class="product-cell"><span class="thumb large-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Аккумуляторная дрель Makita DDF482</span><span class="product-sub">Менеджер: Алексей Морозов</span></span></div><dl class="detail-data"><dt>Забрать до</dt><dd>25 сен 2026, 18:00 МСК</dd><dt>Плановый возврат</dt><dd>26 сен 2026, 18:00 МСК</dd><dt>Плановая длительность</dt><dd>1 день</dd><dt>Примерная стоимость</dt><dd>4 350 ₽</dd><dt>Точка самовывоза</dt><dd>Москва, Комсомольский проспект, 25, подъезд 2</dd></dl></div>
+                <div class="surface"><div class="surface-head"><h2>История</h2></div><ol class="timeline"><li><span></span><div><strong>Заявка создана</strong><small>21 сен 2026, 14:12 · Вы</small></div></li><li class="current"><span></span><div><strong>Ожидает решения менеджера</strong><small>Конкретный экземпляр ещё не назначен</small></div></li></ol></div>
+              </div>
+              <aside><div class="notice info"><strong>Это ещё не бронь.</strong> Дождитесь решения менеджера. Если заявку не рассмотрят до крайнего срока получения, она отменится автоматически.</div><a class="btn btn-danger btn-wide" href="#cancel-request">Отменить заявку</a><p class="fine centered">Отмена ожидающей заявки бесплатна.</p></aside>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen dashboard-screen" id="cancel-request" data-role="renter" aria-labelledby="cancel-title">
+        <div class="dialog-stage">
+          <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="cancel-title">
+            <span class="status warn">Отмена заявки</span>
+            <h1 id="cancel-title">Отменить заявку?</h1>
+            <p><strong>Аккумуляторная дрель Makita DDF482</strong><br>Получение до 25 сен 2026, 18:00 МСК</p>
+            <p>Заявка перестанет участвовать в очереди менеджера. Штрафа нет.</p>
+            <div class="field"><label for="cancel-reason">Причина <span class="muted">(необязательно)</span></label><textarea id="cancel-reason" placeholder="Например, изменились планы"></textarea></div>
+            <div class="dialog-actions"><a class="btn btn-quiet" href="#renter-detail">Не отменять</a><a class="btn btn-danger" href="#renter-requests">Отменить заявку</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen dashboard-screen" id="manager-cancel" data-role="manager" aria-labelledby="manager-cancel-title">
+        <div class="dialog-stage">
+          <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="manager-cancel-title">
+            <span class="status warn">Отмена заявки менеджером</span>
+            <h1 id="manager-cancel-title">Отменить заявку арендатора?</h1>
+            <p><strong>Марина Волкова · Аккумуляторная дрель Makita DDF482</strong><br>Получение до 25 сен 2026, 18:00 МСК</p>
+            <p>Заявка исчезнет из рабочей очереди. Арендатор увидит отмену и получит внутреннее уведомление.</p>
+            <div class="field"><label for="manager-cancel-reason">Причина <span class="muted">(необязательно)</span></label><textarea id="manager-cancel-reason" placeholder="Например, товар временно недоступен"></textarea></div>
+            <div class="dialog-actions"><a class="btn btn-quiet" href="#manager-detail">Не отменять</a><a class="btn btn-danger" href="#manager-queue">Отменить заявку</a></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen dashboard-screen" id="manager-queue" data-role="manager" aria-labelledby="manager-queue-title">
+        <div class="app-body dashboard-body">
+          <aside class="sidebar">
+            <div class="sidebar-label">Кабинет менеджера</div>
+            <nav aria-label="Навигация менеджера"><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><span class="side-link"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои товары</span><a class="side-link" href="#manager-queue" aria-current="page"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки <span class="nav-count">8</span></a><span class="side-link muted"><svg aria-hidden="true"><use href="#i-arrow"/></svg>Выдача и возврат</span></nav>
+            <p class="side-note">Сначала показаны товары со свободными экземплярами. Настройки списка сохраняются для менеджера.</p>
+          </aside>
+          <div class="workspace-main">
+            <div class="page-head"><div><h1 id="manager-queue-title">Очередь заявок</h1><p>Ожидающие заявки только на ваши товары</p></div><span class="status good">8 ожидают</span></div>
+            <div class="queue-controls surface">
+              <div class="field compact-field"><label for="queue-sort">Сортировка</label><select id="queue-sort"><option>Ближайшие</option><option>Сначала ранние</option><option>Сначала поздние</option></select></div>
+              <label class="checkbox-field"><input id="hide-unavailable" type="checkbox"><span><strong>Скрыть товары без свободных экземпляров</strong><small>Настройка сохранится в вашем кабинете</small></span></label>
+              <span class="saved-indicator" id="saved-indicator" aria-live="polite">Настройки сохранены</span>
+            </div>
+            <div class="notice info queue-rule">При любой сортировке первыми идут заявки на товары со свободными экземплярами. Вы сами выбираете, какую заявку обработать.</div>
+            <div class="surface queue-surface">
+              <div class="table-wrap"><table class="queue-table"><thead><tr><th>Товар</th><th>Получить до</th><th>Плановый срок</th><th>Арендатор</th><th>Действие</th></tr></thead><tbody>
+                <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Дрель Makita DDF482</span><span class="availability-text good-text">Свободно: 2 из 3</span></span></div></td><td data-label="Получить до"><strong class="num">25 сен, 18:00</strong><small class="block-muted">через 4 дня</small></td><td data-label="Плановый срок">1 день</td><td data-label="Арендатор"><div class="person-cell"><span class="avatar small-avatar">М</span><span><strong>Марина Волкова</strong><small>3 минуты назад</small></span></div></td><td data-label="Действие"><a class="btn btn-primary btn-small" href="#manager-detail">Открыть</a></td></tr>
+                <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-ladder"/></svg></span><span><span class="product-title">Стремянка, 6 ступеней</span><span class="availability-text good-text">Свободно: 1 из 2</span></span></div></td><td data-label="Получить до"><strong class="num">26 сен, 10:00</strong><small class="block-muted">через 5 дней</small></td><td data-label="Плановый срок">2 дня</td><td data-label="Арендатор"><div class="person-cell"><span class="avatar small-avatar alt">И</span><span><strong>Илья Петров</strong><small>7 часов назад</small></span></div></td><td data-label="Действие"><a class="btn btn-secondary btn-small" href="#manager-detail">Открыть</a></td></tr>
+                <tr class="queue-group-label"><td colspan="5">Нет свободных экземпляров · 2 заявки</td></tr>
+                <tr class="no-stock-row"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-washer"/></svg></span><span><span class="product-title">Мойка Karcher K5</span><span class="availability-text">Свободно: 0 из 2</span></span></div></td><td data-label="Получить до"><strong class="num">24 сен, 09:00</strong><small class="block-muted">через 3 дня</small></td><td data-label="Плановый срок">8 часов</td><td data-label="Арендатор"><div class="person-cell"><span class="avatar small-avatar third">О</span><span><strong>Олег Смирнов</strong><small>2 дня назад</small></span></div></td><td data-label="Действие"><a class="btn btn-secondary btn-small" href="#manager-detail">Открыть</a></td></tr>
+                <tr class="no-stock-row"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Перфоратор Bosch GBH</span><span class="availability-text">Свободно: 0 из 4</span></span></div></td><td data-label="Получить до"><strong class="num">29 сен, 14:30</strong><small class="block-muted">через 8 дней</small></td><td data-label="Плановый срок">1 месяц</td><td data-label="Арендатор"><div class="person-cell"><span class="avatar small-avatar fourth">Е</span><span><strong>Елена Ким</strong><small>2 дня назад</small></span></div></td><td data-label="Действие"><a class="btn btn-secondary btn-small" href="#manager-detail">Открыть</a></td></tr>
+              </tbody></table></div>
+              <div class="empty compact-empty" id="hidden-empty" hidden><h3>Все заявки без доступных экземпляров скрыты</h3><p>Снимите флажок, чтобы снова увидеть полную очередь.</p></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="screen dashboard-screen" id="manager-detail" data-role="manager" aria-labelledby="manager-detail-title">
+        <div class="app-body dashboard-body">
+          <aside class="sidebar"><div class="sidebar-label">Кабинет менеджера</div><nav aria-label="Навигация менеджера"><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><span class="side-link"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои товары</span><a class="side-link" href="#manager-queue" aria-current="page"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки</a><span class="side-link muted"><svg aria-hidden="true"><use href="#i-arrow"/></svg>Выдача и возврат</span></nav></aside>
+          <div class="workspace-main">
+            <div class="crumb"><a href="#manager-queue">Очередь заявок</a> / Заявка №AR-1048</div>
+            <div class="page-head"><div><h1 id="manager-detail-title">Заявка №AR-1048</h1><p>Подана 3 минуты назад · 21 сен 2026, 14:12 МСК</p></div><span class="status neutral">Ожидает решения</span></div>
+            <div class="detail-layout manager-detail-layout">
+              <div>
+                <div class="surface"><div class="surface-head"><h2>Товар и сроки</h2><span class="status good">Свободно: 2 из 3</span></div><div class="product-cell"><span class="thumb large-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Аккумуляторная дрель Makita DDF482</span><span class="product-sub">3 ₽/мин · Москва, Хамовники</span></span></div><dl class="detail-data"><dt>Получить до</dt><dd>25 сен 2026, 18:00 МСК</dd><dt>Плановый возврат</dt><dd>26 сен 2026, 18:00 МСК</dd><dt>Плановая длительность</dt><dd>1 день</dd><dt>Примерная стоимость</dt><dd>4 350 ₽</dd></dl></div>
+                <div class="surface"><div class="surface-head"><h2>История</h2></div><ol class="timeline"><li><span></span><div><strong>Заявка создана</strong><small>21 сен 2026, 14:12 · Марина Волкова</small></div></li><li class="current"><span></span><div><strong>Ожидает вашего решения</strong><small>Экземпляр автоматически не назначается</small></div></li></ol></div>
+              </div>
+              <aside>
+                <div class="surface renter-card"><span class="avatar renter-avatar">М</span><h2>Марина Волкова</h2><p class="muted">Арендатор</p><dl class="summary-list"><dt>Подала заявку</dt><dd>3 минуты назад</dd><dt>На этот товар</dt><dd>2 ожидающие заявки</dd></dl></div>
+                <div class="action-panel"><button class="btn btn-primary btn-wide" type="button" disabled>Забронировать</button><p>Кнопка показана для будущего этапа. Назначение экземпляра пока не реализуется.</p><a class="btn btn-danger btn-wide" href="#manager-cancel">Отменить заявку</a></div>
+              </aside>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const screens = new Set([
+      "product-guest", "login-return", "product-renter", "request-limit",
+      "request-form", "request-success", "renter-requests", "renter-detail",
+      "cancel-request", "manager-cancel", "manager-queue", "manager-detail"
+    ]);
+
+    function showScreen() {
+      const requested = location.hash.slice(1);
+      const selected = screens.has(requested) ? requested : "product-guest";
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.toggle("active", screen.id === selected));
+      document.querySelectorAll(".prototype-nav a").forEach((link) => {
+        if (link.hash === `#${selected}`) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+      const role = document.getElementById(selected).dataset.role;
+      document.querySelectorAll(".header-profile").forEach((profile) => profile.classList.toggle("active", profile.dataset.role === role));
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => window.scrollTo(0, 0));
+    }
+
+    function parseDateTime(dateId, timeId) {
+      const date = document.getElementById(dateId).value;
+      const time = document.getElementById(timeId).value;
+      return date && time ? new Date(`${date}T${time}:00+03:00`) : null;
+    }
+
+    function formatInputDate(date) {
+      const local = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+      return local.toISOString().slice(0, 10);
+    }
+
+    function formatInputTime(date) {
+      const local = new Date(date.getTime() + 3 * 60 * 60 * 1000);
+      return local.toISOString().slice(11, 16);
+    }
+
+    function updateReturnFromDuration() {
+      const pickup = parseDateTime("pickup-date", "pickup-time");
+      if (!pickup) return;
+      const days = Math.max(0, Number(document.getElementById("duration-days").value) || 0);
+      const hours = Math.max(0, Number(document.getElementById("duration-hours").value) || 0);
+      const result = new Date(pickup.getTime() + (days * 24 + hours) * 60 * 60 * 1000);
+      document.getElementById("return-date").value = formatInputDate(result);
+      document.getElementById("return-time").value = formatInputTime(result);
+      updateEstimate();
+    }
+
+    function updateDurationFromReturn() {
+      const pickup = parseDateTime("pickup-date", "pickup-time");
+      const plannedReturn = parseDateTime("return-date", "return-time");
+      if (!pickup || !plannedReturn) return;
+      const durationHours = Math.round((plannedReturn - pickup) / 3600000);
+      const error = document.getElementById("schedule-error");
+      error.hidden = durationHours >= 0;
+      if (durationHours < 0) return;
+      document.getElementById("duration-days").value = Math.floor(durationHours / 24);
+      document.getElementById("duration-hours").value = durationHours % 24;
+      updateEstimate();
+    }
+
+    function updateEstimate() {
+      const pickup = parseDateTime("pickup-date", "pickup-time");
+      const plannedReturn = parseDateTime("return-date", "return-time");
+      if (!pickup || !plannedReturn || plannedReturn < pickup) return;
+      const minutes = Math.ceil((plannedReturn - pickup) / 60000);
+      const value = 30 + minutes * 3;
+      const days = Math.floor(minutes / 1440);
+      const hours = Math.floor((minutes % 1440) / 60);
+      const parts = [];
+      if (days) parts.push(`${days} дн.`);
+      if (hours) parts.push(`${hours} ч.`);
+      if (!parts.length) parts.push(`${minutes} мин.`);
+      document.getElementById("estimated-cost").textContent = `${value.toLocaleString("ru-RU")} ₽`;
+      document.getElementById("estimated-details").textContent = `${parts.join(" ")} (${minutes.toLocaleString("ru-RU")} мин) × 3 ₽/мин + 30 ₽ стартовая стоимость`;
+    }
+
+    document.getElementById("request-demo-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      if (!document.getElementById("schedule-error").hidden) return;
+      location.hash = "request-success";
+    });
+    ["duration-days", "duration-hours", "pickup-date", "pickup-time"].forEach((id) => document.getElementById(id).addEventListener("input", updateReturnFromDuration));
+    ["return-date", "return-time"].forEach((id) => document.getElementById(id).addEventListener("input", updateDurationFromReturn));
+
+    const hiddenPreference = localStorage.getItem("stage7-hide-unavailable") === "true";
+    const hideUnavailable = document.getElementById("hide-unavailable");
+    hideUnavailable.checked = hiddenPreference;
+    function applyQueuePreference() {
+      document.querySelectorAll(".no-stock-row, .queue-group-label").forEach((row) => row.hidden = hideUnavailable.checked);
+      localStorage.setItem("stage7-hide-unavailable", String(hideUnavailable.checked));
+      document.getElementById("saved-indicator").classList.add("visible");
+      setTimeout(() => document.getElementById("saved-indicator").classList.remove("visible"), 1400);
+    }
+    hideUnavailable.addEventListener("change", applyQueuePreference);
+    document.getElementById("queue-sort").addEventListener("change", () => {
+      localStorage.setItem("stage7-queue-sort", document.getElementById("queue-sort").value);
+      document.getElementById("saved-indicator").classList.add("visible");
+      setTimeout(() => document.getElementById("saved-indicator").classList.remove("visible"), 1400);
+    });
+    const storedSort = localStorage.getItem("stage7-queue-sort");
+    if (storedSort) document.getElementById("queue-sort").value = storedSort;
+    applyQueuePreference();
+    addEventListener("hashchange", showScreen);
+    showScreen();
+  </script>
+</body>
+</html>

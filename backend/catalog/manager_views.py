@@ -4,6 +4,10 @@ from decimal import Decimal
 from typing import Any
 from uuid import UUID
 
+from applications.services import (
+    cancel_excess_applications,
+    cancel_waiting_for_product,
+)
 from django.core.exceptions import ValidationError as ModelValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
@@ -379,6 +383,7 @@ class ManagerInstancesView(APIView):
 class ManagerInstanceView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def delete(self, request: Request, pk: int, instance_id: UUID) -> Response:
         product = owned_product(request, pk)
         editable_product(product)
@@ -392,6 +397,7 @@ class ManagerInstanceView(APIView):
         instance.status = ProductInstance.Status.DELETED
         instance.is_deleted = True
         instance.save()
+        cancel_excess_applications(product)
         return Response(status=204)
 
 
@@ -411,6 +417,7 @@ class ManagerSubmitView(APIView):
 class ManagerFreezeView(APIView):
     permission_classes = [IsAuthenticated]
 
+    @transaction.atomic
     def post(self, request: Request, pk: int) -> Response:
         product = owned_product(request, pk)
         if product.status != Product.Status.PUBLISHED:
@@ -420,4 +427,8 @@ class ManagerFreezeView(APIView):
             product.save()
         except ModelValidationError as exc:
             raise model_error(exc) from exc
+        cancel_waiting_for_product(
+            product,
+            "Товар заморожен менеджером и больше не принимает заявки.",
+        )
         return Response(product_data(product))

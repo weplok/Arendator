@@ -68,6 +68,12 @@ export function LoginPage() {
           </Typography>
         </header>
 
+        {searchParams.get("notice") === "application" ? (
+          <Alert severity="info">
+            Подать заявку может только авторизованный арендатор
+          </Alert>
+        ) : null}
+
         {loginMutation.isError ? (
           <Alert ref={errorSummaryRef} tabIndex={-1} severity="error">
             {getSubmitErrorMessage(loginMutation.error)}
