@@ -1,14 +1,20 @@
 """Transactional business operations for waiting applications."""
 
 from datetime import datetime
+from decimal import Decimal
 
-from applications.models import ApplicationEvent, RentalApplication
-from django.db import transaction
+from applications.models import (
+    ApplicationEvent,
+    BookingEvent,
+    RentalApplication,
+    RentalBooking,
+)
+from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.utils import timezone
 from rest_framework.exceptions import APIException, ValidationError
 
-from catalog.models import Product
+from catalog.models import Product, ProductInstance
 from users.models import User
 
 
@@ -16,6 +22,18 @@ class ApplicationLimitReached(APIException):
     status_code = 409
     default_code = "application_limit_reached"
     default_detail = "Достигнут лимит ожидающих заявок на товар."
+
+
+class InstanceUnavailable(APIException):
+    status_code = 409
+    default_code = "instance_unavailable"
+    default_detail = "Выбранный экземпляр уже недоступен."
+
+
+class BookingDeadlinePassed(APIException):
+    status_code = 409
+    default_code = "booking_deadline_passed"
+    default_detail = "Крайний срок получения уже наступил."
 
 
 def expire_waiting_applications() -> None:
@@ -156,3 +174,172 @@ def cancel_excess_applications(product: Product) -> None:
                 actor=ApplicationEvent.Actor.SYSTEM,
                 reason="Лимит заявок уменьшился после удаления экземпляра.",
             )
+
+
+@transaction.atomic
+def create_booking(
+    *,
+    application_id: int,
+    instance_id: str,
+    manager: User,
+) -> tuple[RentalBooking, bool]:
+    application = (
+        RentalApplication.objects.select_for_update()
+        .select_related("product")
+        .get(pk=application_id)
+    )
+    existing = RentalBooking.objects.filter(application=application).first()
+    if existing is not None:
+        if str(existing.instance_id) == str(instance_id):
+            return existing, False
+        raise ValidationError(
+            {"application": "Для этой заявки бронь уже была создана."}
+        )
+    if application.product.manager_id != manager.id:
+        raise ValidationError({"application": "Заявка относится к другому менеджеру."})
+    if application.status != RentalApplication.Status.WAITING:
+        raise ValidationError({"application": "Заявка больше не ожидает решения."})
+    if application.pickup_deadline_at <= timezone.now():
+        raise BookingDeadlinePassed()
+
+    instance = ProductInstance.objects.select_for_update().get(pk=instance_id)
+    if (
+        instance.product_id != application.product_id
+        or instance.is_deleted
+        or instance.status != ProductInstance.Status.AVAILABLE
+    ):
+        raise InstanceUnavailable(
+            {
+                "detail": "Выбранный экземпляр уже недоступен.",
+                "instance": "Обновите список и выберите свободный экземпляр.",
+            }
+        )
+
+    try:
+        booking = RentalBooking.objects.create(
+            application=application,
+            instance=instance,
+            minute_rate_snapshot=application.product.minute_rate,
+            starting_price_snapshot=application.product.minute_rate * Decimal("10"),
+        )
+    except IntegrityError as exc:
+        raise InstanceUnavailable() from exc
+
+    instance.status = ProductInstance.Status.RESERVED
+    instance.save(update_fields=("status",))
+    application.status = RentalApplication.Status.BOOKED
+    application.save(update_fields=("status", "updated_at"))
+    ApplicationEvent.objects.create(
+        application=application,
+        event=ApplicationEvent.Event.BOOKED,
+        actor=ApplicationEvent.Actor.MANAGER,
+    )
+    BookingEvent.objects.create(
+        booking=booking,
+        event=BookingEvent.Event.CREATED,
+        actor=BookingEvent.Actor.MANAGER,
+    )
+    return booking, True
+
+
+@transaction.atomic
+def cancel_booking(
+    *, booking: RentalBooking, actor: str, reason: str = ""
+) -> RentalBooking:
+    locked = (
+        RentalBooking.objects.select_for_update()
+        .select_related("instance")
+        .get(pk=booking.pk)
+    )
+    if locked.status not in (
+        RentalBooking.Status.ACTIVE,
+        RentalBooking.Status.ARRIVED,
+    ):
+        raise ValidationError({"status": "Эта бронь уже завершена."})
+    now = timezone.now()
+    locked.status = RentalBooking.Status.CANCELLED
+    locked.cancellation_reason = reason
+    locked.ended_at = now
+    locked.save(
+        update_fields=(
+            "status",
+            "cancellation_reason",
+            "ended_at",
+            "updated_at",
+        )
+    )
+    instance = locked.instance
+    instance.status = ProductInstance.Status.AVAILABLE
+    instance.save(update_fields=("status",))
+    BookingEvent.objects.create(
+        booking=locked,
+        event=BookingEvent.Event.CANCELLED,
+        actor=actor,
+        note=reason.strip(),
+    )
+    return locked
+
+
+def confirm_booking_arrival(*, booking: RentalBooking) -> RentalBooking:
+    deadline_passed = False
+    with transaction.atomic():
+        locked = (
+            RentalBooking.objects.select_for_update()
+            .select_related("application", "instance")
+            .get(pk=booking.pk)
+        )
+        if locked.status == RentalBooking.Status.ARRIVED:
+            return locked
+        if locked.status != RentalBooking.Status.ACTIVE:
+            raise ValidationError(
+                {"status": "Прибытие нельзя подтвердить для этой брони."}
+            )
+        now = timezone.now()
+        if locked.application.pickup_deadline_at <= now:
+            _expire_locked_booking(locked, now)
+            deadline_passed = True
+        else:
+            locked.status = RentalBooking.Status.ARRIVED
+            locked.arrival_confirmed_at = now
+            locked.save(update_fields=("status", "arrival_confirmed_at", "updated_at"))
+            instance = locked.instance
+            instance.status = ProductInstance.Status.PICKUP_IN_PROGRESS
+            instance.save(update_fields=("status",))
+            BookingEvent.objects.create(
+                booking=locked,
+                event=BookingEvent.Event.ARRIVAL_CONFIRMED,
+                actor=BookingEvent.Actor.MANAGER,
+            )
+    if deadline_passed:
+        raise BookingDeadlinePassed()
+    return locked
+
+
+@transaction.atomic
+def expire_due_bookings() -> int:
+    now = timezone.now()
+    bookings = list(
+        RentalBooking.objects.select_for_update()
+        .select_related("application", "instance")
+        .filter(
+            status=RentalBooking.Status.ACTIVE,
+            application__pickup_deadline_at__lte=now,
+        )
+    )
+    for booking in bookings:
+        _expire_locked_booking(booking, now)
+    return len(bookings)
+
+
+def _expire_locked_booking(booking: RentalBooking, expired_at: datetime) -> None:
+    booking.status = RentalBooking.Status.EXPIRED
+    booking.ended_at = expired_at
+    booking.save(update_fields=("status", "ended_at", "updated_at"))
+    instance = booking.instance
+    instance.status = ProductInstance.Status.AVAILABLE
+    instance.save(update_fields=("status",))
+    BookingEvent.objects.create(
+        booking=booking,
+        event=BookingEvent.Event.EXPIRED,
+        actor=BookingEvent.Actor.SYSTEM,
+    )

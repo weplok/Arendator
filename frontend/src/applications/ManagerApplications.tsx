@@ -4,14 +4,20 @@ import {
   Box,
   Button,
   Checkbox,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
   FormControlLabel,
+  FormControl,
+  FormHelperText,
+  FormLabel,
   MenuItem,
   Paper,
+  Radio,
+  RadioGroup,
   TextField,
   Typography,
 } from "@mui/material";
@@ -21,6 +27,7 @@ import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
 import {
   cancelManagerApplication,
+  createBookingFromApplication,
   getManagerApplication,
   getManagerApplications,
   MANAGER_APPLICATIONS_KEY,
@@ -29,6 +36,8 @@ import {
   type RentalApplication,
   updateManagerApplicationPreferences,
 } from "../api/applications";
+import { ApiError } from "../api/client";
+import { parseCreatedBooking } from "../api/bookings";
 import { ApplicationDetail } from "./RenterApplications";
 import {
   formatMoscowDateTime,
@@ -175,10 +184,95 @@ export function ManagerApplicationDetailPage() {
   if (query.isError) return <Alert severity="error">Не удалось загрузить заявку.</Alert>;
   return (
     <>
-      <ApplicationDetail application={query.data} audience="manager" onCancel={() => setCancelOpen(true)} />
+      <ApplicationDetail
+        application={query.data}
+        audience="manager"
+        managerActions={<BookingAssignment application={query.data} onConflict={() => query.refetch()} />}
+        onCancel={() => setCancelOpen(true)}
+      />
       <ManagerCancelDialog application={cancelOpen ? query.data : null} onClose={() => setCancelOpen(false)} />
     </>
   );
+}
+
+function BookingAssignment({ application, onConflict }: { application: RentalApplication; onConflict: () => void }) {
+  const [selectedInstanceId, setSelectedInstanceId] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const navigate = useNavigate();
+  const availableCount = application.instances?.filter((instance) => instance.status === "AVAILABLE").length ?? 0;
+  const mutation = useMutation({
+    mutationFn: async () => parseCreatedBooking(
+      await createBookingFromApplication(application.id, selectedInstanceId),
+    ),
+    onSuccess: (booking) => navigate(`/manager/bookings/${booking.id}?created=1`),
+    onError: (error) => {
+      if (error instanceof ApiError && error.code === "instance_unavailable") {
+        setConfirmOpen(false);
+        setSelectedInstanceId("");
+        onConflict();
+      }
+    },
+  });
+
+  if (application.status !== "WAITING") {
+    return <Alert severity="info" sx={{ mt: 2 }}>Эта заявка больше не ожидает назначения.</Alert>;
+  }
+  return <>
+    <Paper variant="outlined" className="booking-assignment-card">
+      <Typography component="h2" variant="h6">Назначить экземпляр</Typography>
+      <Chip
+        color={availableCount > 0 ? "success" : "default"}
+        label={availableCount > 0 ? `Можно забронировать · ${availableCount} свободно` : "Пока нельзя забронировать · свободно 0"}
+        sx={{ my: 2 }}
+      />
+      {application.instances?.length ? (
+        <FormControl error={mutation.isError} fullWidth>
+          <FormLabel id="instance-selection-label">Экземпляры товара</FormLabel>
+          <RadioGroup
+            aria-labelledby="instance-selection-label"
+            name="booking_instance"
+            value={selectedInstanceId}
+            onChange={(event) => setSelectedInstanceId(event.target.value)}
+          >
+            {application.instances.map((instance) => (
+              <FormControlLabel
+                key={instance.id}
+                value={instance.id}
+                disabled={instance.status !== "AVAILABLE"}
+                control={<Radio />}
+                label={`${instance.inventory_number} · ${instance.status_label}`}
+              />
+            ))}
+          </RadioGroup>
+          <FormHelperText>
+            {mutation.isError ? "Выбранный экземпляр уже недоступен. Список обновлён — выберите другой." : "Автоматического выбора нет. Доступность проверится ещё раз при создании брони."}
+          </FormHelperText>
+        </FormControl>
+      ) : <Typography color="text.secondary">У товара нет активных экземпляров.</Typography>}
+      <Button
+        variant="contained"
+        fullWidth
+        disabled={!selectedInstanceId || availableCount === 0}
+        onClick={() => setConfirmOpen(true)}
+        sx={{ mt: 2 }}
+      >
+        Проверить и создать бронь
+      </Button>
+    </Paper>
+    <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)} aria-labelledby="confirm-booking-title">
+      <DialogTitle id="confirm-booking-title">Проверить бронь</DialogTitle>
+      <DialogContent>
+        <Typography><strong>{application.renter.name}</strong> · {application.product.name}</Typography>
+        <Typography sx={{ mt: 2 }}>Экземпляр: <strong>{application.instances?.find((instance) => instance.id === selectedInstanceId)?.inventory_number}</strong></Typography>
+        <Typography>Удерживать до {formatMoscowDateTime(application.pickup_deadline_at)} МСК</Typography>
+        <Alert severity="info" sx={{ mt: 2 }}>Плановый возврат не создаёт интервальную бронь. Экземпляр удерживается только до срока получения.</Alert>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setConfirmOpen(false)}>Назад</Button>
+        <Button variant="contained" disabled={mutation.isPending} onClick={() => mutation.mutate()}>{mutation.isPending ? "Создаём…" : "Создать бронь"}</Button>
+      </DialogActions>
+    </Dialog>
+  </>;
 }
 
 function ManagerCancelDialog({ application, onClose }: { application: RentalApplication | null; onClose: () => void }) {

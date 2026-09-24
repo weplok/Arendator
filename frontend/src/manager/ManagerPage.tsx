@@ -36,9 +36,10 @@ export function ManagerLayout() {
       <NavLink to="/account" end>Обзор</NavLink>
       <NavLink to="/manager/products">Мои товары</NavLink>
       <NavLink to="/manager/applications">Заявки</NavLink>
+      <NavLink to="/manager/bookings">Брони</NavLink>
       <NavLink to="/manager/rejected">Отклонённые</NavLink>
       <NavLink to="/manager/archive">Архив</NavLink>
-      <p>Здесь вы управляете только своим каталогом и заявками на свои товары.</p>
+      <p>Здесь вы управляете только своим каталогом, заявками и бронями на свои товары.</p>
     </nav>
     <div className="manager-main" key={location.pathname}><Outlet /></div>
   </Container>;

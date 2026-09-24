@@ -2,7 +2,12 @@ import { z } from "zod";
 
 import { getJson, mutateJson, postJson } from "./client";
 
-const applicationStatusSchema = z.enum(["WAITING", "CANCELLED", "EXPIRED"]);
+const applicationStatusSchema = z.enum([
+  "WAITING",
+  "BOOKED",
+  "CANCELLED",
+  "EXPIRED",
+]);
 const applicationPhotoSchema = z.object({
   id: z.number().int(),
   url: z.string(),
@@ -27,7 +32,7 @@ const applicationProductSchema = z.object({
   total_instances_count: z.number().int().nonnegative(),
 });
 const applicationEventSchema = z.object({
-  event: z.enum(["CREATED", "CANCELLED", "EXPIRED"]),
+  event: z.enum(["CREATED", "BOOKED", "CANCELLED", "EXPIRED"]),
   actor: z.enum(["RENTER", "MANAGER", "SYSTEM"]),
   created_at: z.string(),
   note: z.string(),
@@ -48,6 +53,21 @@ export const rentalApplicationSchema = z.object({
     avatar: z.string().nullable(),
   }),
   history: z.array(applicationEventSchema),
+  instances: z.array(z.object({
+    id: z.string().uuid(),
+    inventory_number: z.string(),
+    instance_number: z.number().int().positive(),
+    status: z.enum([
+      "AVAILABLE",
+      "RESERVED",
+      "PICKUP_IN_PROGRESS",
+      "RENTED",
+      "RETURN_INSPECTION",
+      "MAINTENANCE",
+      "DELETED",
+    ]),
+    status_label: z.string(),
+  })).optional(),
 });
 const managerOrderingSchema = z.enum(["EARLIEST", "LATEST", "NEAREST"]);
 const managerPreferencesSchema = z.object({
@@ -146,5 +166,15 @@ export async function updateManagerApplicationPreferences(
       "PATCH",
       JSON.stringify(preferences),
     ),
+  );
+}
+
+export async function createBookingFromApplication(
+  applicationId: number,
+  instanceId: string,
+): Promise<unknown> {
+  return postJson(
+    `/api/v1/manager/applications/${applicationId}/book/`,
+    JSON.stringify({ instance_id: instanceId }),
   );
 }

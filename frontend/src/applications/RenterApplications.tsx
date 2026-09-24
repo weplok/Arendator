@@ -15,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Link as RouterLink,
   NavLink,
@@ -42,9 +42,9 @@ export function RenterLayout() {
       <nav className="renter-sidebar" aria-label="Кабинет арендатора">
         <span className="renter-sidebar__caption">Кабинет арендатора</span>
         <NavLink to="/account" end>Заявки</NavLink>
-        <span className="renter-sidebar__disabled">Брони</span>
+        <NavLink to="/account/bookings">Брони</NavLink>
         <span className="renter-sidebar__disabled">Аренды</span>
-        <p>На этом этапе доступны подача, просмотр и отмена ожидающих заявок.</p>
+        <p>Бронь гарантирует наличие товара только до крайнего срока получения.</p>
       </nav>
       <div className="renter-main"><Outlet /></div>
     </Container>
@@ -147,8 +147,9 @@ export function ApplicationStatus({ status }: { status: RentalApplication["statu
     WAITING: "Ожидает решения",
     CANCELLED: "Отменена",
     EXPIRED: "Срок получения истёк",
+    BOOKED: "Создана бронь",
   } as const;
-  return <Chip size="small" color={status === "WAITING" ? "default" : "warning"} label={labels[status]} />;
+  return <Chip size="small" color={status === "BOOKED" ? "success" : status === "WAITING" ? "default" : "warning"} label={labels[status]} />;
 }
 
 export function RenterApplicationDetailPage() {
@@ -182,10 +183,11 @@ export function RenterApplicationDetailPage() {
 interface ApplicationDetailProps {
   application: RentalApplication;
   audience: "renter" | "manager";
+  managerActions?: ReactNode;
   onCancel: () => void;
 }
 
-export function ApplicationDetail({ application, audience, onCancel }: ApplicationDetailProps) {
+export function ApplicationDetail({ application, audience, managerActions, onCancel }: ApplicationDetailProps) {
   return (
     <>
       <Typography className="application-crumb" color="text.secondary">
@@ -230,8 +232,7 @@ export function ApplicationDetail({ application, audience, onCancel }: Applicati
               <div><small>Арендатор</small><strong>{application.renter.name}</strong></div>
             </Paper>
           )}
-          {audience === "manager" ? <Button variant="contained" fullWidth disabled sx={{ mt: 2 }}>Забронировать</Button> : null}
-          {audience === "manager" ? <Typography color="text.secondary" variant="caption">Бронирование будет доступно на следующем этапе.</Typography> : null}
+          {audience === "manager" ? managerActions : null}
           {application.status === "WAITING" ? <Button color="error" variant="outlined" fullWidth sx={{ mt: 2 }} onClick={onCancel}>Отменить заявку</Button> : null}
         </aside>
       </Box>
@@ -282,6 +283,7 @@ function CancelApplicationDialog({ application, onClose }: { application: Rental
 
 function historyLabel(event: RentalApplication["history"][number]["event"]): string {
   if (event === "CREATED") return "Заявка создана";
+  if (event === "BOOKED") return "Создана бронь";
   if (event === "EXPIRED") return "Срок получения истёк";
   return "Заявка отменена";
 }

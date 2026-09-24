@@ -1,14 +1,22 @@
 """Versioned API routes for rental applications."""
 
 from applications.views import (
+    ManagerApplicationBookView,
     ManagerApplicationCancelView,
     ManagerApplicationDetailView,
     ManagerApplicationListView,
+    ManagerBookingArrivalView,
+    ManagerBookingCancelView,
+    ManagerBookingDetailView,
+    ManagerBookingListView,
     ManagerQueuePreferenceView,
     ProductApplicationCreateView,
     RenterApplicationCancelView,
     RenterApplicationDetailView,
     RenterApplicationListView,
+    RenterBookingCancelView,
+    RenterBookingDetailView,
+    RenterBookingListView,
 )
 from django.urls import path
 
@@ -47,8 +55,44 @@ urlpatterns = [
         name="manager-cancel",
     ),
     path(
+        "manager/applications/<int:pk>/book/",
+        ManagerApplicationBookView.as_view(),
+        name="manager-book",
+    ),
+    path(
         "manager/application-preferences/",
         ManagerQueuePreferenceView.as_view(),
         name="manager-preferences",
+    ),
+    path("bookings/", RenterBookingListView.as_view(), name="renter-booking-list"),
+    path(
+        "bookings/<int:pk>/",
+        RenterBookingDetailView.as_view(),
+        name="renter-booking-detail",
+    ),
+    path(
+        "bookings/<int:pk>/cancel/",
+        RenterBookingCancelView.as_view(),
+        name="renter-booking-cancel",
+    ),
+    path(
+        "manager/bookings/",
+        ManagerBookingListView.as_view(),
+        name="manager-booking-list",
+    ),
+    path(
+        "manager/bookings/<int:pk>/",
+        ManagerBookingDetailView.as_view(),
+        name="manager-booking-detail",
+    ),
+    path(
+        "manager/bookings/<int:pk>/cancel/",
+        ManagerBookingCancelView.as_view(),
+        name="manager-booking-cancel",
+    ),
+    path(
+        "manager/bookings/<int:pk>/arrival/",
+        ManagerBookingArrivalView.as_view(),
+        name="manager-booking-arrival",
     ),
 ]

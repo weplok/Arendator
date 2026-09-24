@@ -7,6 +7,12 @@ import { LoginPage } from "./auth/LoginPage";
 import { RegisterPage } from "./auth/RegisterPage";
 import { ApplicationFormPage } from "./applications/ApplicationFormPage";
 import {
+  ManagerBookingDetailPage,
+  ManagerBookingsPage,
+  RenterBookingDetailPage,
+  RenterBookingsPage,
+} from "./applications/BookingPages";
+import {
   ManagerApplicationDetailPage,
   ManagerApplicationsPage,
 } from "./applications/ManagerApplications";
@@ -87,10 +93,14 @@ function SessionApp() {
               >
                 {user?.role === "MANAGER" ? <Route index element={<ManagerListPage section="overview" />} /> : <Route index element={<RenterApplicationsPage />} />}
                 {user?.role === "RENTER" ? <Route path="applications/:applicationId" element={<RenterApplicationDetailPage />} /> : null}
+                {user?.role === "RENTER" ? <Route path="bookings" element={<RenterBookingsPage />} /> : null}
+                {user?.role === "RENTER" ? <Route path="bookings/:bookingId" element={<RenterBookingDetailPage />} /> : null}
               </Route>
               {user?.role === "MANAGER" ? <Route path="/manager" element={<ManagerLayout />}>
                 <Route path="applications" element={<ManagerApplicationsPage />} />
                 <Route path="applications/:applicationId" element={<ManagerApplicationDetailPage />} />
+                <Route path="bookings" element={<ManagerBookingsPage />} />
+                <Route path="bookings/:bookingId" element={<ManagerBookingDetailPage />} />
                 <Route path="products" element={<ManagerListPage section="products" />} />
                 <Route path="rejected" element={<ManagerListPage section="rejected" />} />
                 <Route path="archive" element={<ManagerListPage section="archive" />} />

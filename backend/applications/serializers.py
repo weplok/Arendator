@@ -5,13 +5,16 @@ from typing import Any, cast
 
 from applications.models import (
     ApplicationEvent,
+    BookingEvent,
     ManagerQueuePreference,
     RentalApplication,
+    RentalBooking,
 )
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from catalog.models import ProductInstance
 from catalog.serializers import PickupPointSerializer, ProductPhotoSerializer
 
 
@@ -126,6 +129,118 @@ class RentalApplicationSerializer(serializers.ModelSerializer[RentalApplication]
         )
         total = (minutes + Decimal("10")) * application.product.minute_rate
         return str(total.quantize(Decimal("0.01")))
+
+
+class ProductInstanceChoiceSerializer(serializers.ModelSerializer[ProductInstance]):
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = ProductInstance
+        fields = (
+            "id",
+            "inventory_number",
+            "instance_number",
+            "status",
+            "status_label",
+        )
+
+
+class ManagerRentalApplicationSerializer(RentalApplicationSerializer):
+    instances = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RentalApplication
+        fields = (
+            "id",
+            "status",
+            "pickup_deadline_at",
+            "planned_return_at",
+            "created_at",
+            "updated_at",
+            "cancellation_reason",
+            "estimated_cost",
+            "product",
+            "renter",
+            "history",
+            "instances",
+        )
+
+    @extend_schema_field(ProductInstanceChoiceSerializer(many=True))
+    def get_instances(self, application: RentalApplication) -> list[dict[str, Any]]:
+        instances = application.product.instances.filter(is_deleted=False).order_by(
+            "instance_number"
+        )
+        return list(ProductInstanceChoiceSerializer(instances, many=True).data)
+
+
+class BookingEventSerializer(serializers.ModelSerializer[BookingEvent]):
+    class Meta:
+        model = BookingEvent
+        fields = ("event", "actor", "created_at", "note")
+
+
+class BookingInstanceSerializer(serializers.ModelSerializer[ProductInstance]):
+    status_label = serializers.CharField(source="get_status_display", read_only=True)
+
+    class Meta:
+        model = ProductInstance
+        fields = ("id", "inventory_number", "instance_number", "status", "status_label")
+
+
+class RentalBookingSerializer(serializers.ModelSerializer[RentalBooking]):
+    application_id = serializers.IntegerField(read_only=True)
+    pickup_deadline_at = serializers.DateTimeField(
+        source="application.pickup_deadline_at", read_only=True
+    )
+    planned_return_at = serializers.DateTimeField(
+        source="application.planned_return_at", read_only=True
+    )
+    product = ApplicationProductSerializer(source="application.product", read_only=True)
+    renter = ApplicationRenterSerializer(source="application.renter", read_only=True)
+    manager = serializers.SerializerMethodField()
+    history = BookingEventSerializer(many=True, read_only=True)
+    instance = serializers.SerializerMethodField()
+
+    class Meta:
+        model = RentalBooking
+        fields = (
+            "id",
+            "application_id",
+            "status",
+            "pickup_deadline_at",
+            "planned_return_at",
+            "minute_rate_snapshot",
+            "starting_price_snapshot",
+            "arrival_confirmed_at",
+            "cancellation_reason",
+            "ended_at",
+            "created_at",
+            "updated_at",
+            "product",
+            "renter",
+            "manager",
+            "instance",
+            "history",
+        )
+
+    def get_manager(self, booking: RentalBooking) -> dict[str, Any]:
+        manager = booking.application.product.manager
+        return {
+            "id": manager.id,
+            "name": manager.name,
+            "avatar": manager.avatar.url if manager.avatar else None,
+        }
+
+    @extend_schema_field(BookingInstanceSerializer(allow_null=True))
+    def get_instance(self, booking: RentalBooking) -> dict[str, Any] | None:
+        request = self.context.get("request")
+        if request is None or request.user.role != "MANAGER":
+            return None
+        return cast(dict[str, Any], BookingInstanceSerializer(booking.instance).data)
+
+
+class BookingCreateSerializer(serializers.Serializer):
+    instance_id = serializers.UUIDField()
 
 
 class ManagerQueuePreferenceSerializer(

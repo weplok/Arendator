@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f5">
+  <title>Этап №8 — бронирование и прибытие</title>
+  <link rel="stylesheet" href="manager-stage-4.css">
+  <link rel="stylesheet" href="applications-stage-7.css">
+  <link rel="stylesheet" href="bookings-stage-8.css">
+</head>
+<body>
+  <a class="skip-link" href="#stage8-content">К основному содержанию</a>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 10 9-5M12 12 3 7m9 5v10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-request" viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v16H5V5a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 8h8M8 12h8M8 16h5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M7 3h10a2 2 0 0 1 2 2v17l-7-4-7 4V5a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 21c.8-4.1 3.4-6 8-6s7.2 1.9 8 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-8 12-8 12S4 15 4 10a8 8 0 1 1 16 0Z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="10" r="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="M12 9v5m0 3v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-drill" viewBox="0 0 90 90"><path d="M18 24h48l9 10-8 9H44l-7 8H24V40h-6zM47 43v25l-9 7h-9V48M18 28h-8v10h8M66 29v12M51 68h-9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></symbol>
+    <symbol id="i-laser" viewBox="0 0 90 90"><path d="M22 31h46v31H22zM30 31l6-12h18l6 12M36 46h18M45 37v18M16 68h58" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></symbol>
+    <symbol id="i-cleaner" viewBox="0 0 90 90"><path d="M29 25h31v48H29zM35 18h19v7M37 37h15M42 49h5M60 38h8c8 0 8 13 0 13h-8M36 73v6M53 73v6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></symbol>
+  </svg>
+
+  <aside class="prototype-bar" aria-label="Навигация по эскизам">
+    <div class="prototype-head"><strong>Этап №8 · бронирование</strong><span>Интерактивные эскизы. Даты и данные демонстрационные.</span></div>
+    <nav class="prototype-nav" aria-label="Экраны эскизов">
+      <a href="#manager-bookings">01 Текущие брони</a>
+      <a href="#manager-requests">02 Заявки</a>
+      <a href="#request-ready">03 Назначение</a>
+      <a href="#booking-confirm">04 Проверка</a>
+      <a href="#booking-success">05 Бронь создана</a>
+      <a href="#manager-booking">06 Детали менеджера</a>
+      <a href="#arrival-confirm">07 Прибытие</a>
+      <a href="#pickup-progress">08 Получение</a>
+      <a href="#renter-bookings">09 Брони арендатора</a>
+      <a href="#renter-booking">10 Детали арендатора</a>
+      <a href="#cancel-renter">11 Отмена арендатора</a>
+      <a href="#cancel-manager">12 Отмена менеджера</a>
+      <a href="#booking-expired">13 Истечение</a>
+      <a href="#assignment-conflict">14 Конфликт</a>
+    </nav>
+  </aside>
+
+  <div class="app" id="stage8-content" tabindex="-1">
+    <header class="app-header">
+      <a class="brand" href="#manager-bookings"><span class="brand-mark" aria-hidden="true"></span>Арентатор</a>
+      <div class="header-right">
+        <div class="header-profile" data-role="manager"><a class="text-link" href="#manager-requests">Заявки</a><a class="text-link" href="#manager-bookings">Брони</a><span class="account"><span class="avatar">А</span><span>Алексей<small>Менеджер</small></span></span></div>
+        <div class="header-profile" data-role="renter"><a class="text-link" href="#renter-bookings">Мои брони</a><span class="account"><span class="avatar">М</span><span>Марина<small>Арендатор</small></span></span></div>
+      </div>
+    </header>
+
+    <section class="screen dashboard-screen" id="manager-bookings" data-role="manager">
+      <div class="app-body dashboard-body">
+        <aside class="sidebar">
+          <div class="sidebar-label">Кабинет менеджера</div>
+          <nav aria-label="Навигация менеджера">
+            <span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span>
+            <span class="side-link"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои товары</span>
+            <a class="side-link" href="#manager-requests"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки <span class="nav-count">8</span></a>
+            <a class="side-link" href="#manager-bookings" aria-current="page"><svg aria-hidden="true"><use href="#i-bookmark"/></svg>Брони <span class="nav-count">5</span></a>
+          </nav>
+          <p class="side-note">Активные брони сортируются по ближайшему сроку получения.</p>
+        </aside>
+        <main class="workspace-main">
+          <div class="page-head"><div><h1 id="manager-bookings-title" tabindex="-1">Текущие брони</h1><p>Удерживаемые экземпляры и арендаторы, которых ожидаете</p></div><span class="status good">5 активных</span></div>
+          <div class="grid-4 booking-stats">
+            <div class="stat"><span class="stat-label">Сегодня</span><div class="stat-value">3</div><small>до 23:59 МСК</small></div>
+            <div class="stat urgent-stat"><span class="stat-label">Ближайший срок</span><div class="stat-value">1:42</div><small>осталось до получения</small></div>
+            <div class="stat"><span class="stat-label">На 3 дня</span><div class="stat-value">4</div><small>включая сегодня</small></div>
+            <div class="stat"><span class="stat-label">Уже прибыли</span><div class="stat-value">1</div><small>получение оформляется</small></div>
+          </div>
+          <div class="notice warning deadline-alert"><svg aria-hidden="true"><use href="#i-alert"/></svg><div><strong>Ближайшая бронь истечёт сегодня в 18:00 МСК</strong><span>Марина Волкова · Аккумуляторная дрель Makita DDF482</span></div><a href="#manager-booking">Открыть</a></div>
+          <div class="surface booking-list-surface">
+            <div class="surface-head booking-list-head">
+              <div><h2>Брони по сроку получения</h2><p>Подтверждённые прибытия остаются в списке до следующего этапа.</p></div>
+              <div class="period-filter" role="group" aria-label="Период броней">
+                <button class="period-button active" type="button" data-window="today" aria-pressed="true">Сегодня</button>
+                <button class="period-button" type="button" data-window="three" aria-pressed="false">3 дня</button>
+                <button class="period-button" type="button" data-window="all" aria-pressed="false">Все</button>
+              </div>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>Товар</th><th>Срок получения</th><th>Арендатор</th><th>Экземпляр</th><th>Статус</th></tr></thead><tbody>
+              <tr class="clickable-row" data-period="today"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><a class="row-link product-title" href="#manager-booking" aria-label="Открыть бронь на аккумуляторную дрель Makita DDF482 для Марины Волковой">Аккумуляторная дрель Makita DDF482</a><div class="product-sub">3 ₽/мин · Сокольники</div></div></div></td><td data-label="Срок"><strong class="deadline danger-text">Сегодня, 18:00</strong><span class="block-muted">Осталось 1 ч 42 мин · МСК</span></td><td data-label="Арендатор">Марина Волкова</td><td data-label="Экземпляр"><strong class="num">D-1042</strong></td><td data-label="Статус"><span class="status warn">Ждёт арендатора</span></td></tr>
+              <tr class="clickable-row" data-period="today"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-laser"/></svg></span><div><a class="row-link product-title" href="#pickup-progress" aria-label="Открыть бронь на лазерный уровень Bosch для Ильи Смирнова">Лазерный уровень Bosch GLL 3-80</a><div class="product-sub">4 ₽/мин · Басманный</div></div></div></td><td data-label="Срок"><strong class="deadline">Сегодня, 20:30</strong><span class="block-muted">Подтверждено в 16:07 · МСК</span></td><td data-label="Арендатор">Илья Смирнов</td><td data-label="Экземпляр"><strong class="num">L-2210</strong></td><td data-label="Статус"><span class="status good">Арендатор прибыл</span></td></tr>
+              <tr class="clickable-row" data-period="today"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-cleaner"/></svg></span><div><a class="row-link product-title" href="#manager-booking" aria-label="Открыть бронь на пароочиститель Karcher SC 3 для Ольги Ким">Пароочиститель Karcher SC 3</a><div class="product-sub">5 ₽/мин · Хамовники</div></div></div></td><td data-label="Срок"><strong class="deadline">Сегодня, 22:00</strong><span class="block-muted">Осталось 5 ч 42 мин · МСК</span></td><td data-label="Арендатор">Ольга Ким</td><td data-label="Экземпляр"><strong class="num">P-0381</strong></td><td data-label="Статус"><span class="status neutral">Ждёт арендатора</span></td></tr>
+              <tr class="clickable-row" data-period="three"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><a class="row-link product-title" href="#manager-booking" aria-label="Открыть бронь на перфоратор Makita HR2470 для Дениса Орлова">Перфоратор Makita HR2470</a><div class="product-sub">4 ₽/мин · Сокольники</div></div></div></td><td data-label="Срок"><strong class="deadline">25 сен, 12:00</strong><span class="block-muted">Завтра · МСК</span></td><td data-label="Арендатор">Денис Орлов</td><td data-label="Экземпляр"><strong class="num">R-0138</strong></td><td data-label="Статус"><span class="status neutral">Ждёт арендатора</span></td></tr>
+              <tr class="clickable-row" data-period="all"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-laser"/></svg></span><div><a class="row-link product-title" href="#manager-booking" aria-label="Открыть бронь на нивелир ADA Cube 360 для Егора Левина">Нивелир ADA Cube 360</a><div class="product-sub">3 ₽/мин · Тверской</div></div></div></td><td data-label="Срок"><strong class="deadline">28 сен, 10:00</strong><span class="block-muted">Через 4 дня · МСК</span></td><td data-label="Арендатор">Егор Левин</td><td data-label="Экземпляр"><strong class="num">N-0064</strong></td><td data-label="Статус"><span class="status neutral">Ждёт арендатора</span></td></tr>
+            </tbody></table></div>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <section class="screen dashboard-screen" id="manager-requests" data-role="manager">
+      <div class="app-body dashboard-body">
+        <aside class="sidebar"><div class="sidebar-label">Кабинет менеджера</div><nav aria-label="Навигация менеджера"><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><span class="side-link"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои товары</span><a class="side-link" href="#manager-requests" aria-current="page"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки <span class="nav-count">8</span></a><a class="side-link" href="#manager-bookings"><svg aria-hidden="true"><use href="#i-bookmark"/></svg>Брони <span class="nav-count">5</span></a></nav><p class="side-note">Свободный экземпляр делает бронирование возможным, но не выбирает заявку автоматически.</p></aside>
+        <main class="workspace-main">
+          <div class="page-head"><div><h1 id="manager-requests-title" tabindex="-1">Заявки</h1><p>Сначала те, для которых сейчас есть свободные экземпляры</p></div><span class="status good">3 можно забронировать</span></div>
+          <div class="notice info queue-explanation"><strong>Вы выбираете заявку самостоятельно</strong><span>Группа «Можно забронировать сейчас» — подсказка о наличии, а не автоматический приоритет.</span></div>
+          <div class="surface booking-list-surface request-readiness-list">
+            <div class="surface-head booking-list-head"><div><h2>Очередь по ближайшему сроку</h2><p>Внутри групп заявки отсортированы по сроку получения.</p></div><a class="text-link" href="applications-stage-7.html#manager-queue">Настройки очереди</a></div>
+            <div class="table-wrap"><table><thead><tr><th>Товар и доступность</th><th>Получение до</th><th>Арендатор</th><th>Статус</th></tr></thead><tbody>
+              <tr class="readiness-group"><td colspan="4"><span class="group-dot good-dot"></span>Можно забронировать сейчас <strong>3</strong></td></tr>
+              <tr class="clickable-row"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><a class="row-link product-title" href="#request-ready" aria-label="Открыть заявку Марины Волковой на дрель Makita DDF482 и назначить экземпляр">Дрель Makita DDF482</a><span class="availability-text good-text">Свободно: 2 из 4</span></div></div></td><td data-label="Срок"><strong>25 сен, 18:00</strong><span class="block-muted">Завтра · МСК</span></td><td data-label="Арендатор">Марина Волкова</td><td data-label="Статус"><span class="status good">Можно забронировать</span></td></tr>
+              <tr class="clickable-row"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-laser"/></svg></span><div><a class="row-link product-title" href="#request-ready" aria-label="Открыть заявку Ильи Смирнова на лазерный уровень Bosch">Лазерный уровень Bosch</a><span class="availability-text good-text">Свободно: 1 из 2</span></div></div></td><td data-label="Срок"><strong>26 сен, 10:00</strong><span class="block-muted">Через 2 дня · МСК</span></td><td data-label="Арендатор">Илья Смирнов</td><td data-label="Статус"><span class="status good">Можно забронировать</span></td></tr>
+              <tr class="readiness-group"><td colspan="4"><span class="group-dot"></span>Ожидают свободный экземпляр <strong>5</strong></td></tr>
+              <tr class="clickable-row"><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-cleaner"/></svg></span><div><a class="row-link product-title" href="applications-stage-7.html#manager-detail" aria-label="Открыть ожидающую заявку Ольги Ким на пароочиститель Karcher SC 3">Пароочиститель Karcher SC 3</a><span class="availability-text">Свободно: 0 из 2</span></div></div></td><td data-label="Срок"><strong>25 сен, 20:00</strong><span class="block-muted">Завтра · МСК</span></td><td data-label="Арендатор">Ольга Ким</td><td data-label="Статус"><span class="status neutral">Пока нельзя забронировать</span></td></tr>
+            </tbody></table></div>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <section class="screen dashboard-screen" id="request-ready" data-role="manager" aria-labelledby="request-ready-title">
+      <div class="app-body dashboard-body">
+        <aside class="sidebar"><div class="sidebar-label">Кабинет менеджера</div><nav aria-label="Навигация менеджера"><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><span class="side-link"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои товары</span><a class="side-link" href="#manager-requests" aria-current="page"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки <span class="nav-count">8</span></a><a class="side-link" href="#manager-bookings"><svg aria-hidden="true"><use href="#i-bookmark"/></svg>Брони <span class="nav-count">5</span></a></nav><p class="side-note">Система не выбирает заявку или экземпляр автоматически.</p></aside>
+        <main class="workspace-main">
+          <div class="crumb"><a href="#manager-requests">← Очередь заявок</a></div>
+          <div class="page-head"><div><span class="status good availability-status">Можно забронировать · 2 свободно</span><h1 id="request-ready-title" tabindex="-1">Заявка Марины Волковой</h1><p>Аккумуляторная дрель Makita DDF482</p></div></div>
+          <div class="assignment-layout">
+            <div>
+              <div class="surface request-facts"><div class="surface-head"><h2>Условия заявки</h2><span class="status neutral">Ожидает решения</span></div><dl class="detail-data"><dt>Крайний срок получения</dt><dd>25 сен 2026, 18:00 МСК</dd><dt>Плановый возврат</dt><dd>27 сен 2026, 18:00 МСК</dd><dt>Точка самовывоза</dt><dd>Москва, ул. Русаковская, 22</dd><dt>Условия сейчас</dt><dd>3 ₽/мин + 30 ₽ стартовая стоимость</dd></dl></div>
+              <div class="notice info guarantee-note"><strong>Что гарантирует бронь</strong><span>Выбранный экземпляр удерживается только до 25 сен, 18:00 МСК. Плановый возврат не блокирует экземпляр на весь период.</span></div>
+            </div>
+            <form class="surface instance-picker" id="instance-form">
+              <div class="surface-head"><div><h2>Назначьте экземпляр</h2><p>Выбрать можно только свободный.</p></div><span class="availability-count">2 из 4</span></div>
+              <fieldset><legend class="sr-only">Экземпляры товара</legend>
+                <label class="instance-option"><input type="radio" name="instance" value="D-1042" required><span class="instance-radio"><strong>D-1042</strong><small>Свободен · состояние проверено 22 сен</small></span><span class="status good">Доступен</span></label>
+                <label class="instance-option"><input type="radio" name="instance" value="D-1187"><span class="instance-radio"><strong>D-1187</strong><small>Свободен · состояние проверено 20 сен</small></span><span class="status good">Доступен</span></label>
+                <label class="instance-option unavailable"><input type="radio" name="instance" value="D-0911" disabled><span class="instance-radio"><strong>D-0911</strong><small>Бронь до 25 сен, 12:00 МСК</small></span><span class="status neutral">Забронирован</span></label>
+                <label class="instance-option unavailable"><input type="radio" name="instance" value="D-0724" disabled><span class="instance-radio"><strong>D-0724</strong><small>Плановый возврат 26 сен, 14:00 МСК</small></span><span class="status neutral">В аренде</span></label>
+              </fieldset>
+              <p class="selection-help" id="instance-help" aria-live="polite">Экземпляр не выбран. Автоматического выбора нет.</p>
+              <button class="btn btn-primary btn-wide" type="submit">Проверить бронь</button>
+              <a class="danger-link cancel-under" href="#cancel-manager">Отменить заявку</a>
+            </form>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <section class="screen dialog-screen" id="booking-confirm" data-role="manager" aria-labelledby="booking-confirm-title">
+      <div class="dialog-stage booking-dialog-stage"><div class="dialog wide-dialog" role="dialog" aria-modal="true" aria-labelledby="booking-confirm-title">
+        <span class="step-label">Шаг 2 из 2 · проверка</span><h1 id="booking-confirm-title" tabindex="-1">Создать бронь?</h1>
+        <div class="confirmation-product"><span class="thumb large-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Аккумуляторная дрель Makita DDF482</strong><span>Марина Волкова</span></div></div>
+        <dl class="confirm-grid"><dt>Экземпляр</dt><dd>D-1042</dd><dt>Удерживать до</dt><dd>25 сен 2026, 18:00 МСК</dd><dt>Плановый возврат</dt><dd>27 сен 2026, 18:00 МСК</dd><dt>Фиксируемая ставка</dt><dd>3 ₽/мин + 30 ₽ старт</dd></dl>
+        <div class="notice warning"><strong>Важно</strong><br>Бронь гарантирует наличие товара до срока получения, но не резервирует его до планового возврата.</div>
+        <p class="transaction-note"><svg aria-hidden="true"><use href="#i-check"/></svg>Перед созданием система ещё раз проверит, что D-1042 свободен.</p>
+        <div class="dialog-actions"><a class="btn btn-quiet" href="#request-ready">Вернуться к выбору</a><a class="btn btn-primary" href="#booking-success">Создать бронь</a></div>
+      </div></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="booking-success" data-role="manager" aria-labelledby="booking-success-title">
+      <div class="public-content narrow-public"><div class="surface success-panel booking-success-panel"><span class="success-icon"><svg aria-hidden="true"><use href="#i-check"/></svg></span><span class="status good">Бронь активна</span><h1 id="booking-success-title" tabindex="-1">Бронь создана</h1><p>Экземпляр D-1042 удерживается для Марины Волковой до 25 сентября, 18:00 МСК. Арендатор получил внутреннее уведомление.</p><dl class="success-data"><dt>Товар</dt><dd>Дрель Makita DDF482</dd><dt>Экземпляр</dt><dd>D-1042 · RESERVED</dd><dt>Ставка зафиксирована</dt><dd>3 ₽/мин + 30 ₽ старт</dd></dl><div class="notice info">Прибытие нужно подтвердить до срока получения. Иначе бронь истечёт автоматически, а экземпляр снова станет доступен.</div><div class="button-row"><a class="btn btn-primary" href="#manager-booking">Открыть бронь</a><a class="btn btn-secondary" href="#manager-bookings">К текущим броням</a></div></div></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="manager-booking" data-role="manager" aria-labelledby="manager-booking-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет менеджера</div><nav aria-label="Навигация менеджера"><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><span class="side-link"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки</span><a class="side-link" href="#manager-bookings" aria-current="page"><svg aria-hidden="true"><use href="#i-bookmark"/></svg>Брони <span class="nav-count">5</span></a></nav></aside><main class="workspace-main">
+        <div class="crumb"><a href="#manager-bookings">← Текущие брони</a></div><div class="page-head"><div><span class="status warn">Ждёт арендатора</span><h1 id="manager-booking-title" tabindex="-1">Бронь № 000184</h1><p>Создана сегодня в 15:24 МСК</p></div></div>
+        <div class="booking-detail-layout"><div>
+          <div class="deadline-hero"><div class="deadline-icon"><svg aria-hidden="true"><use href="#i-clock"/></svg></div><div><span>Получение до</span><strong>Сегодня, 18:00 МСК</strong><small>Осталось 1 ч 42 мин</small></div></div>
+          <div class="surface"><div class="surface-head"><h2>Бронь</h2><span class="status good">Экземпляр удерживается</span></div><div class="confirmation-product"><span class="thumb large-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Аккумуляторная дрель Makita DDF482</strong><span>3 ₽/мин · стартовая стоимость 30 ₽</span></div></div><dl class="detail-data"><dt>Арендатор</dt><dd>Марина Волкова</dd><dt>Экземпляр</dt><dd>D-1042 · RESERVED</dd><dt>Плановый возврат</dt><dd>27 сен 2026, 18:00 МСК</dd><dt>Точка самовывоза</dt><dd>Москва, ул. Русаковская, 22</dd></dl></div>
+          <div class="surface"><h2>История</h2><ol class="timeline booking-timeline"><li class="current"><span></span><div><strong>Бронь создана</strong><small>Сегодня, 15:24 · Алексей Морозов</small></div></li><li><span></span><div><strong>Заявка подана</strong><small>Сегодня, 12:11 · Марина Волкова</small></div></li></ol></div>
+        </div><aside class="manager-action-column"><div class="surface primary-action-card"><span class="eyebrow">Следующий шаг</span><h2>Арендатор приехал?</h2><p>Подтвердите только физическое прибытие до 18:00. Это остановит автоматическое истечение, но не начнёт аренду.</p><a class="btn btn-primary btn-wide" href="#arrival-confirm">Подтвердить прибытие</a><a class="btn btn-quiet btn-wide" href="#cancel-manager">Отменить бронь</a></div><div class="aside-note"><strong>После 18:00 без подтверждения</strong><br>Бронь истечёт автоматически, D-1042 снова станет свободен.</div></aside></div>
+      </main></div>
+    </section>
+
+    <section class="screen dialog-screen" id="arrival-confirm" data-role="manager" aria-labelledby="arrival-confirm-title"><div class="dialog-stage booking-dialog-stage"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="arrival-confirm-title"><span class="status good">До срока получения</span><h1 id="arrival-confirm-title" tabindex="-1">Арендатор уже прибыл?</h1><div class="person-summary"><span class="avatar"><svg aria-hidden="true"><use href="#i-person"/></svg></span><div><strong>Марина Волкова</strong><span>Дрель Makita DDF482 · D-1042</span></div></div><p>Подтверждайте только физическое прибытие арендатора в точку самовывоза.</p><ul class="impact-list"><li><svg aria-hidden="true"><use href="#i-check"/></svg>Автоистечение после 18:00 будет остановлено</li><li><svg aria-hidden="true"><use href="#i-check"/></svg>Экземпляр перейдёт в «Получение оформляется»</li><li><svg aria-hidden="true"><use href="#i-alert"/></svg>Аренда и расчёт времени ещё не начнутся</li></ul><div class="dialog-actions"><a class="btn btn-quiet" href="#manager-booking">Не подтверждать</a><a class="btn btn-primary" href="#pickup-progress">Подтвердить прибытие</a></div></div></div></section>
+
+    <section class="screen dashboard-screen" id="pickup-progress" data-role="manager" aria-labelledby="pickup-progress-title"><div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет менеджера</div><nav aria-label="Навигация менеджера"><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><span class="side-link"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки</span><a class="side-link" href="#manager-bookings" aria-current="page"><svg aria-hidden="true"><use href="#i-bookmark"/></svg>Брони <span class="nav-count">5</span></a></nav></aside><main class="workspace-main"><div class="crumb"><a href="#manager-bookings">← Текущие брони</a></div><div class="page-head"><div><span class="status good">Арендатор прибыл</span><h1 id="pickup-progress-title" tabindex="-1">Получение оформляется</h1><p>Бронь № 000184 · подтверждено сегодня в 16:07 МСК</p></div></div><div class="notice arrival-banner"><svg aria-hidden="true"><use href="#i-check"/></svg><div><strong>Бронь больше не истечёт автоматически</strong><span>Прибытие подтверждено до крайнего срока получения.</span></div></div><div class="booking-detail-layout"><div class="surface"><div class="surface-head"><h2>Данные брони</h2><span class="status neutral">PICKUP_IN_PROGRESS</span></div><div class="confirmation-product"><span class="thumb large-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Аккумуляторная дрель Makita DDF482</strong><span>Марина Волкова · экземпляр D-1042</span></div></div><dl class="detail-data"><dt>Прибытие</dt><dd>24 сен 2026, 16:07 МСК</dd><dt>Бывший срок получения</dt><dd>24 сен 2026, 18:00 МСК</dd><dt>Плановый возврат</dt><dd>27 сен 2026, 18:00 МСК</dd></dl></div><aside class="manager-action-column"><div class="surface primary-action-card"><span class="eyebrow">Граница этапа №8</span><h2>Прибытие зафиксировано</h2><p>Дальнейшее оформление получения будет реализовано в отдельном этапе. Здесь бронь можно только отменить до начала аренды.</p><a class="btn btn-quiet btn-wide" href="#cancel-manager">Отменить бронь</a></div></aside></div></main></div></section>
+
+    <section class="screen dashboard-screen" id="renter-bookings" data-role="renter" aria-labelledby="renter-bookings-title"><div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Личный кабинет</div><nav aria-label="Навигация арендатора"><span class="side-link"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки <span class="nav-count">2</span></span><a class="side-link" href="#renter-bookings" aria-current="page"><svg aria-hidden="true"><use href="#i-bookmark"/></svg>Брони <span class="nav-count">1</span></a><span class="side-link muted"><svg aria-hidden="true"><use href="#i-box"/></svg>Аренды</span></nav><p class="side-note">Бронь гарантирует товар только до указанного срока получения.</p></aside><main class="workspace-main"><div class="page-head"><div><h1 id="renter-bookings-title" tabindex="-1">Мои брони</h1><p>Активные брони и история завершённых</p></div></div><div class="tabs booking-tabs"><a class="active" href="#renter-bookings" aria-current="page">Активные <span>1</span></a><a href="#booking-expired">Завершённые <span>2</span></a></div><article class="surface renter-booking-card"><div class="booking-card-main"><div class="product-cell"><span class="thumb booking-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><span class="status good">Товар гарантирован</span><h2>Аккумуляторная дрель Makita DDF482</h2><p>Менеджер: Алексей Морозов</p></div></div><div class="renter-deadline"><span>Получить до</span><strong>Сегодня, 18:00 МСК</strong><small>Осталось 1 ч 42 мин</small></div></div><div class="booking-card-footer"><span><svg aria-hidden="true"><use href="#i-pin"/></svg>Москва, ул. Русаковская, 22</span><a class="btn btn-primary" href="#renter-booking">Открыть бронь</a></div></article><div class="notice info renter-guarantee"><strong>Что означает гарантия</strong><span>Менеджер удерживает один экземпляр этого товара до указанного срока. Конкретный инвентарный номер в кабинете арендатора не показывается.</span></div></main></div></section>
+
+    <section class="screen dashboard-screen" id="renter-booking" data-role="renter" aria-labelledby="renter-booking-title"><div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Личный кабинет</div><nav aria-label="Навигация арендатора"><span class="side-link"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки</span><a class="side-link" href="#renter-bookings" aria-current="page"><svg aria-hidden="true"><use href="#i-bookmark"/></svg>Брони <span class="nav-count">1</span></a><span class="side-link muted"><svg aria-hidden="true"><use href="#i-box"/></svg>Аренды</span></nav></aside><main class="workspace-main"><div class="crumb"><a href="#renter-bookings">← Мои брони</a></div><div class="page-head"><div><span class="status good">Бронь активна</span><h1 id="renter-booking-title" tabindex="-1">Дрель Makita DDF482</h1><p>Бронь № 000184</p></div></div><div class="booking-detail-layout"><div><div class="deadline-hero renter-hero"><div class="deadline-icon"><svg aria-hidden="true"><use href="#i-clock"/></svg></div><div><span>Товар гарантирован до</span><strong>Сегодня, 18:00 МСК</strong><small>Приезжайте до указанного времени</small></div></div><div class="surface"><h2>Получение</h2><dl class="detail-data"><dt>Точка самовывоза</dt><dd>Москва, ул. Русаковская, 22</dd><dt>Плановый возврат</dt><dd>27 сен 2026, 18:00 МСК</dd><dt>Зафиксированная ставка</dt><dd>3 ₽/мин + 30 ₽ стартовая стоимость</dd><dt>Менеджер</dt><dd>Алексей Морозов</dd></dl></div><div class="notice info"><strong>Важно</strong><br>Бронь гарантирует наличие товара до срока получения. Она не резервирует экземпляр на весь период до планового возврата.</div></div><aside class="manager-action-column"><div class="surface primary-action-card"><span class="eyebrow">Ваш следующий шаг</span><h2>Приехать за товаром</h2><p>Когда вы будете в точке самовывоза, менеджер подтвердит прибытие. Выдача и аренда ещё не начались.</p><a class="btn btn-danger btn-wide" href="#cancel-renter">Отменить бронь</a></div></aside></div></main></div></section>
+
+    <section class="screen dialog-screen" id="cancel-renter" data-role="renter" aria-labelledby="cancel-renter-title"><div class="dialog-stage booking-dialog-stage"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="cancel-renter-title"><span class="status warn">Отмена без штрафа</span><h1 id="cancel-renter-title" tabindex="-1">Отменить бронь?</h1><p><strong>Аккумуляторная дрель Makita DDF482</strong><br>Получение до 25 сен 2026, 18:00 МСК</p><p>Бронь прекратится, удерживаемый экземпляр сразу станет доступен другим арендаторам. Штрафа нет.</p><div class="field"><label for="cancel-renter-reason">Причина <span class="muted">(необязательно)</span></label><textarea id="cancel-renter-reason" name="cancel_reason" autocomplete="off" placeholder="Например, изменились планы…"></textarea></div><div class="dialog-actions"><a class="btn btn-quiet" href="#renter-booking">Не отменять</a><a class="btn btn-danger" href="#booking-expired">Отменить бронь</a></div></div></div></section>
+
+    <section class="screen dialog-screen" id="cancel-manager" data-role="manager" aria-labelledby="cancel-manager-title"><div class="dialog-stage booking-dialog-stage"><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="cancel-manager-title"><span class="status warn">Отмена менеджером</span><h1 id="cancel-manager-title" tabindex="-1">Отменить бронь?</h1><p><strong>Марина Волкова · Дрель Makita DDF482 · D-1042</strong><br>Получение до 25 сен 2026, 18:00 МСК</p><p>Экземпляр сразу вернётся в свободные. Арендатор увидит отмену и получит внутреннее уведомление. Штрафа нет.</p><div class="field"><label for="cancel-manager-reason">Причина <span class="muted">(необязательно)</span></label><textarea id="cancel-manager-reason" name="cancel_reason" autocomplete="off" placeholder="Например, экземпляр временно недоступен…"></textarea></div><div class="dialog-actions"><a class="btn btn-quiet" href="#manager-booking">Не отменять</a><a class="btn btn-danger" href="#manager-bookings">Отменить бронь</a></div></div></div></section>
+
+    <section class="screen dashboard-screen" id="booking-expired" data-role="renter" aria-labelledby="booking-expired-title"><div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Личный кабинет</div><nav aria-label="Навигация арендатора"><span class="side-link"><svg aria-hidden="true"><use href="#i-request"/></svg>Заявки</span><a class="side-link" href="#renter-bookings" aria-current="page"><svg aria-hidden="true"><use href="#i-bookmark"/></svg>Брони</a><span class="side-link muted"><svg aria-hidden="true"><use href="#i-box"/></svg>Аренды</span></nav></aside><main class="workspace-main"><div class="crumb"><a href="#renter-bookings">← Завершённые брони</a></div><div class="page-head"><div><span class="status expired">Истекла автоматически</span><h1 id="booking-expired-title" tabindex="-1">Дрель Makita DDF482</h1><p>Бронь № 000163</p></div></div><div class="booking-detail-layout"><div><div class="notice expired-notice"><svg aria-hidden="true"><use href="#i-clock"/></svg><div><strong>Срок получения прошёл</strong><span>Прибытие не было подтверждено до 20 сен 2026, 14:00 МСК. Бронь прекращена без штрафа.</span></div></div><div class="surface"><h2>История</h2><ol class="timeline booking-timeline"><li class="expired-step"><span></span><div><strong>Бронь истекла автоматически</strong><small>20 сен 2026, 14:00 МСК · Система</small></div></li><li><span></span><div><strong>Бронь создана</strong><small>18 сен 2026, 10:32 МСК · Алексей Морозов</small></div></li></ol></div></div><aside class="manager-action-column"><div class="surface primary-action-card"><span class="eyebrow">Бронь завершена</span><h2>Товар больше не удерживается</h2><p>Чтобы арендовать его, создайте новую заявку с актуальным сроком получения.</p><a class="btn btn-primary btn-wide" href="applications-stage-7.html#product-renter">Открыть товар</a></div></aside></div></main></div></section>
+
+    <section class="screen dialog-screen" id="assignment-conflict" data-role="manager" aria-labelledby="assignment-conflict-title"><div class="dialog-stage booking-dialog-stage"><div class="dialog" role="alertdialog" aria-modal="true" aria-labelledby="assignment-conflict-title"><span class="conflict-icon"><svg aria-hidden="true"><use href="#i-alert"/></svg></span><h1 id="assignment-conflict-title" tabindex="-1">D-1042 уже недоступен</h1><p>Другой менеджер или операция успели назначить этот экземпляр. Бронь для Марины Волковой не создана.</p><div class="conflict-detail"><span>Актуальная доступность</span><strong>1 свободный экземпляр</strong><small>D-1187 можно назначить сейчас</small></div><div class="dialog-actions"><a class="btn btn-quiet" href="#manager-bookings">К текущим броням</a><a class="btn btn-primary" href="#request-ready">Выбрать другой</a></div></div></div></section>
+  </div>
+
+  <script>
+    document.querySelectorAll(".sidebar").forEach((sidebar) => {
+      const label = sidebar.querySelector(".sidebar-label")?.textContent.trim();
+      if (label) sidebar.setAttribute("aria-label", label);
+    });
+
+    const screens = new Set([
+      "manager-bookings", "manager-requests", "request-ready", "booking-confirm", "booking-success",
+      "manager-booking", "arrival-confirm", "pickup-progress", "renter-bookings",
+      "renter-booking", "cancel-renter", "cancel-manager", "booking-expired",
+      "assignment-conflict"
+    ]);
+
+    function showScreen() {
+      const requested = location.hash.slice(1);
+      const selected = screens.has(requested) ? requested : "manager-bookings";
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.toggle("active", screen.id === selected));
+      document.querySelectorAll(".prototype-nav a").forEach((link) => {
+        if (link.hash === `#${selected}`) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+      const selectedScreen = document.getElementById(selected);
+      document.querySelectorAll(".header-profile").forEach((profile) => profile.classList.toggle("active", profile.dataset.role === selectedScreen.dataset.role));
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => selectedScreen.querySelector("h1[tabindex='-1']")?.focus({ preventScroll: true }));
+    }
+
+    document.getElementById("instance-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const selected = new FormData(event.currentTarget).get("instance");
+      const help = document.getElementById("instance-help");
+      if (!selected) {
+        help.textContent = "Выберите один свободный экземпляр.";
+        help.classList.add("error-text");
+        event.currentTarget.querySelector("input:not(:disabled)").focus();
+        return;
+      }
+      location.hash = "booking-confirm";
+    });
+
+    document.querySelectorAll("input[name='instance']").forEach((input) => input.addEventListener("change", () => {
+      const help = document.getElementById("instance-help");
+      help.textContent = `Выбран ${input.value}. Доступность будет проверена ещё раз.`;
+      help.classList.remove("error-text");
+    }));
+
+    function selectPeriod(selectedWindow, updateUrl = true) {
+      document.querySelectorAll(".period-button").forEach((item) => {
+        const isSelected = item.dataset.window === selectedWindow;
+        item.classList.toggle("active", isSelected);
+        item.setAttribute("aria-pressed", String(isSelected));
+      });
+      document.querySelectorAll("[data-period]").forEach((row) => {
+        row.hidden = selectedWindow === "today"
+          ? row.dataset.period !== "today"
+          : selectedWindow === "three" && row.dataset.period === "all";
+      });
+      if (updateUrl) {
+        const url = new URL(location.href);
+        url.searchParams.set("period", selectedWindow);
+        history.replaceState(null, "", url);
+      }
+    }
+
+    document.querySelectorAll(".period-button").forEach((button) => button.addEventListener("click", () => selectPeriod(button.dataset.window)));
+
+    const initialPeriod = new URLSearchParams(location.search).get("period");
+    selectPeriod(["today", "three", "all"].includes(initialPeriod) ? initialPeriod : "today", false);
+    addEventListener("hashchange", showScreen);
+    showScreen();
+  </script>
+</body>
+</html>

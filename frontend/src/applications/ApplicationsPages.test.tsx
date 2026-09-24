@@ -69,6 +69,37 @@ const application = {
     note: "",
   }],
 };
+const instanceId = "11111111-1111-4111-8111-111111111111";
+const booking = {
+  id: 184,
+  application_id: application.id,
+  status: "ACTIVE",
+  pickup_deadline_at: application.pickup_deadline_at,
+  planned_return_at: application.planned_return_at,
+  minute_rate_snapshot: "8.00",
+  starting_price_snapshot: "80.00",
+  arrival_confirmed_at: null,
+  cancellation_reason: "",
+  ended_at: null,
+  created_at: "2026-09-24T12:24:00+03:00",
+  updated_at: "2026-09-24T12:24:00+03:00",
+  product: application.product,
+  renter: application.renter,
+  manager: { id: 4, name: manager.name, avatar: null },
+  instance: {
+    id: instanceId,
+    inventory_number: "D-1042",
+    instance_number: 1,
+    status: "RESERVED",
+    status_label: "Забронирован",
+  },
+  history: [{
+    event: "CREATED",
+    actor: "MANAGER",
+    created_at: "2026-09-24T12:24:00+03:00",
+    note: "",
+  }],
+};
 
 afterEach(() => {
   cleanup();
@@ -187,6 +218,111 @@ describe("manager application queue", () => {
 
     expect(await screen.findByText("Настройки сохранены")).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText("Стремянка")).not.toBeInTheDocument());
+  });
+
+  it("requires a manual instance choice and creates a booking", async () => {
+    document.cookie = "csrftoken=test-token; path=/";
+    const readyApplication = {
+      ...application,
+      instances: [{
+        id: instanceId,
+        inventory_number: "D-1042",
+        instance_number: 1,
+        status: "AVAILABLE",
+        status_label: "Свободен",
+      }],
+    };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path === "/api/v1/auth/me/") return jsonResponse(manager);
+      if (path === "/api/v1/manager/applications/42/") return jsonResponse(readyApplication);
+      if (path === "/api/v1/manager/applications/42/book/") return jsonResponse(booking, 201);
+      if (path === "/api/v1/manager/bookings/184/") return jsonResponse(booking);
+      return jsonResponse([]);
+    }));
+
+    renderApp("/manager/applications/42");
+
+    expect(await screen.findByText("Можно забронировать · 1 свободно")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Проверить и создать бронь" })).toBeDisabled();
+    fireEvent.click(screen.getByRole("radio", { name: "D-1042 · Свободен" }));
+    fireEvent.click(screen.getByRole("button", { name: "Проверить и создать бронь" }));
+    const dialog = screen.getByRole("dialog", { name: "Проверить бронь" });
+    fireEvent.click(within(dialog).getByRole("button", { name: "Создать бронь" }));
+
+    expect(await screen.findByText(/Бронь создана. Экземпляр удерживается/)).toBeInTheDocument();
+    expect(screen.getByText("D-1042", { exact: false })).toBeInTheDocument();
+  });
+
+  it("confirms arrival without starting a rental", async () => {
+    document.cookie = "csrftoken=test-token; path=/";
+    let currentBooking: unknown = booking;
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path === "/api/v1/auth/me/") return jsonResponse(manager);
+      if (path === "/api/v1/manager/bookings/184/arrival/") {
+        currentBooking = {
+          ...booking,
+          status: "ARRIVED",
+          arrival_confirmed_at: "2026-09-24T16:07:00+03:00",
+          instance: { ...booking.instance, status: "PICKUP_IN_PROGRESS" },
+          history: [...booking.history, {
+            event: "ARRIVAL_CONFIRMED",
+            actor: "MANAGER",
+            created_at: "2026-09-24T16:07:00+03:00",
+            note: "",
+          }],
+        };
+        return jsonResponse(currentBooking);
+      }
+      if (path === "/api/v1/manager/bookings/184/") return jsonResponse(currentBooking);
+      return jsonResponse([]);
+    }));
+
+    renderApp("/manager/bookings/184");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Подтвердить прибытие" }));
+    const dialog = screen.getByRole("dialog", { name: "Арендатор уже прибыл?" });
+    expect(within(dialog).getByText(/аренда и расчёт времени не начнутся/i)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Подтвердить прибытие" }));
+
+    expect(await screen.findByText(/Автоматическое истечение остановлено/)).toBeInTheDocument();
+    await waitFor(() => expect(screen.queryByRole("dialog", { name: "Арендатор уже прибыл?" })).not.toBeInTheDocument());
+    expect(screen.getByRole("heading", { name: "Получение оформляется" })).toBeInTheDocument();
+  });
+});
+
+describe("renter bookings", () => {
+  it("never exposes the inventory number and cancels without a penalty", async () => {
+    document.cookie = "csrftoken=test-token; path=/";
+    let currentBooking = { ...booking, instance: null };
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path === "/api/v1/auth/me/") return jsonResponse(renter);
+      if (path === "/api/v1/bookings/184/cancel/") {
+        currentBooking = {
+          ...currentBooking,
+          status: "CANCELLED",
+          cancellation_reason: "Планы изменились",
+        };
+        return jsonResponse(currentBooking);
+      }
+      if (path === "/api/v1/bookings/184/") return jsonResponse(currentBooking);
+      if (path === "/api/v1/bookings/") return jsonResponse([currentBooking]);
+      return jsonResponse([]);
+    }));
+
+    renderApp("/account/bookings/184");
+
+    expect(await screen.findByText(/Товар гарантирован до/)).toBeInTheDocument();
+    expect(screen.queryByText("D-1042")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Отменить бронь" }));
+    const dialog = screen.getByRole("dialog", { name: "Отменить бронь?" });
+    expect(within(dialog).getByText(/без штрафа/i)).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole("button", { name: "Отменить бронь" }));
+
+    expect(await screen.findByRole("heading", { name: "Мои брони" })).toBeInTheDocument();
+    expect(screen.getByText("Завершённые · 1")).toBeInTheDocument();
   });
 });
 

@@ -6,13 +6,14 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import F, Q
 
-from catalog.models import Product
+from catalog.models import Product, ProductInstance
 from users.models import User
 
 
 class RentalApplication(models.Model):
     class Status(models.TextChoices):
         WAITING = "WAITING", "Ожидает решения"
+        BOOKED = "BOOKED", "Преобразована в бронь"
         CANCELLED = "CANCELLED", "Отменена"
         EXPIRED = "EXPIRED", "Срок получения истёк"
 
@@ -49,7 +50,7 @@ class RentalApplication(models.Model):
                 name="application_return_not_before_pickup",
             ),
             models.CheckConstraint(
-                condition=Q(status__in=("WAITING", "CANCELLED", "EXPIRED")),
+                condition=Q(status__in=("WAITING", "BOOKED", "CANCELLED", "EXPIRED")),
                 name="application_valid_status",
             ),
         ]
@@ -87,6 +88,7 @@ class RentalApplication(models.Model):
 class ApplicationEvent(models.Model):
     class Event(models.TextChoices):
         CREATED = "CREATED", "Заявка создана"
+        BOOKED = "BOOKED", "Создана бронь"
         CANCELLED = "CANCELLED", "Заявка отменена"
         EXPIRED = "EXPIRED", "Срок получения истёк"
 
@@ -146,3 +148,124 @@ class ManagerQueuePreference(models.Model):
     def save(self, *args: Any, **kwargs: Any) -> None:
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class RentalBooking(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Ждёт арендатора"
+        ARRIVED = "ARRIVED", "Арендатор прибыл"
+        CANCELLED = "CANCELLED", "Отменена"
+        EXPIRED = "EXPIRED", "Истекла автоматически"
+
+    application = models.OneToOneField(
+        RentalApplication,
+        verbose_name="заявка",
+        on_delete=models.PROTECT,
+        related_name="booking",
+    )
+    instance = models.ForeignKey(
+        ProductInstance,
+        verbose_name="экземпляр",
+        on_delete=models.PROTECT,
+        related_name="bookings",
+    )
+    status = models.CharField(
+        "статус",
+        max_length=16,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+    )
+    minute_rate_snapshot = models.DecimalField(
+        "зафиксированная ставка",
+        max_digits=12,
+        decimal_places=2,
+    )
+    starting_price_snapshot = models.DecimalField(
+        "зафиксированная стартовая стоимость",
+        max_digits=12,
+        decimal_places=2,
+    )
+    arrival_confirmed_at = models.DateTimeField(
+        "прибытие подтверждено",
+        null=True,
+        blank=True,
+    )
+    cancellation_reason = models.TextField("причина отмены", blank=True)
+    ended_at = models.DateTimeField("дата завершения", null=True, blank=True)
+    created_at = models.DateTimeField("дата создания", auto_now_add=True)
+    updated_at = models.DateTimeField("дата изменения", auto_now=True)
+
+    class Meta:
+        verbose_name = "бронь"
+        verbose_name_plural = "брони"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(status__in=("ACTIVE", "ARRIVED", "CANCELLED", "EXPIRED")),
+                name="booking_valid_status",
+            ),
+            models.UniqueConstraint(
+                fields=("instance",),
+                condition=Q(status__in=("ACTIVE", "ARRIVED")),
+                name="booking_one_current_per_instance",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=("status", "application"),
+                name="booking_status_application_idx",
+            ),
+            models.Index(
+                fields=("status", "created_at"),
+                name="booking_status_created_idx",
+            ),
+        ]
+
+    def clean(self) -> None:
+        errors: dict[str, str] = {}
+        if (
+            self.application_id
+            and self.instance_id
+            and self.application.product_id != self.instance.product_id
+        ):
+            errors["instance"] = "Экземпляр относится к другому товару."
+        if self.status == self.Status.ARRIVED and self.arrival_confirmed_at is None:
+            errors["arrival_confirmed_at"] = "Укажите время подтверждения прибытия."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.cancellation_reason = self.cancellation_reason.strip()
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"Бронь {self.pk or 'новая'}: {self.application.product}"
+
+
+class BookingEvent(models.Model):
+    class Event(models.TextChoices):
+        CREATED = "CREATED", "Бронь создана"
+        ARRIVAL_CONFIRMED = "ARRIVAL_CONFIRMED", "Прибытие подтверждено"
+        CANCELLED = "CANCELLED", "Бронь отменена"
+        EXPIRED = "EXPIRED", "Бронь истекла автоматически"
+
+    class Actor(models.TextChoices):
+        RENTER = "RENTER", "Арендатор"
+        MANAGER = "MANAGER", "Менеджер"
+        SYSTEM = "SYSTEM", "Система"
+
+    booking = models.ForeignKey(
+        RentalBooking,
+        verbose_name="бронь",
+        on_delete=models.CASCADE,
+        related_name="history",
+    )
+    event = models.CharField("событие", max_length=24, choices=Event.choices)
+    actor = models.CharField("инициатор", max_length=16, choices=Actor.choices)
+    created_at = models.DateTimeField("дата события", auto_now_add=True)
+    note = models.TextField("комментарий", blank=True)
+
+    class Meta:
+        verbose_name = "событие брони"
+        verbose_name_plural = "события брони"
+        ordering = ("created_at", "id")

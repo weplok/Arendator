@@ -425,6 +425,146 @@
   color: var(--color-success-text) !important;
 }
 
+.booking-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.booking-summary > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 92px;
+  padding: 18px 20px;
+  border-radius: 14px;
+}
+
+.booking-summary span {
+  color: var(--color-text-muted);
+  font-size: 13px;
+}
+
+.booking-summary strong {
+  color: var(--color-primary-dark);
+  font-size: 30px;
+  font-variant-numeric: tabular-nums;
+}
+
+.booking-periods {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.booking-list-surface {
+  padding: 0;
+  overflow: hidden;
+}
+
+.booking-table tr {
+  position: relative;
+}
+
+.booking-table tbody tr:hover,
+.booking-table tbody tr:focus-within {
+  background: var(--green-50);
+}
+
+.booking-row-link {
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.booking-row-link::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+.booking-row-link:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.booking-card-section {
+  display: grid;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.renter-booking-card {
+  padding: 20px;
+  border-radius: 16px !important;
+}
+
+.booking-card-main,
+.booking-card-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.booking-card-footer {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--color-border);
+}
+
+.renter-booking-deadline {
+  text-align: right;
+}
+
+.renter-booking-deadline span,
+.renter-booking-deadline strong {
+  display: block;
+}
+
+.renter-booking-deadline span {
+  color: var(--color-text-muted);
+  font-size: 12px;
+}
+
+.booking-deadline-hero {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 18px;
+  padding: 22px 24px;
+  border: 1px solid #b8decf;
+  border-radius: 16px !important;
+  background: var(--green-50) !important;
+}
+
+.booking-deadline-hero span,
+.booking-deadline-hero small {
+  color: var(--color-success-text);
+}
+
+.booking-deadline-hero strong {
+  font-size: clamp(22px, 3vw, 32px);
+}
+
+.booking-action-card,
+.booking-assignment-card {
+  display: grid;
+  gap: 14px;
+  padding: 20px;
+  border-radius: 16px !important;
+}
+
+.booking-assignment-card {
+  margin-top: 16px;
+}
+
+.booking-assignment-card .MuiFormControlLabel-root {
+  min-height: 48px;
+  margin-right: 0;
+  border-bottom: 1px solid var(--color-border);
+}
+
 @media (max-width: 1023px) {
   .application-form-layout,
   .application-detail-layout {
@@ -479,6 +619,10 @@
     align-items: stretch;
     flex-direction: column;
     gap: 14px;
+  }
+
+  .booking-summary {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -565,6 +709,26 @@
 
   .application-product-cell {
     min-width: 0;
+  }
+
+  .booking-card-main,
+  .booking-card-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .renter-booking-deadline {
+    text-align: left;
+  }
+
+  .booking-card-footer .MuiButton-root {
+    min-height: 48px;
+  }
+
+  .booking-periods .MuiButton-root {
+    min-width: 0;
+    min-height: 48px;
+    flex: 1;
   }
 }
 
