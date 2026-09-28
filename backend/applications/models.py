@@ -1,13 +1,34 @@
-"""Waiting applications and manager queue preferences."""
+"""Applications, handover photo acts, and rentals."""
 
+from pathlib import Path
 from typing import Any
+import uuid
 
 from django.core.exceptions import ValidationError
+from django.core.validators import FileExtensionValidator
 from django.db import models
 from django.db.models import F, Q
 
-from catalog.models import Product, ProductInstance
+from catalog.models import Product, ProductInstance, validate_product_photo
 from users.models import User
+
+
+def handover_photo_upload_to(instance: "HandoverPhoto", filename: str) -> str:
+    """Generate an opaque storage key for a private handover photo."""
+    extension = Path(filename).suffix.lower()
+    return (
+        f"handovers/{instance.handover.booking_id}/{instance.author_role}/"
+        f"{uuid.uuid4().hex}{extension}"
+    )
+
+
+def return_photo_upload_to(instance: "ReturnPhoto", filename: str) -> str:
+    """Generate an opaque storage key for a private return photo."""
+    extension = Path(filename).suffix.lower()
+    return (
+        f"returns/{instance.return_act.rental_id}/{instance.author_role}/"
+        f"{uuid.uuid4().hex}{extension}"
+    )
 
 
 class RentalApplication(models.Model):
@@ -154,6 +175,7 @@ class RentalBooking(models.Model):
     class Status(models.TextChoices):
         ACTIVE = "ACTIVE", "Ждёт арендатора"
         ARRIVED = "ARRIVED", "Арендатор прибыл"
+        RENTED = "RENTED", "Аренда началась"
         CANCELLED = "CANCELLED", "Отменена"
         EXPIRED = "EXPIRED", "Истекла автоматически"
 
@@ -200,7 +222,15 @@ class RentalBooking(models.Model):
         verbose_name_plural = "брони"
         constraints = [
             models.CheckConstraint(
-                condition=Q(status__in=("ACTIVE", "ARRIVED", "CANCELLED", "EXPIRED")),
+                condition=Q(
+                    status__in=(
+                        "ACTIVE",
+                        "ARRIVED",
+                        "RENTED",
+                        "CANCELLED",
+                        "EXPIRED",
+                    )
+                ),
                 name="booking_valid_status",
             ),
             models.UniqueConstraint(
@@ -246,6 +276,10 @@ class BookingEvent(models.Model):
     class Event(models.TextChoices):
         CREATED = "CREATED", "Бронь создана"
         ARRIVAL_CONFIRMED = "ARRIVAL_CONFIRMED", "Прибытие подтверждено"
+        MATERIALS_COMPLETED = "MATERIALS_COMPLETED", "Фиксация завершена"
+        CHANGES_REQUESTED = "CHANGES_REQUESTED", "Запрошено изменение фиксации"
+        HANDOVER_CONFIRMED = "HANDOVER_CONFIRMED", "Фотоакт подтверждён"
+        RENTAL_STARTED = "RENTAL_STARTED", "Аренда началась"
         CANCELLED = "CANCELLED", "Бронь отменена"
         EXPIRED = "EXPIRED", "Бронь истекла автоматически"
 
@@ -269,3 +303,261 @@ class BookingEvent(models.Model):
         verbose_name = "событие брони"
         verbose_name_plural = "события брони"
         ordering = ("created_at", "id")
+
+
+class HandoverAct(models.Model):
+    """Mutable two-party photo act completed before a rental starts."""
+
+    booking = models.OneToOneField(
+        RentalBooking,
+        verbose_name="бронь",
+        on_delete=models.CASCADE,
+        related_name="handover",
+    )
+    renter_comment = models.TextField("комментарий арендатора", blank=True)
+    manager_comment = models.TextField("комментарий менеджера", blank=True)
+    renter_completed_at = models.DateTimeField(null=True, blank=True)
+    manager_completed_at = models.DateTimeField(null=True, blank=True)
+    renter_confirmed_at = models.DateTimeField(null=True, blank=True)
+    manager_confirmed_at = models.DateTimeField(null=True, blank=True)
+    renter_revision = models.PositiveIntegerField(default=0)
+    manager_revision = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "фотоакт выдачи"
+        verbose_name_plural = "фотоакты выдачи"
+
+
+class HandoverPhoto(models.Model):
+    class AuthorRole(models.TextChoices):
+        RENTER = "RENTER", "Арендатор"
+        MANAGER = "MANAGER", "Менеджер"
+
+    handover = models.ForeignKey(
+        HandoverAct,
+        verbose_name="фотоакт",
+        on_delete=models.CASCADE,
+        related_name="photos",
+    )
+    author = models.ForeignKey(
+        User,
+        verbose_name="автор",
+        on_delete=models.PROTECT,
+        related_name="handover_photos",
+    )
+    author_role = models.CharField(max_length=16, choices=AuthorRole.choices)
+    image = models.ImageField(
+        "фотография",
+        upload_to=handover_photo_upload_to,
+        validators=[
+            FileExtensionValidator(allowed_extensions=("jpg", "jpeg", "png")),
+            validate_product_photo,
+        ],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "фотография выдачи"
+        verbose_name_plural = "фотографии выдачи"
+        ordering = ("created_at", "id")
+        indexes = [
+            models.Index(
+                fields=("handover", "author_role", "id"),
+                name="handover_photo_party_idx",
+            )
+        ]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class Rental(models.Model):
+    class Status(models.TextChoices):
+        ACTIVE = "ACTIVE", "Активна"
+        OVERDUE = "OVERDUE", "Просрочка"
+        RETURN_INSPECTION = "RETURN_INSPECTION", "Оформляется возврат"
+        COMPLETED = "COMPLETED", "Завершена"
+
+    booking = models.OneToOneField(
+        RentalBooking,
+        verbose_name="бронь",
+        on_delete=models.PROTECT,
+        related_name="rental",
+    )
+    status = models.CharField(
+        max_length=24,
+        choices=Status.choices,
+        default=Status.ACTIVE,
+    )
+    minute_rate_snapshot = models.DecimalField(max_digits=12, decimal_places=2)
+    starting_price_snapshot = models.DecimalField(max_digits=12, decimal_places=2)
+    planned_return_at = models.DateTimeField()
+    rental_started_at = models.DateTimeField()
+    return_received_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "аренда"
+        verbose_name_plural = "аренды"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(
+                    status__in=(
+                        "ACTIVE",
+                        "OVERDUE",
+                        "RETURN_INSPECTION",
+                        "COMPLETED",
+                    )
+                ),
+                name="rental_valid_status",
+            )
+        ]
+        indexes = [
+            models.Index(
+                fields=("status", "planned_return_at"),
+                name="rental_status_return_idx",
+            )
+        ]
+
+
+class RentalEvent(models.Model):
+    class Event(models.TextChoices):
+        RETURN_RECEIVED = "RETURN_RECEIVED", "Возврат принят"
+        MATERIALS_COMPLETED = "MATERIALS_COMPLETED", "Фиксация завершена"
+        CHANGES_REQUESTED = "CHANGES_REQUESTED", "Запрошено изменение фиксации"
+        SURCHARGE_WAIVED = "SURCHARGE_WAIVED", "Коэффициент просрочки отменён"
+        DAMAGE_UPDATED = "DAMAGE_UPDATED", "Штраф за повреждение изменён"
+        DAMAGE_ACCEPTED = "DAMAGE_ACCEPTED", "Штраф принят"
+        DAMAGE_REJECTED = "DAMAGE_REJECTED", "Штраф отклонён"
+        RETURN_CONFIRMED = "RETURN_CONFIRMED", "Фотоакт возврата подтверждён"
+        RETURN_COMPLETED = "RETURN_COMPLETED", "Возврат завершён"
+
+    class Actor(models.TextChoices):
+        RENTER = "RENTER", "Арендатор"
+        MANAGER = "MANAGER", "Менеджер"
+        SYSTEM = "SYSTEM", "Система"
+
+    rental = models.ForeignKey(
+        Rental,
+        verbose_name="аренда",
+        on_delete=models.CASCADE,
+        related_name="history",
+    )
+    event = models.CharField("событие", max_length=32, choices=Event.choices)
+    actor = models.CharField("инициатор", max_length=16, choices=Actor.choices)
+    created_at = models.DateTimeField("дата события", auto_now_add=True)
+    note = models.TextField("комментарий", blank=True)
+
+    class Meta:
+        verbose_name = "событие аренды"
+        verbose_name_plural = "события аренды"
+        ordering = ("created_at", "id")
+
+
+class ReturnAct(models.Model):
+    """Mutable two-party photo act used to complete a rental return."""
+
+    class DamageDecision(models.TextChoices):
+        NONE = "NONE", "Штраф не указан"
+        PENDING = "PENDING", "Ожидает решения арендатора"
+        ACCEPTED = "ACCEPTED", "Согласовано"
+        REJECTED = "REJECTED", "Отклонено"
+
+    rental = models.OneToOneField(
+        Rental,
+        verbose_name="аренда",
+        on_delete=models.CASCADE,
+        related_name="return_act",
+    )
+    renter_comment = models.TextField("комментарий арендатора", blank=True)
+    manager_comment = models.TextField("комментарий менеджера", blank=True)
+    renter_completed_at = models.DateTimeField(null=True, blank=True)
+    manager_completed_at = models.DateTimeField(null=True, blank=True)
+    renter_confirmed_at = models.DateTimeField(null=True, blank=True)
+    manager_confirmed_at = models.DateTimeField(null=True, blank=True)
+    renter_revision = models.PositiveIntegerField(default=0)
+    manager_revision = models.PositiveIntegerField(default=0)
+    late_surcharge_waived = models.BooleanField(default=False)
+    late_surcharge_waiver_reason = models.TextField(blank=True)
+    late_surcharge_waived_at = models.DateTimeField(null=True, blank=True)
+    damage_enabled = models.BooleanField(default=False)
+    damage_description = models.TextField(blank=True)
+    damage_amount = models.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        default=0,
+    )
+    damage_decision = models.CharField(
+        max_length=16,
+        choices=DamageDecision.choices,
+        default=DamageDecision.NONE,
+    )
+    next_instance_status = models.CharField(
+        max_length=24,
+        choices=(
+            (ProductInstance.Status.AVAILABLE, "Доступен"),
+            (ProductInstance.Status.MAINTENANCE, "На обслуживании"),
+        ),
+        blank=True,
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "фотоакт возврата"
+        verbose_name_plural = "фотоакты возврата"
+        constraints = [
+            models.CheckConstraint(
+                condition=Q(damage_amount__gte=0),
+                name="return_damage_amount_nonnegative",
+            )
+        ]
+
+
+class ReturnPhoto(models.Model):
+    class AuthorRole(models.TextChoices):
+        RENTER = "RENTER", "Арендатор"
+        MANAGER = "MANAGER", "Менеджер"
+
+    return_act = models.ForeignKey(
+        ReturnAct,
+        verbose_name="фотоакт",
+        on_delete=models.CASCADE,
+        related_name="photos",
+    )
+    author = models.ForeignKey(
+        User,
+        verbose_name="автор",
+        on_delete=models.PROTECT,
+        related_name="return_photos",
+    )
+    author_role = models.CharField(max_length=16, choices=AuthorRole.choices)
+    image = models.ImageField(
+        "фотография",
+        upload_to=return_photo_upload_to,
+        validators=[
+            FileExtensionValidator(allowed_extensions=("jpg", "jpeg", "png")),
+            validate_product_photo,
+        ],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "фотография возврата"
+        verbose_name_plural = "фотографии возврата"
+        ordering = ("created_at", "id")
+        indexes = [
+            models.Index(
+                fields=("return_act", "author_role", "id"),
+                name="return_photo_party_idx",
+            )
+        ]
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)

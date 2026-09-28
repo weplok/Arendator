@@ -56,7 +56,7 @@ describe("authentication flow", () => {
     document.cookie = "csrftoken=login-token; path=/";
     const fetchMock = vi.fn().mockResolvedValueOnce(unauthenticatedResponse());
     fetchMock.mockResolvedValueOnce(jsonResponse(renter));
-    fetchMock.mockResolvedValue(jsonResponse([]));
+    fetchMock.mockImplementation(async () => jsonResponse([]));
     vi.stubGlobal("fetch", fetchMock);
     renderApp("/login");
 

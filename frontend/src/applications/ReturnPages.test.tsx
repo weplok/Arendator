@@ -1,0 +1,257 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { MemoryRouter, Route, Routes } from "react-router-dom";
+import { afterEach, describe, expect, it, vi } from "vitest";
+
+import { RentalDetailPage } from "./RentalPages";
+import { ReturnPage } from "./ReturnPage";
+
+const party = {
+  role: "RENTER",
+  name: "Анна Смирнова",
+  avatar: null,
+  comment: "",
+  photos: [],
+  is_completed: false,
+  completed_at: null,
+  is_confirmed: false,
+  confirmed_at: null,
+};
+
+const rental = {
+  id: 31,
+  booking_id: 184,
+  status: "RETURN_INSPECTION",
+  minute_rate_snapshot: "8.00",
+  starting_price_snapshot: "80.00",
+  planned_return_at: "2026-09-27T18:00:00+03:00",
+  rental_started_at: "2026-09-25T16:00:00+03:00",
+  return_received_at: "2026-09-27T18:24:00+03:00",
+  ended_at: null,
+  calculated_at: "2026-09-27T18:24:00+03:00",
+  duration_minutes: 3024,
+  timely_minutes: 3000,
+  late_minutes: 24,
+  timely_cost: "24000.00",
+  late_base_cost: "192.00",
+  late_surcharge: "192.00",
+  late_surcharge_waived: false,
+  late_cost: "384.00",
+  damage_amount: "0.00",
+  current_cost: "24464.00",
+  product: {
+    id: 7,
+    name: "Перфоратор Bosch",
+    description: "Инструмент",
+    minute_rate: "8.00",
+    primary_photo: null,
+    pickup_point: {
+      city: "Москва",
+      district: "Хамовники",
+      full_address: "ул. Усачёва, 22",
+    },
+    available_instances_count: 0,
+    total_instances_count: 1,
+  },
+  renter: { id: 8, name: "Анна Смирнова", avatar: null },
+  manager: { id: 4, name: "Алексей Петров", avatar: null },
+  instance: null,
+  return_act: {
+    id: 9,
+    renter: party,
+    manager: { ...party, role: "MANAGER", name: "Алексей Петров" },
+    can_review: false,
+    manager_amount_only: false,
+    late_surcharge_waived: false,
+    late_surcharge_waiver_reason: "",
+    late_surcharge_waived_at: null,
+    damage_enabled: false,
+    damage_description: "",
+    damage_amount: "0.00",
+    damage_decision: "NONE",
+    next_instance_status: "",
+    updated_at: "2026-09-27T18:24:00+03:00",
+  },
+  history: [],
+  waiting_applications: [],
+};
+
+afterEach(() => {
+  cleanup();
+  vi.restoreAllMocks();
+  document.cookie = "csrftoken=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+});
+
+describe("return flow", () => {
+  it("shows stopped accrual and requires one renter photo", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(rental)));
+
+    renderReturnPage("renter");
+
+    expect(await screen.findByRole("heading", { name: "Перфоратор Bosch" })).toBeInTheDocument();
+    expect(screen.getByText("Начисление остановлено")).toBeInTheDocument();
+    expect(screen.getByLabelText("Сделать фото")).toHaveAttribute("capture", "environment");
+    expect(screen.getByRole("button", { name: "Завершить фиксацию" })).toBeDisabled();
+    expect(screen.getByText("Добавьте минимум одно фото")).toBeInTheDocument();
+  });
+
+  it("keeps damage and overdue decisions in a separate manager panel", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(rental)));
+
+    renderReturnPage("manager");
+
+    expect(await screen.findByRole("heading", { name: "Расчёт и штрафы" })).toBeInTheDocument();
+    expect(screen.getByRole("checkbox", { name: "Отменить повышающий коэффициент просрочки" })).toBeEnabled();
+    expect(screen.getByRole("checkbox", { name: "Зафиксировать повреждение" })).toBeEnabled();
+    expect(screen.getByText("Реального списания", { exact: false })).toBeInTheDocument();
+  });
+
+  it("lets renter explicitly reject the current damage amount", async () => {
+    document.cookie = "csrftoken=test-token; path=/";
+    const reviewed = reviewRental();
+    const rejected = {
+      ...reviewed,
+      return_act: {
+        ...reviewed.return_act,
+        can_review: false,
+        manager_amount_only: true,
+        damage_decision: "REJECTED",
+        manager: {
+          ...reviewed.return_act.manager,
+          is_completed: false,
+          completed_at: null,
+        },
+      },
+    };
+    let current: unknown = reviewed;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).includes("damage-decision")) {
+        current = rejected;
+      }
+      return jsonResponse(current);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderReturnPage("renter");
+
+    fireEvent.click(await screen.findByRole("button", { name: "Отказаться от штрафа" }));
+
+    expect(await screen.findByText("Вы отказались от штрафа. Ожидайте новую сумму от менеджера.")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Сохранить новую сумму" })).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/rentals/31/return/damage-decision/",
+      expect.objectContaining({ method: "POST", body: JSON.stringify({ accepted: false }) }),
+    );
+  });
+
+  it("locks everything except the amount after rejection", async () => {
+    const reviewed = reviewRental();
+    const amountOnly = {
+      ...reviewed,
+      return_act: {
+        ...reviewed.return_act,
+        can_review: false,
+        manager_amount_only: true,
+        damage_decision: "REJECTED",
+        manager: {
+          ...reviewed.return_act.manager,
+          is_completed: false,
+          completed_at: null,
+        },
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(amountOnly)));
+    renderReturnPage("manager");
+
+    expect(await screen.findByText("Арендатор отказался от штрафа", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("textbox", { name: "Описание повреждения" })).toBeDisabled();
+    expect(screen.getByRole("spinbutton", { name: "Сумма штрафа, ₽" })).toBeEnabled();
+    expect(screen.queryByLabelText("Сделать фото")).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Сохранить новую сумму" })).toBeEnabled();
+  });
+
+  it("explains the consequence before manager stops accrual", async () => {
+    const active = {
+      ...rental,
+      status: "OVERDUE",
+      return_received_at: null,
+      return_act: null,
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(active)));
+    renderRentalDetail();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Оборудование принесено на возврат" }));
+
+    expect(screen.getByRole("dialog", { name: "Подтвердить физический возврат?" })).toBeInTheDocument();
+    expect(screen.getByText("Осмотр и фотофиксация не оплачиваются", { exact: false })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Отмена" })).toBeInTheDocument();
+  });
+});
+
+function reviewRental() {
+  return {
+    ...rental,
+    damage_amount: "500.00",
+    current_cost: "24964.00",
+    return_act: {
+      ...rental.return_act,
+      can_review: true,
+      damage_enabled: true,
+      damage_description: "Трещина на корпусе",
+      damage_amount: "500.00",
+      damage_decision: "PENDING",
+      renter: {
+        ...rental.return_act.renter,
+        photos: [{ id: 1, url: "/photo/1", created_at: "2026-09-27T18:26:00+03:00" }],
+        is_completed: true,
+        completed_at: "2026-09-27T18:27:00+03:00",
+      },
+      manager: {
+        ...rental.return_act.manager,
+        photos: [{ id: 2, url: "/photo/2", created_at: "2026-09-27T18:28:00+03:00" }],
+        is_completed: true,
+        completed_at: "2026-09-27T18:29:00+03:00",
+      },
+    },
+  };
+}
+
+function renderReturnPage(audience: "manager" | "renter"): void {
+  const path = audience === "manager"
+    ? "/manager/rentals/31/return"
+    : "/account/rentals/31/return";
+  renderWithRouter(
+    path,
+    audience === "manager"
+      ? "/manager/rentals/:rentalId/return"
+      : "/account/rentals/:rentalId/return",
+    <ReturnPage audience={audience} />,
+  );
+}
+
+function renderRentalDetail(): void {
+  renderWithRouter(
+    "/manager/rentals/31",
+    "/manager/rentals/:rentalId",
+    <RentalDetailPage audience="manager" />,
+  );
+}
+
+function renderWithRouter(path: string, route: string, element: React.ReactNode): void {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+  render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes><Route path={route} element={element} /></Routes>
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+}
+
+function jsonResponse(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}

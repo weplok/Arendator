@@ -43,7 +43,7 @@ export function RenterLayout() {
         <span className="renter-sidebar__caption">Кабинет арендатора</span>
         <NavLink to="/account" end>Заявки</NavLink>
         <NavLink to="/account/bookings">Брони</NavLink>
-        <span className="renter-sidebar__disabled">Аренды</span>
+        <NavLink to="/account/rentals">Аренды</NavLink>
         <p>Бронь гарантирует наличие товара только до крайнего срока получения.</p>
       </nav>
       <div className="renter-main"><Outlet /></div>

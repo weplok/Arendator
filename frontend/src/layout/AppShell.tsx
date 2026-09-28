@@ -22,6 +22,7 @@ import {
 } from "../api/auth";
 import { CatalogSearchForm } from "../catalog/CatalogSearchForm";
 import { MenuIcon } from "../ui/Icons";
+import { ActivityBanner } from "./ActivityBanner";
 
 interface AppShellProps {
   children: ReactNode;
@@ -183,6 +184,7 @@ export function AppShell({ children, user }: AppShellProps) {
         </Container>
       </AppBar>
       <Box id="main-content" component="main" tabIndex={-1}>
+        <ActivityBanner user={user} />
         {children}
       </Box>
     </Box>

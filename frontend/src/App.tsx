@@ -12,6 +12,7 @@ import {
   RenterBookingDetailPage,
   RenterBookingsPage,
 } from "./applications/BookingPages";
+import { HandoverPage } from "./applications/HandoverPage";
 import {
   ManagerApplicationDetailPage,
   ManagerApplicationsPage,
@@ -21,6 +22,13 @@ import {
   RenterApplicationsPage,
   RenterLayout,
 } from "./applications/RenterApplications";
+import {
+  ManagerRentalsPage,
+  RentalDetailPage,
+  RenterRentalSummary,
+  RenterRentalsPage,
+} from "./applications/RentalPages";
+import { ReturnPage } from "./applications/ReturnPage";
 import { CatalogPage } from "./catalog/CatalogPage";
 import { ManagerProfilePage } from "./catalog/ManagerProfilePage";
 import { ProductDetailPage } from "./catalog/ProductDetailPage";
@@ -91,16 +99,24 @@ function SessionApp() {
                 path="/account"
                 element={user?.role === "MANAGER" ? <ManagerLayout /> : user?.role === "RENTER" ? <RenterLayout /> : <Navigate to="/login" replace />}
               >
-                {user?.role === "MANAGER" ? <Route index element={<ManagerListPage section="overview" />} /> : <Route index element={<RenterApplicationsPage />} />}
+                {user?.role === "MANAGER" ? <Route index element={<ManagerListPage section="overview" />} /> : <Route index element={<><RenterRentalSummary /><RenterApplicationsPage /></>} />}
                 {user?.role === "RENTER" ? <Route path="applications/:applicationId" element={<RenterApplicationDetailPage />} /> : null}
                 {user?.role === "RENTER" ? <Route path="bookings" element={<RenterBookingsPage />} /> : null}
                 {user?.role === "RENTER" ? <Route path="bookings/:bookingId" element={<RenterBookingDetailPage />} /> : null}
+                {user?.role === "RENTER" ? <Route path="bookings/:bookingId/handover" element={<HandoverPage audience="renter" />} /> : null}
+                {user?.role === "RENTER" ? <Route path="rentals/:rentalId" element={<RentalDetailPage audience="renter" />} /> : null}
+                {user?.role === "RENTER" ? <Route path="rentals/:rentalId/return" element={<ReturnPage audience="renter" />} /> : null}
+                {user?.role === "RENTER" ? <Route path="rentals" element={<RenterRentalsPage />} /> : null}
               </Route>
               {user?.role === "MANAGER" ? <Route path="/manager" element={<ManagerLayout />}>
                 <Route path="applications" element={<ManagerApplicationsPage />} />
                 <Route path="applications/:applicationId" element={<ManagerApplicationDetailPage />} />
                 <Route path="bookings" element={<ManagerBookingsPage />} />
                 <Route path="bookings/:bookingId" element={<ManagerBookingDetailPage />} />
+                <Route path="bookings/:bookingId/handover" element={<HandoverPage audience="manager" />} />
+                <Route path="rentals" element={<ManagerRentalsPage />} />
+                <Route path="rentals/:rentalId" element={<RentalDetailPage audience="manager" />} />
+                <Route path="rentals/:rentalId/return" element={<ReturnPage audience="manager" />} />
                 <Route path="products" element={<ManagerListPage section="products" />} />
                 <Route path="rejected" element={<ManagerListPage section="rejected" />} />
                 <Route path="archive" element={<ManagerListPage section="archive" />} />

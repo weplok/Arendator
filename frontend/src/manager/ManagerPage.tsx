@@ -37,6 +37,7 @@ export function ManagerLayout() {
       <NavLink to="/manager/products">Мои товары</NavLink>
       <NavLink to="/manager/applications">Заявки</NavLink>
       <NavLink to="/manager/bookings">Брони</NavLink>
+      <NavLink to="/manager/rentals">Аренды</NavLink>
       <NavLink to="/manager/rejected">Отклонённые</NavLink>
       <NavLink to="/manager/archive">Архив</NavLink>
       <p>Здесь вы управляете только своим каталогом, заявками и бронями на свои товары.</p>

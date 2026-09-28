@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f5">
+  <title>Этап №9 — выдача и начало аренды</title>
+  <link rel="stylesheet" href="manager-stage-4.css">
+  <link rel="stylesheet" href="applications-stage-7.css">
+  <link rel="stylesheet" href="bookings-stage-8.css">
+  <link rel="stylesheet" href="handover-stage-9.css">
+</head>
+<body>
+  <a class="skip-link" href="#stage9-content">К основному содержанию</a>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 10 9-5M12 12 3 7m9 5v10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v10H2V9a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="8" cy="8" r="1.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m4 18 5-5 3 3 3-4 5 6" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-person" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4 21c.8-4.1 3.4-6 8-6s7.2 1.9 8 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="M12 9v5m0 3v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11v6m0-10v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H3v5m13-5h5v5M8 21H3v-5m13 5h5v-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4 7h16M9 7V4h6v3m-9 0 1 14h10l1-14M10 11v6m4-6v6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-ruble" viewBox="0 0 24 24"><path d="M7 20V4h6a5 5 0 0 1 0 10H7m0 3h9M7 14h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8"/></symbol>
+    <symbol id="i-drill" viewBox="0 0 90 90"><path d="M18 24h48l9 10-8 9H44l-7 8H24V40h-6zM47 43v25l-9 7h-9V48M18 28h-8v10h8M66 29v12M51 68h-9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></symbol>
+  </svg>
+
+  <aside class="prototype-bar" aria-label="Навигация по эскизам">
+    <div class="prototype-head"><strong>Этап №9 · выдача</strong><span>Интерактивные mobile-first эскизы. Данные демонстрационные.</span></div>
+    <nav class="prototype-nav" aria-label="Экраны эскизов">
+      <a href="#catalog-pickup">01 Плашка приёмки</a>
+      <a href="#renter-home-pickup">02 Кабинет + приёмка</a>
+      <a href="#renter-capture">03 Фото арендатора</a>
+      <a href="#manager-capture">04 Фото менеджера</a>
+      <a href="#upload-states">05 Загрузка</a>
+      <a href="#waiting-materials">06 Ожидание</a>
+      <a href="#renter-review">07 Проверка</a>
+      <a href="#manager-review">08 Подтверждение</a>
+      <a href="#change-requested">09 Исправление</a>
+      <a href="#waiting-confirm">10 Одно подтверждение</a>
+      <a href="#renter-rental">11 Аренда · арендатор</a>
+      <a href="#manager-rental">12 Аренда · менеджер</a>
+      <a href="#catalog-overdue">13 Штрафная плашка</a>
+      <a href="#renter-overdue">14 Просрочка</a>
+    </nav>
+  </aside>
+
+  <div class="app" id="stage9-content">
+    <header class="app-header">
+      <a class="brand" href="#catalog-pickup" aria-label="Временно — каталог"><span class="brand-mark" aria-hidden="true"></span>Временно</a>
+      <div class="header-right">
+        <a class="text-link" href="#catalog-pickup">Каталог</a>
+        <div class="header-profile active" data-role="renter"><span class="role-label">Арендатор</span><span class="account"><span class="avatar">МВ</span><span>Марина<small>Личный кабинет</small></span></span></div>
+        <div class="header-profile" data-role="manager"><span class="role-label">Менеджер</span><span class="account"><span class="avatar">АС</span><span>Алексей<small>Рабочий кабинет</small></span></span></div>
+      </div>
+    </header>
+
+    <section class="screen" id="catalog-pickup" data-role="renter" aria-labelledby="catalog-pickup-title">
+      <div class="catalog-shell">
+        <div class="stage-banner"><svg aria-hidden="true"><use href="#i-camera"/></svg><div><strong>Идёт приёмка дрели Makita</strong><span>Добавьте минимум 2 фото и завершите фиксацию вместе с менеджером.</span></div><a href="#renter-capture">Продолжить приёмку</a></div>
+        <div class="catalog-tools">
+          <aside class="catalog-filter-mock" aria-label="Демонстрация фильтров"><h2>Фильтры</h2><div class="filter-line"></div><div class="filter-line"></div><div class="filter-line"></div><div class="filter-line"></div></aside>
+          <div class="catalog-results-mock"><h1 id="catalog-pickup-title" tabindex="-1">Каталог оборудования</h1><p>Инструменты и техника рядом с вами</p><div class="catalog-grid-mock">
+            <article class="catalog-card-mock"><div class="catalog-photo-mock"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="catalog-card-copy"><strong>Перфоратор Makita HR2470</strong><span>4 ₽/мин · Сокольники</span></div></article>
+            <article class="catalog-card-mock"><div class="catalog-photo-mock"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="catalog-card-copy"><strong>Шуруповёрт Bosch GSR</strong><span>3 ₽/мин · Басманный</span></div></article>
+            <article class="catalog-card-mock"><div class="catalog-photo-mock"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="catalog-card-copy"><strong>Лобзик DeWalt DWE349</strong><span>3 ₽/мин · Тверской</span></div></article>
+          </div></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen dashboard-screen" id="renter-home-pickup" data-role="renter" aria-labelledby="renter-home-pickup-title">
+      <div class="app-body dashboard-body">
+        <aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav aria-label="Навигация арендатора"><a class="side-link" href="#renter-home-pickup" aria-current="page"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</a><span class="side-link"><svg aria-hidden="true"><use href="#i-box"/></svg>Заявки</span><span class="side-link"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды</span></nav></aside>
+        <main class="workspace-main">
+          <div class="stage-banner"><svg aria-hidden="true"><use href="#i-camera"/></svg><div><strong>Идёт приёмка дрели Makita</strong><span>Ваши материалы: 2 фото · менеджер ещё фиксирует состояние.</span></div><a href="#renter-capture">Продолжить приёмку</a></div>
+          <div class="page-head"><div><h1 id="renter-home-pickup-title" tabindex="-1">Добрый день, Марина</h1><p>Заявки, брони и аренды в одном месте</p></div></div>
+          <div class="dashboard-preview"><section class="surface"><span>Ожидающие заявки</span><strong>2</strong></section><section class="surface"><span>Активные брони</span><strong>1</strong></section><section class="surface"><span>Активные аренды</span><strong>0</strong></section></div>
+          <section class="surface"><div class="surface-head"><h2>Ближайшее действие</h2><span class="status warn">Получение оформляется</span></div><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Дрель Makita DDF482</strong><div class="product-sub">Аренда ещё не началась · фотоакт выдачи</div></div></div></section>
+        </main>
+      </div>
+    </section>
+
+    <section class="screen dashboard-screen" id="renter-capture" data-role="renter" aria-labelledby="renter-capture-title">
+      <div class="app-body dashboard-body">
+        <aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav aria-label="Навигация арендатора"><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><span class="side-link"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои аренды</span><a class="side-link" href="#renter-capture" aria-current="page"><svg aria-hidden="true"><use href="#i-camera"/></svg>Приёмка <span class="nav-count">1</span></a></nav></aside>
+        <main class="workspace-main">
+          <div class="stage-banner"><svg aria-hidden="true"><use href="#i-camera"/></svg><div><strong>Активная приёмка</strong><span>Дрель Makita DDF482</span></div><a href="#renter-capture">Вы здесь</a></div>
+          <div class="handover-head"><div><span class="status good">Арендатор прибыл</span><h1 id="renter-capture-title" tabindex="-1">Зафиксируйте состояние</h1><p>Сфотографируйте товар со всех важных сторон.</p></div><div class="product-brief"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Дрель Makita DDF482</strong><span>Плановый возврат 28 сен, 18:00 МСК</span></div></div></div>
+          <div class="steps" aria-label="Этап 1 из 2"><div class="step current"><span>1</span><div><strong>Фиксация</strong><small>Фото и комментарии</small></div></div><div class="step"><span>2</span><div><strong>Подтверждение</strong><small>Проверка обеими сторонами</small></div></div></div>
+          <div class="capture-stack">
+              <section class="surface party-card" aria-labelledby="own-renter-title"><div class="party-head"><div class="party-title"><span class="avatar">МВ</span><div><strong id="own-renter-title">Ваши материалы</strong><small>2 фото</small></div></div><span class="status warn">Черновик</span></div>
+                <div class="photo-board">
+                  <article class="act-photo"><button type="button" data-photo="Фотография 1" aria-label="Открыть фотографию 1"><span class="photo-scene"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article>
+                  <article class="act-photo"><button type="button" data-photo="Фотография 2" aria-label="Открыть фотографию 2"><span class="photo-scene detail"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article>
+                </div>
+                <div class="upload-choices"><label class="upload-choice"><svg aria-hidden="true"><use href="#i-camera"/></svg><span>Сделать фото<small>Камера устройства</small></span><input class="visually-hidden" type="file" name="renter_capture" autocomplete="off" accept="image/png,image/jpeg" capture="environment"></label><label class="upload-choice"><svg aria-hidden="true"><use href="#i-image"/></svg><span>Выбрать из устройства<small>PNG или JPEG, до 15 МБ</small></span><input class="visually-hidden" type="file" name="renter_upload" autocomplete="off" accept="image/png,image/jpeg" multiple></label></div>
+                <div class="comment-box"><label for="renter-comment">Комментарий (необязательно)</label><textarea id="renter-comment" name="renter_comment" autocomplete="off">На правой стороне корпуса есть тонкая царапина, показал крупно на втором фото.</textarea></div>
+                <div class="capture-actions"><a class="btn btn-primary" href="#waiting-materials">Завершить фиксацию</a></div>
+              </section>
+              <section class="surface party-card" aria-labelledby="manager-draft-title"><div class="party-head"><div class="party-title"><span class="avatar">АС</span><div><strong id="manager-draft-title">Материалы менеджера</strong><small>0 фото</small></div></div><span class="status neutral">Не завершено</span></div><div class="unconfirmed-note"><svg aria-hidden="true"><use href="#i-info"/></svg><span><strong>Фиксация не подтверждена.</strong> Дождитесь менеджера.</span></div><div class="comment-readonly comment-empty">Фото и комментарий пока не добавлены.</div></section>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <section class="screen dashboard-screen" id="manager-capture" data-role="manager" aria-labelledby="manager-capture-title">
+      <div class="app-body dashboard-body">
+        <aside class="sidebar"><div class="sidebar-label">Кабинет менеджера</div><nav aria-label="Навигация менеджера"><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><a class="side-link" href="#manager-capture" aria-current="page"><svg aria-hidden="true"><use href="#i-camera"/></svg>Выдача <span class="nav-count">1</span></a><span class="side-link"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды</span></nav></aside>
+        <main class="workspace-main">
+          <div class="handover-head"><div><span class="status good">Экземпляр D-1042 · получение</span><h1 id="manager-capture-title" tabindex="-1">Фиксация перед выдачей</h1><p>Фото менеджера необязательны.</p></div><div class="product-brief"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Дрель Makita DDF482</strong><span>Марина Волкова · прибыла в 15:42</span></div></div></div>
+          <div class="steps" aria-label="Этап 1 из 2"><div class="step current"><span>1</span><div><strong>Фиксация</strong><small>Фото и комментарии</small></div></div><div class="step"><span>2</span><div><strong>Подтверждение</strong><small>Фактическая передача</small></div></div></div>
+          <div class="capture-stack">
+            <section class="surface party-card"><div class="party-head"><div class="party-title"><span class="avatar">АС</span><div><strong>Ваши материалы</strong><small>Фото необязательны</small></div></div><span class="status neutral">Без фото</span></div><div class="upload-choices"><label class="upload-choice"><svg aria-hidden="true"><use href="#i-camera"/></svg><span>Сделать фото<small>Камера устройства</small></span><input class="visually-hidden" type="file" name="manager_capture" autocomplete="off" accept="image/png,image/jpeg" capture="environment"></label><label class="upload-choice"><svg aria-hidden="true"><use href="#i-image"/></svg><span>Выбрать из устройства<small>PNG или JPEG, до 15 МБ</small></span><input class="visually-hidden" type="file" name="manager_upload" autocomplete="off" accept="image/png,image/jpeg" multiple></label></div><div class="comment-box"><label for="manager-comment">Комментарий (необязательно)</label><textarea id="manager-comment" name="manager_comment" autocomplete="off" placeholder="Например, комплектация или заметное состояние…"></textarea></div><div class="capture-actions"><a class="btn btn-primary" href="#waiting-materials">Завершить фиксацию</a></div></section>
+            <section class="surface party-card"><div class="party-head"><div class="party-title"><span class="avatar">МВ</span><div><strong>Материалы арендатора</strong><small>2 фото · комментарий</small></div></div><span class="status neutral">Не завершено</span></div><div class="unconfirmed-note"><svg aria-hidden="true"><use href="#i-info"/></svg><span><strong>Фиксация не подтверждена.</strong> Дождитесь арендатора.</span></div><div class="photo-board"><article class="act-photo"><button type="button" data-photo="Фотография 1" aria-label="Открыть фотографию 1"><span class="photo-scene"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article><article class="act-photo"><button type="button" data-photo="Фотография 2" aria-label="Открыть фотографию 2"><span class="photo-scene detail"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article></div><div class="comment-readonly"><strong>Комментарий арендатора</strong>На правой стороне корпуса есть тонкая царапина.</div></section>
+          </div>
+        </main>
+      </div>
+    </section>
+
+    <section class="screen dashboard-screen" id="upload-states" data-role="renter" aria-labelledby="upload-states-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav><a class="side-link" href="#renter-capture" aria-current="page"><svg aria-hidden="true"><use href="#i-camera"/></svg>Приёмка</a></nav></aside><main class="workspace-main"><div class="handover-head"><div><span class="status warn">Загрузка фото</span><h1 id="upload-states-title" tabindex="-1">Ваши фотографии</h1></div></div><div class="surface"><div class="photo-board"><article class="act-photo"><span class="photo-scene"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></article></div><div class="upload-progress" role="status" aria-live="polite"><div class="upload-progress-row"><strong>IMG_2481.jpg</strong><span>68%</span></div><div class="progress-track" aria-label="Загружено 68 процентов"><span></span></div></div><div class="upload-progress upload-error" role="status" aria-live="polite"><div class="upload-progress-row"><div><strong>IMG_2482.jpg</strong><span class="block-muted">Не удалось загрузить.</span></div><button class="retry" type="button">Повторить</button></div><div class="progress-track" aria-label="Ошибка загрузки"><span></span></div></div><div class="form-actions upload-form-actions"><a class="btn btn-quiet" href="#renter-capture">Вернуться к фиксации</a><div class="capture-actions"><button class="btn btn-primary" type="button" disabled aria-describedby="upload-requirement">Завершить фиксацию</button><p class="action-reason" id="upload-requirement">Добавьте ещё 1 фото, чтобы завершить фиксацию.</p></div></div></div></main></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="waiting-materials" data-role="renter" aria-labelledby="waiting-materials-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav><a class="side-link" href="#waiting-materials" aria-current="page"><svg aria-hidden="true"><use href="#i-camera"/></svg>Приёмка</a></nav></aside><main class="workspace-main"><div class="handover-head"><div><span class="status good">Ваша фиксация завершена</span><h1 id="waiting-materials-title" tabindex="-1">Ждём менеджера</h1></div></div><div class="steps"><div class="step current"><span>1</span><div><strong>Фиксация</strong><small>1 из 2 сторон завершила</small></div></div><div class="step"><span>2</span><div><strong>Подтверждение</strong><small>Пока недоступно</small></div></div></div><div class="surface party-card"><div class="party-head"><div class="party-title"><span class="avatar">АС</span><div><strong>Материалы менеджера</strong><small>0 фото · комментарий</small></div></div><span class="status neutral">В процессе</span></div><div class="unconfirmed-note"><svg aria-hidden="true"><use href="#i-info"/></svg><span><strong>Фиксация не подтверждена.</strong> Дождитесь менеджера.</span></div><div class="comment-readonly">Комплект: кейс, аккумулятор 5 А·ч, зарядное устройство.</div></div></main></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="renter-review" data-role="renter" aria-labelledby="renter-review-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav><a class="side-link" href="#renter-review" aria-current="page"><svg aria-hidden="true"><use href="#i-check"/></svg>Подтверждение</a></nav></aside><main class="workspace-main"><div class="handover-head"><div><span class="status good">Обе стороны завершили фиксацию</span><h1 id="renter-review-title" tabindex="-1">Проверьте общий фотоакт</h1><p>Сверьте фото и комментарии.</p></div></div><div class="steps"><div class="step done"><span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><div><strong>Фиксация</strong><small>Материалы готовы</small></div></div><div class="step current"><span>2</span><div><strong>Подтверждение</strong><small>Нужно решение обеих сторон</small></div></div></div><div class="handover-layout"><div>
+        <section class="surface party-card"><div class="party-head"><div class="party-title"><span class="avatar">МВ</span><div><strong>Ваши материалы</strong><small>2 фото · комментарий</small></div></div><span class="status good">Готово к проверке</span></div><div class="photo-board"><article class="act-photo"><button type="button" data-photo="Фотография 1" aria-label="Открыть фотографию 1"><span class="photo-scene"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article><article class="act-photo"><button type="button" data-photo="Фотография 2" aria-label="Открыть фотографию 2"><span class="photo-scene detail"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article></div><div class="comment-readonly"><strong>Ваш комментарий</strong>На правой стороне корпуса есть тонкая царапина.</div></section>
+        <section class="surface party-card"><div class="party-head"><div class="party-title"><span class="avatar">АС</span><div><strong>Материалы менеджера</strong><small>0 фото · комментарий</small></div></div><span class="status good">Готово к проверке</span></div><div class="comment-readonly"><strong>Комментарий менеджера</strong>Комплект: кейс, аккумулятор 5 А·ч, зарядное устройство.</div></section>
+      </div><aside class="surface action-card"><h2>Ваше решение</h2><div class="review-summary"><div class="review-person ready"><strong>Вы</strong><span>Ожидается решение</span></div><div class="review-person waiting"><strong>Менеджер</strong><span>Ещё не подтвердил</span></div></div><div class="review-actions"><a class="btn btn-primary" href="#waiting-confirm">Подтвердить фиксацию</a><a class="btn btn-secondary" href="#change-requested">Попросить менеджера изменить</a></div></aside></div></main></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="manager-review" data-role="manager" aria-labelledby="manager-review-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет менеджера</div><nav><a class="side-link" href="#manager-review" aria-current="page"><svg aria-hidden="true"><use href="#i-check"/></svg>Выдача</a><span class="side-link"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды</span></nav></aside><main class="workspace-main"><div class="handover-head"><div><span class="status good">Финальная проверка выдачи</span><h1 id="manager-review-title" tabindex="-1">Подтвердите передачу</h1><p>Проверьте материалы арендатора.</p></div><div class="product-brief"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>D-1042 · Makita DDF482</strong><span>Марина Волкова</span></div></div></div><div class="steps"><div class="step done"><span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><div><strong>Фиксация</strong><small>Обе стороны завершили</small></div></div><div class="step current"><span>2</span><div><strong>Подтверждение</strong><small>Арендатор уже подтвердил</small></div></div></div><div class="handover-layout"><div><section class="surface party-card"><div class="party-head"><div class="party-title"><span class="avatar">МВ</span><div><strong>Материалы арендатора</strong><small>2 фото · комментарий</small></div></div><span class="status good">Арендатор подтвердил</span></div><div class="photo-board"><article class="act-photo"><button type="button" data-photo="Фотография 1" aria-label="Открыть фотографию 1"><span class="photo-scene"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article><article class="act-photo"><button type="button" data-photo="Фотография 2" aria-label="Открыть фотографию 2"><span class="photo-scene detail"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article></div><div class="comment-readonly"><strong>Комментарий арендатора</strong>На правой стороне корпуса есть тонкая царапина.</div></section><section class="surface party-card"><div class="party-head"><div class="party-title"><span class="avatar">АС</span><div><strong>Ваши материалы</strong><small>Без фото · комментарий</small></div></div><span class="status good">Готово</span></div><div class="comment-readonly">Комплект: кейс, аккумулятор 5 А·ч, зарядное устройство.</div></section></div><aside class="surface action-card"><h2>Передача состоялась?</h2><div class="review-summary"><div class="review-person ready"><strong>Арендатор</strong><span>Подтвердил в 15:49</span></div><div class="review-person waiting"><strong>Вы</strong><span>Ожидается решение</span></div></div><div class="review-actions"><a class="btn btn-primary" href="#manager-rental">Подтвердить и начать аренду</a><a class="btn btn-secondary" href="#change-requested">Попросить арендатора изменить</a></div></aside></div></main></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="change-requested" data-role="renter" aria-labelledby="change-requested-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav><a class="side-link" href="#change-requested" aria-current="page"><svg aria-hidden="true"><use href="#i-camera"/></svg>Приёмка</a></nav></aside><main class="workspace-main"><div class="handover-head"><div><span class="status warn">Нужно обновить ваши материалы</span><h1 id="change-requested-title" tabindex="-1">Менеджер попросил изменить фиксацию</h1><p>Проверьте фото и комментарий.</p></div></div><div class="steps"><div class="step current"><span>1</span><div><strong>Фиксация</strong><small>Редактирование доступно</small></div></div><div class="step"><span>2</span><div><strong>Подтверждение</strong><small>Следующий шаг</small></div></div></div><div class="capture-stack"><section class="surface party-card"><div class="party-head"><div class="party-title"><span class="avatar">МВ</span><div><strong>Ваши материалы</strong><small>2 фото · комментарий</small></div></div><span class="status warn">Требуются изменения</span></div><div class="photo-board"><article class="act-photo"><button type="button" data-photo="Фотография 1" aria-label="Открыть фотографию 1"><span class="photo-scene"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article><article class="act-photo"><button type="button" data-photo="Фотография 2" aria-label="Открыть фотографию 2"><span class="photo-scene detail"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></article></div><div class="upload-choices"><label class="upload-choice"><svg aria-hidden="true"><use href="#i-camera"/></svg><span>Сделать фото<small>Камера устройства</small></span><input class="visually-hidden" type="file" name="renter_recapture" autocomplete="off" accept="image/png,image/jpeg" capture="environment"></label><label class="upload-choice"><svg aria-hidden="true"><use href="#i-image"/></svg><span>Выбрать из устройства<small>PNG или JPEG, до 15 МБ</small></span><input class="visually-hidden" type="file" name="renter_reupload" autocomplete="off" accept="image/png,image/jpeg" multiple></label></div><div class="comment-box"><label for="change-comment">Комментарий (необязательно)</label><textarea id="change-comment" name="change_comment" autocomplete="off">На правой стороне корпуса есть тонкая царапина, показал крупно на втором фото.</textarea></div><div class="capture-actions"><a class="btn btn-primary" href="#renter-review">Завершить фиксацию</a></div></section></div></main></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="waiting-confirm" data-role="renter" aria-labelledby="waiting-confirm-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav><a class="side-link" href="#waiting-confirm" aria-current="page"><svg aria-hidden="true"><use href="#i-check"/></svg>Подтверждение</a></nav></aside><main class="workspace-main"><div class="handover-head"><div><span class="status good">Вы подтвердили</span><h1 id="waiting-confirm-title" tabindex="-1">Ждём подтверждения менеджера</h1></div></div><div class="steps"><div class="step done"><span><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg></span><div><strong>Фиксация</strong><small>Материалы готовы</small></div></div><div class="step current"><span>2</span><div><strong>Подтверждение</strong><small>1 из 2 сторон</small></div></div></div><div class="surface"><div class="review-summary"><div class="review-person ready"><strong>Марина Волкова</strong><span>Подтвердила в 15:49 МСК</span></div><div class="review-person waiting"><strong>Алексей Соколов</strong><span>Ожидается подтверждение</span></div></div><div class="form-actions"><a class="btn btn-quiet" href="#renter-review">Посмотреть фотоакт</a></div></div></main></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="renter-rental" data-role="renter" aria-labelledby="renter-rental-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><a class="side-link" href="#renter-rental" aria-current="page"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды <span class="nav-count">1</span></a></nav></aside><main class="workspace-main"><section class="rental-hero"><div class="rental-hero-head"><div><span class="status good">Активная аренда</span><h1 id="renter-rental-title" tabindex="-1">Дрель Makita DDF482</h1><p>Начало: сегодня, 15:51 МСК · плановый возврат 28 сен, 18:00 МСК</p></div><span class="live-pill"><span class="live-dot"></span>Обновляется каждую минуту</span></div><div class="rental-metrics"><div class="rental-metric"><span>Текущая стоимость</span><strong>1 194 ₽</strong><small>Расчётная, без реального списания</small></div><div class="rental-metric"><span>Время аренды</span><strong>06:28</strong><small>6 ч 28 мин</small></div><div class="rental-metric"><span>Ставка</span><strong>3 ₽</strong><small>за минуту</small></div></div></section><div class="rental-grid"><section class="surface"><div class="surface-head"><h2>Как рассчитана сумма</h2><span class="status neutral">Обновлено 22:19</span></div><dl class="cost-breakdown"><dt>Стартовая стоимость · первые 10 минут</dt><dd>30 ₽</dd><dt>Своевременное время · 388 минут × 3 ₽</dt><dd>1 164 ₽</dd><dt><strong>Итого сейчас</strong></dt><dd><strong>1 194 ₽</strong></dd></dl></section><aside class="surface"><h2>Фотоакт выдачи</h2><a class="btn btn-secondary btn-wide" href="#renter-review">Посмотреть фотоакт</a></aside></div></main></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="manager-rental" data-role="manager" aria-labelledby="manager-rental-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет менеджера</div><nav><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><a class="side-link" href="#manager-rental" aria-current="page"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды <span class="nav-count">4</span></a></nav></aside><main class="workspace-main"><div class="handover-head"><div><span class="status good">Аренда началась</span><h1 id="manager-rental-title" tabindex="-1">Аренда D-1042</h1></div><div class="product-brief"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Дрель Makita DDF482</strong><span>Марина Волкова</span></div></div></div><section class="rental-hero"><div class="rental-hero-head"><div><span class="status good">Активна</span><h2 class="rental-time">6 ч 28 мин</h2><p>Начало сегодня, 15:51 МСК · возврат до 28 сен, 18:00 МСК</p></div><span class="live-pill"><span class="live-dot"></span>Таймер активен</span></div><div class="rental-metrics"><div class="rental-metric"><span>Расчётная стоимость</span><strong>1 194 ₽</strong><small>30 ₽ старт + минуты</small></div><div class="rental-metric"><span>Ставка</span><strong>3 ₽</strong><small>за минуту</small></div><div class="rental-metric"><span>До просрочки</span><strong>44:09</strong><small>44 ч 9 мин</small></div></div></section><div class="rental-grid"><section class="surface"><div class="surface-head"><h2>Текущий расчёт</h2><span class="status neutral">22:19 МСК</span></div><dl class="cost-breakdown"><dt>Стартовая стоимость</dt><dd>30 ₽</dd><dt>Своевременные минуты · 388</dt><dd>1 164 ₽</dd><dt><strong>Итого</strong></dt><dd><strong>1 194 ₽</strong></dd></dl></section><aside class="surface"><h2>Арендатор</h2><dl class="summary-list"><dt>Имя</dt><dd>Марина Волкова</dd><dt>Плановый возврат</dt><dd>28 сен, 18:00 МСК</dd><dt>Фотоакт</dt><dd><a href="#manager-review">Открыть выдачу</a></dd></dl></aside></div></main></div>
+    </section>
+
+    <section class="screen" id="catalog-overdue" data-role="renter" aria-labelledby="catalog-overdue-title">
+      <div class="catalog-shell"><div class="stage-banner overdue"><svg aria-hidden="true"><use href="#i-alert"/></svg><div><strong>Идёт штрафное время · +6 ₽/мин</strong><span>Дрель Makita просрочена на 42 минуты. Текущая расчётная стоимость: 8 286 ₽.</span></div><a href="#renter-overdue">Открыть аренду</a></div><div class="catalog-tools"><aside class="catalog-filter-mock" aria-label="Демонстрация фильтров"><h2>Фильтры</h2><div class="filter-line"></div><div class="filter-line"></div><div class="filter-line"></div></aside><div class="catalog-results-mock"><h1 id="catalog-overdue-title" tabindex="-1">Каталог оборудования</h1><p>Инструменты и техника рядом с вами</p><div class="catalog-grid-mock"><article class="catalog-card-mock"><div class="catalog-photo-mock"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="catalog-card-copy"><strong>Перфоратор Makita HR2470</strong><span>4 ₽/мин · Сокольники</span></div></article><article class="catalog-card-mock"><div class="catalog-photo-mock"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="catalog-card-copy"><strong>Лобзик DeWalt DWE349</strong><span>3 ₽/мин · Тверской</span></div></article></div></div></div></div>
+    </section>
+
+    <section class="screen dashboard-screen" id="renter-overdue" data-role="renter" aria-labelledby="renter-overdue-title">
+      <div class="app-body dashboard-body"><aside class="sidebar"><div class="sidebar-label">Кабинет арендатора</div><nav><span class="side-link"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</span><a class="side-link" href="#renter-overdue" aria-current="page"><svg aria-hidden="true"><use href="#i-alert"/></svg>Аренды <span class="nav-count">1</span></a></nav></aside><main class="workspace-main"><div class="stage-banner overdue"><svg aria-hidden="true"><use href="#i-alert"/></svg><div><strong>Начисляется штрафное время</strong><span>Верните оборудование менеджеру как можно скорее.</span></div><a href="#renter-overdue">Вы здесь</a></div><section class="rental-hero overdue"><div class="rental-hero-head"><div><span class="status overdue-status overdue-icon"><svg aria-hidden="true"><use href="#i-alert"/></svg>Просрочка</span><h1 id="renter-overdue-title" tabindex="-1">Дрель Makita DDF482</h1><p>Плановый возврат был сегодня в 18:00 МСК</p></div><span class="live-pill"><span class="live-dot"></span>Штрафное время активно</span></div><div class="rental-metrics"><div class="rental-metric"><span>Текущая стоимость</span><strong>8 286 ₽</strong><small>Включая расчётную доплату</small></div><div class="rental-metric"><span>Просрочка</span><strong>00:42</strong><small>42 минуты</small></div><div class="rental-metric"><span>Штрафная ставка</span><strong>6 ₽</strong><small>за минуту · ×2</small></div></div></section><div class="rental-grid"><section class="surface"><div class="surface-head"><h2>Текущий расчёт</h2><span class="status overdue-status">Штрафное время</span></div><dl class="cost-breakdown"><dt>Стартовая стоимость</dt><dd>30 ₽</dd><dt>Своевременные минуты · 2 668 × 3 ₽</dt><dd>8 004 ₽</dd><dt class="overdue-line">Просрочка · 42 × 6 ₽</dt><dd class="overdue-line">252 ₽</dd><dt><strong>Итого сейчас</strong></dt><dd><strong>8 286 ₽</strong></dd></dl></section><aside class="surface"><h2>Возврат</h2><p class="fine">Привезите оборудование в точку самовывоза.</p></aside></div></main></div>
+    </section>
+  </div>
+
+  <dialog id="photo-dialog" class="dialog wide-dialog" aria-labelledby="photo-dialog-title"><div class="surface-head"><div><span class="step-label">Фотоакт выдачи</span><h2 id="photo-dialog-title">Фотография</h2></div><button class="btn btn-quiet btn-small" type="button" data-close-photo>Закрыть</button></div><div class="photo-scene detail" style="min-height:340px"><svg aria-hidden="true"><use href="#i-drill"/></svg></div></dialog>
+
+  <script>
+    const screens = new Set([
+      "catalog-pickup", "renter-home-pickup", "renter-capture", "manager-capture", "upload-states",
+      "waiting-materials", "renter-review", "manager-review", "change-requested",
+      "waiting-confirm", "renter-rental", "manager-rental", "catalog-overdue",
+      "renter-overdue"
+    ]);
+
+    function showScreen() {
+      const requested = location.hash.slice(1);
+      const selected = screens.has(requested) ? requested : "catalog-pickup";
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.toggle("active", screen.id === selected));
+      document.querySelectorAll(".prototype-nav a").forEach((link) => {
+        if (link.hash === `#${selected}`) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+      const selectedScreen = document.getElementById(selected);
+      document.querySelectorAll(".header-profile").forEach((profile) => profile.classList.toggle("active", profile.dataset.role === selectedScreen.dataset.role));
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => selectedScreen.querySelector("h1[tabindex='-1']")?.focus({ preventScroll: true }));
+    }
+
+    const photoDialog = document.getElementById("photo-dialog");
+    document.querySelectorAll("[data-photo]").forEach((button) => button.addEventListener("click", () => {
+      document.getElementById("photo-dialog-title").textContent = button.dataset.photo;
+      photoDialog.showModal();
+    }));
+    document.querySelector("[data-close-photo]").addEventListener("click", () => photoDialog.close());
+    photoDialog.addEventListener("click", (event) => {
+      if (event.target === photoDialog) photoDialog.close();
+    });
+    addEventListener("hashchange", showScreen);
+    showScreen();
+  </script>
+</body>
+</html>

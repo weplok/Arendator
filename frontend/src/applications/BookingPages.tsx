@@ -255,7 +255,9 @@ function BookingDetail({ booking, audience, onArrival, onCancel }: BookingDetail
         <aside>
           <Paper variant="outlined" className="booking-action-card">
             {active && audience === "manager" ? <><Typography component="h2" variant="h6">Арендатор приехал?</Typography><Typography color="text.secondary">Подтверждение остановит автоистечение, но не начнёт аренду.</Typography><Button variant="contained" fullWidth onClick={onArrival}>Подтвердить прибытие</Button></> : null}
-            {booking.status === "ARRIVED" ? <><Typography component="h2" variant="h6">Получение оформляется</Typography><Typography color="text.secondary">Выдача и фотоакт будут реализованы на следующем этапе.</Typography></> : null}
+            {booking.status === "ARRIVED" ? <><Typography component="h2" variant="h6">Получение оформляется</Typography><Typography color="text.secondary">Добавьте материалы и подтвердите общий фотоакт.</Typography></> : null}
+            {booking.status === "ARRIVED" ? <Button component={RouterLink} to={audience === "manager" ? `/manager/bookings/${booking.id}/handover` : `/account/bookings/${booking.id}/handover`} variant="contained" fullWidth>Перейти к приёмке</Button> : null}
+            {booking.status === "RENTED" && booking.rental ? <Button component={RouterLink} to={audience === "manager" ? `/manager/rentals/${booking.rental.id}` : `/account/rentals/${booking.rental.id}`} variant="contained" fullWidth>Открыть аренду</Button> : null}
             {canCancel ? <Button color="error" variant="outlined" fullWidth onClick={onCancel}>Отменить бронь</Button> : null}
           </Paper>
           <Alert severity="info" sx={{ mt: 2 }}>Бронь гарантирует наличие товара только до срока получения, а не до планового возврата.</Alert>
@@ -303,16 +305,21 @@ function BookingStatus({ status }: { status: RentalBooking["status"] }) {
   const labels: Record<RentalBooking["status"], string> = {
     ACTIVE: "Ждёт арендатора",
     ARRIVED: "Арендатор прибыл",
+    RENTED: "Аренда началась",
     CANCELLED: "Отменена",
     EXPIRED: "Истекла автоматически",
   };
-  const color = status === "ARRIVED" ? "success" : status === "ACTIVE" ? "primary" : "warning";
+  const color = status === "ARRIVED" || status === "RENTED" ? "success" : status === "ACTIVE" ? "primary" : "warning";
   return <Chip size="small" color={color} label={labels[status]} />;
 }
 
 function bookingHistoryLabel(event: RentalBooking["history"][number]["event"]): string {
   if (event === "CREATED") return "Бронь создана";
   if (event === "ARRIVAL_CONFIRMED") return "Прибытие подтверждено";
+  if (event === "MATERIALS_COMPLETED") return "Фиксация завершена";
+  if (event === "CHANGES_REQUESTED") return "Запрошено изменение фиксации";
+  if (event === "HANDOVER_CONFIRMED") return "Фотоакт подтверждён";
+  if (event === "RENTAL_STARTED") return "Аренда началась";
   if (event === "EXPIRED") return "Бронь истекла автоматически";
   return "Бронь отменена";
 }

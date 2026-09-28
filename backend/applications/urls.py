@@ -1,6 +1,12 @@
 """Versioned API routes for rental applications."""
 
 from applications.views import (
+    HandoverCompleteView,
+    HandoverConfirmView,
+    HandoverMaterialsView,
+    HandoverPhotoListView,
+    HandoverPhotoView,
+    HandoverRequestChangesView,
     ManagerApplicationBookView,
     ManagerApplicationCancelView,
     ManagerApplicationDetailView,
@@ -10,19 +16,33 @@ from applications.views import (
     ManagerBookingDetailView,
     ManagerBookingListView,
     ManagerQueuePreferenceView,
+    ManagerReturnReceiveView,
     ProductApplicationCreateView,
+    RentalDetailView,
+    RentalListView,
+    RenterActivityView,
     RenterApplicationCancelView,
     RenterApplicationDetailView,
     RenterApplicationListView,
     RenterBookingCancelView,
     RenterBookingDetailView,
     RenterBookingListView,
+    ReturnCompleteView,
+    ReturnConfirmView,
+    ReturnDamageDecisionView,
+    ReturnFinancialsView,
+    ReturnFinishView,
+    ReturnMaterialsView,
+    ReturnPhotoListView,
+    ReturnPhotoView,
+    ReturnRequestChangesView,
 )
 from django.urls import path
 
 app_name = "applications"
 
 urlpatterns = [
+    path("activity/", RenterActivityView.as_view(), name="renter-activity"),
     path(
         "products/<int:pk>/applications/",
         ProductApplicationCreateView.as_view(),
@@ -94,5 +114,97 @@ urlpatterns = [
         "manager/bookings/<int:pk>/arrival/",
         ManagerBookingArrivalView.as_view(),
         name="manager-booking-arrival",
+    ),
+    path(
+        "bookings/<int:pk>/handover/photos/",
+        HandoverPhotoListView.as_view(),
+        name="handover-photo-list",
+    ),
+    path(
+        "bookings/<int:pk>/handover/photos/<int:photo_id>/",
+        HandoverPhotoView.as_view(),
+        name="handover-photo-delete",
+    ),
+    path(
+        "handover-photos/<int:photo_id>/",
+        HandoverPhotoView.as_view(),
+        name="handover-photo-file",
+    ),
+    path(
+        "bookings/<int:pk>/handover/materials/",
+        HandoverMaterialsView.as_view(),
+        name="handover-materials",
+    ),
+    path(
+        "bookings/<int:pk>/handover/complete/",
+        HandoverCompleteView.as_view(),
+        name="handover-complete",
+    ),
+    path(
+        "bookings/<int:pk>/handover/confirm/",
+        HandoverConfirmView.as_view(),
+        name="handover-confirm",
+    ),
+    path(
+        "bookings/<int:pk>/handover/request-changes/",
+        HandoverRequestChangesView.as_view(),
+        name="handover-request-changes",
+    ),
+    path("rentals/", RentalListView.as_view(), name="rental-list"),
+    path("rentals/<int:pk>/", RentalDetailView.as_view(), name="rental-detail"),
+    path(
+        "manager/rentals/<int:pk>/return/receive/",
+        ManagerReturnReceiveView.as_view(),
+        name="manager-return-receive",
+    ),
+    path(
+        "rentals/<int:pk>/return/photos/",
+        ReturnPhotoListView.as_view(),
+        name="return-photo-list",
+    ),
+    path(
+        "rentals/<int:pk>/return/photos/<int:photo_id>/",
+        ReturnPhotoView.as_view(),
+        name="return-photo-delete",
+    ),
+    path(
+        "return-photos/<int:photo_id>/",
+        ReturnPhotoView.as_view(),
+        name="return-photo-file",
+    ),
+    path(
+        "rentals/<int:pk>/return/materials/",
+        ReturnMaterialsView.as_view(),
+        name="return-materials",
+    ),
+    path(
+        "rentals/<int:pk>/return/financials/",
+        ReturnFinancialsView.as_view(),
+        name="return-financials",
+    ),
+    path(
+        "rentals/<int:pk>/return/complete/",
+        ReturnCompleteView.as_view(),
+        name="return-complete",
+    ),
+    path(
+        "rentals/<int:pk>/return/request-changes/",
+        ReturnRequestChangesView.as_view(),
+        name="return-request-changes",
+    ),
+    path(
+        "rentals/<int:pk>/return/damage-decision/",
+        ReturnDamageDecisionView.as_view(),
+        name="return-damage-decision",
+    ),
+    path(
+        "rentals/<int:pk>/return/confirm/",
+        ReturnConfirmView.as_view(),
+        name="return-confirm",
+    ),
+    path(
+        "rentals/<int:pk>/return/finish/",
+        ReturnFinishView.as_view(),
+        name="return-finish",
     ),
 ]

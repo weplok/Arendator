@@ -668,6 +668,84 @@ h6 {
   border: 0;
 }
 
+.activity-banner-wrap {
+  width: min(100%, 1280px);
+  padding: 18px 24px 0;
+  margin: 0 auto;
+}
+
+.activity-banner {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid #bfd7cc;
+  color: #1f513f !important;
+  background: var(--green-50) !important;
+}
+
+.activity-banner strong,
+.activity-banner span {
+  display: block;
+}
+
+.activity-banner span {
+  margin-top: 2px;
+  font-size: 0.78rem;
+}
+
+.activity-banner-icon {
+  width: 24px;
+  height: 24px;
+  display: grid !important;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--color-primary);
+  font-weight: 800;
+}
+
+.activity-banner-icon::after {
+  width: 8px;
+  height: 4px;
+  border-bottom: 2px solid currentColor;
+  border-left: 2px solid currentColor;
+  content: "";
+  transform: rotate(-45deg) translateY(-1px);
+}
+
+.activity-banner.is-overdue {
+  color: #7f2818 !important;
+  border-color: #efc2b5;
+  background: #fff0eb !important;
+}
+
+.activity-banner-warning {
+  width: 0;
+  height: 0;
+  border-right: 12px solid transparent;
+  border-bottom: 22px solid #a33a22;
+  border-left: 12px solid transparent;
+}
+
+@media (max-width: 600px) {
+  .activity-banner-wrap {
+    padding: 12px 16px 0;
+  }
+
+  .activity-banner {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .activity-banner .MuiButton-root {
+    grid-column: 2;
+    min-height: 44px;
+    justify-self: start;
+  }
+}
+
 @media (max-width: 800px) {
   .product-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
