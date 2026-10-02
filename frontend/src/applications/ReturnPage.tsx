@@ -6,6 +6,10 @@ import {
   Checkbox,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   FormControlLabel,
   FormLabel,
@@ -104,6 +108,11 @@ function ReturnWorkspace(props: {
   const [nextStatus, setNextStatus] = useState<"AVAILABLE" | "MAINTENANCE">(
     returnAct.next_instance_status || "AVAILABLE",
   );
+  const [maintenanceDialogOpen, setMaintenanceDialogOpen] = useState(false);
+  const [maintenanceReason, setMaintenanceReason] = useState(
+    returnAct.maintenance_reason || returnAct.damage_description,
+  );
+  const [maintenanceResult, setMaintenanceResult] = useState<Rental | null>(null);
   const previewUrls = useRef(new Set<string>());
 
   useEffect(() => () => {
@@ -141,9 +150,21 @@ function ReturnWorkspace(props: {
     onSuccess: updateRental,
   });
   const finish = useMutation({
-    mutationFn: () => finishReturn(rental.id, nextStatus),
-    onSuccess: updateRental,
+    mutationFn: (reason: string) => finishReturn(rental.id, nextStatus, reason),
+    onSuccess: (updated) => {
+      if (nextStatus === "MAINTENANCE") {
+        setMaintenanceResult(updated);
+        return;
+      }
+      updateRental(updated);
+    },
   });
+
+  function closeMaintenanceDialog(): void {
+    if (maintenanceResult) updateRental(maintenanceResult);
+    setMaintenanceDialogOpen(false);
+    setMaintenanceResult(null);
+  }
   const requestChanges = useMutation({
     mutationFn: () => requestReturnChanges(rental.id),
     onSuccess: updateRental,
@@ -306,7 +327,14 @@ function ReturnWorkspace(props: {
               onNextStatusChange={setNextStatus}
               onDamageDecision={(accepted) => damageDecision.mutate(accepted)}
               onConfirm={() => confirm.mutate()}
-              onFinish={() => finish.mutate()}
+              onFinish={() => {
+                if (nextStatus === "MAINTENANCE") {
+                  setMaintenanceReason(returnAct.maintenance_reason || damageDescription);
+                  setMaintenanceDialogOpen(true);
+                } else {
+                  finish.mutate("");
+                }
+              }}
               onRequestChanges={() => requestChanges.mutate()}
               pending={
                 damageDecision.isPending
@@ -319,6 +347,49 @@ function ReturnWorkspace(props: {
             <Alert severity="info">Ваша фиксация сохранена. Ожидаем вторую сторону.</Alert>
           )}
         </Box>
+        <Dialog open={maintenanceDialogOpen} onClose={closeMaintenanceDialog} fullWidth maxWidth="sm" aria-labelledby="return-maintenance-title">
+          <DialogTitle id="return-maintenance-title">
+            {maintenanceResult ? "Отправлено на обслуживание" : "Обслуживание после возврата"}
+          </DialogTitle>
+          <DialogContent>
+            {maintenanceResult ? <Box className="maintenance-success" role="status">
+              <Alert severity="success">Экземпляр исключён из доступности и передан на обслуживание.</Alert>
+              <Typography component="h3" variant="h6">
+                {rental.product.name}{rental.instance ? ` · ${rental.instance.inventory_number}` : ""}
+              </Typography>
+              <Box className="maintenance-reason">
+                <span>Причина обслуживания</span>
+                <strong>{maintenanceReason}</strong>
+              </Box>
+            </Box> : <>
+              <Typography color="text.secondary" sx={{ mb: 2 }}>
+                {rental.product.name}. Причина предварительно заполнена описанием повреждения — её можно уточнить.
+              </Typography>
+              <TextField
+                autoFocus fullWidth required multiline minRows={3}
+                label="Причина обслуживания"
+                name="maintenance_reason"
+                autoComplete="off"
+                value={maintenanceReason}
+                onChange={(event) => setMaintenanceReason(event.target.value)}
+                error={finish.error instanceof ApiError && Boolean(finish.error.fieldErrors.maintenance_reason)}
+                helperText={finish.error instanceof ApiError ? finish.error.fieldErrors.maintenance_reason?.[0] : undefined}
+              />
+            </>}
+          </DialogContent>
+          <DialogActions>
+            {maintenanceResult ? (
+              <Button component={RouterLink} to="/manager/products" variant="contained" onClick={closeMaintenanceDialog}>
+                Вернуться к товарам
+              </Button>
+            ) : <>
+              <Button onClick={closeMaintenanceDialog} disabled={finish.isPending}>Отмена</Button>
+              <Button variant="contained" disabled={finish.isPending || !maintenanceReason.trim()} onClick={() => finish.mutate(maintenanceReason)}>
+                {finish.isPending ? "Отправляем…" : "Отправить на обслуживание"}
+              </Button>
+            </>}
+          </DialogActions>
+        </Dialog>
       </Box>
     </Box>
   );

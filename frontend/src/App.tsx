@@ -36,6 +36,7 @@ import { CategoriesPage } from "./categories/CategoriesPage";
 import { AppShell } from "./layout/AppShell";
 import { ManagerEditor } from "./manager/ManagerEditor";
 import { ManagerLayout, ManagerListPage } from "./manager/ManagerPage";
+import { ManagerProductPage } from "./manager/ManagerProductPage";
 
 export default function App() {
   return (
@@ -121,6 +122,7 @@ function SessionApp() {
                 <Route path="rejected" element={<ManagerListPage section="rejected" />} />
                 <Route path="archive" element={<ManagerListPage section="archive" />} />
                 <Route path="products/new" element={<ManagerEditor />} />
+                <Route path="products/:productId" element={<ManagerProductPage />} />
                 <Route path="products/:productId/:step" element={<ManagerEditor />} />
               </Route> : null}
               <Route path="*" element={<Navigate to="/" replace />} />

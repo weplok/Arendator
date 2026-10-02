@@ -96,6 +96,7 @@ const returnActSchema = z.object({
   damage_amount: z.string(),
   damage_decision: z.enum(["NONE", "PENDING", "ACCEPTED", "REJECTED"]),
   next_instance_status: z.enum(["AVAILABLE", "MAINTENANCE", ""]),
+  maintenance_reason: z.string().default(""),
   updated_at: z.string(),
 });
 const rentalEventSchema = z.object({
@@ -393,9 +394,10 @@ export async function confirmReturn(rentalId: number): Promise<Rental> {
 export async function finishReturn(
   rentalId: number,
   nextInstanceStatus: "AVAILABLE" | "MAINTENANCE",
+  maintenanceReason = "",
 ): Promise<Rental> {
   return rentalSchema.parse(await postJson(
     `/api/v1/rentals/${rentalId}/return/finish/`,
-    JSON.stringify({ next_instance_status: nextInstanceStatus }),
+    JSON.stringify({ next_instance_status: nextInstanceStatus, maintenance_reason: maintenanceReason }),
   ));
 }

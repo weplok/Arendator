@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -104,6 +104,30 @@ describe("return flow", () => {
     expect(screen.getByRole("checkbox", { name: "Отменить повышающий коэффициент просрочки" })).toBeEnabled();
     expect(screen.getByRole("checkbox", { name: "Зафиксировать повреждение" })).toBeEnabled();
     expect(screen.getByText("Реального списания", { exact: false })).toBeInTheDocument();
+  });
+
+  it("prefills the maintenance reason from the damage description", async () => {
+    document.cookie = "csrftoken=test-token; path=/";
+    const reviewed = reviewRental();
+    let submittedBody = "";
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
+      if (String(input).endsWith("/return/finish/")) submittedBody = String(options?.body);
+      return jsonResponse(reviewed);
+    }));
+    renderReturnPage("manager");
+
+    await screen.findByRole("heading", { name: "Подтверждение возврата" });
+    fireEvent.click(screen.getByRole("radio", { name: "На обслуживании" }));
+    fireEvent.click(screen.getByRole("button", { name: "Подтвердить и завершить возврат" }));
+
+    const reason = screen.getByRole("textbox", { name: "Причина обслуживания" });
+    expect(reason).toHaveValue("Трещина на корпусе");
+    fireEvent.click(screen.getByRole("button", { name: "Отправить на обслуживание" }));
+    await waitFor(() => expect(submittedBody).toContain(
+      '"maintenance_reason":"Трещина на корпусе"',
+    ));
+    expect(await screen.findByRole("heading", { name: "Отправлено на обслуживание" })).toBeInTheDocument();
+    expect(screen.getByText("Экземпляр исключён из доступности", { exact: false })).toBeInTheDocument();
   });
 
   it("lets renter explicitly reject the current damage amount", async () => {

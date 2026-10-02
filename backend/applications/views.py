@@ -692,6 +692,7 @@ class ReturnFinishView(APIView):
         finish_return(
             rental_id=pk,
             next_instance_status=serializer.validated_data["next_instance_status"],
+            maintenance_reason=serializer.validated_data.get("maintenance_reason", ""),
         )
         return Response(serialize_rental(pk, request))
 

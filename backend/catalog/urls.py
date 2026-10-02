@@ -3,9 +3,13 @@
 from django.urls import path
 
 from catalog.manager_views import (
+    MaintenancePhotoView,
     ManagerFreezeView,
+    ManagerInstanceSearchView,
     ManagerInstancesView,
     ManagerInstanceView,
+    ManagerMaintenanceCompleteView,
+    ManagerMaintenanceStartView,
     ManagerPhotoOrderView,
     ManagerPhotosView,
     ManagerPhotoView,
@@ -61,6 +65,26 @@ urlpatterns = [
         "manager/products/<int:pk>/instances/<uuid:instance_id>/",
         ManagerInstanceView.as_view(),
         name="manager-instance",
+    ),
+    path(
+        "manager/instances/search/",
+        ManagerInstanceSearchView.as_view(),
+        name="manager-instance-search",
+    ),
+    path(
+        "manager/instances/<uuid:instance_id>/maintenance/",
+        ManagerMaintenanceStartView.as_view(),
+        name="manager-maintenance-start",
+    ),
+    path(
+        "manager/maintenances/<int:maintenance_id>/complete/",
+        ManagerMaintenanceCompleteView.as_view(),
+        name="manager-maintenance-complete",
+    ),
+    path(
+        "maintenance-photos/<int:photo_id>/",
+        MaintenancePhotoView.as_view(),
+        name="maintenance-photo",
     ),
     path(
         "manager/products/<int:pk>/submit/",

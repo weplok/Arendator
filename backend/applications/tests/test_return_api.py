@@ -17,7 +17,7 @@ from django.utils.dateparse import parse_datetime
 import pytest
 from rest_framework.test import APIClient
 
-from catalog.models import ProductInstance
+from catalog.models import Maintenance, ProductInstance
 from catalog.tests.factories import create_product, make_png, TEST_PASSWORD
 from users.models import User
 
@@ -253,6 +253,40 @@ def test_current_damage_consent_and_confirmations_complete_return(
     assert completed.json()["damage_amount"] == "75.50"
     assert rental.booking.instance.status == ProductInstance.Status.MAINTENANCE
     assert rental.ended_at is not None
+    maintenance = Maintenance.objects.get(source_return_act=rental.return_act)
+    assert maintenance.reason == "Скол покрытия"
+
+
+def test_finishing_return_for_maintenance_requires_reason_without_damage(
+    tmp_path: Any,
+    settings: Any,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    rental, renter = create_overdue_rental(timezone.now())
+    manager_client, renter_client = receive_and_add_photos(rental, renter)
+    renter_client.post(f"/api/v1/rentals/{rental.pk}/return/complete/")
+    manager_client.post(f"/api/v1/rentals/{rental.pk}/return/complete/")
+    renter_client.post(f"/api/v1/rentals/{rental.pk}/return/confirm/")
+
+    missing_reason = manager_client.post(
+        f"/api/v1/rentals/{rental.pk}/return/finish/",
+        {"next_instance_status": "MAINTENANCE"},
+        format="json",
+    )
+    completed = manager_client.post(
+        f"/api/v1/rentals/{rental.pk}/return/finish/",
+        {
+            "next_instance_status": "MAINTENANCE",
+            "maintenance_reason": "Плановая диагностика",
+        },
+        format="json",
+    )
+
+    assert missing_reason.status_code == 400
+    assert completed.status_code == 200
+    assert Maintenance.objects.get(source_return_act=rental.return_act).reason == (
+        "Плановая диагностика"
+    )
 
 
 def test_return_photo_is_private(tmp_path: Any, settings: Any) -> None:

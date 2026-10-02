@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f5">
+  <title>Арентатор — повреждения и обслуживание</title>
+  <link rel="stylesheet" href="manager-stage-4.css">
+  <link rel="stylesheet" href="maintenance-stage-12.css">
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Перейти к содержимому</a>
+  <svg aria-hidden="true" width="0" height="0" style="position:absolute;overflow:hidden">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m12 2 9 5v10l-9 5-9-5V7l9-5Zm0 10 9-5M12 12 3 7m9 5v10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-tool" viewBox="0 0 24 24"><path d="M14 6a5 5 0 0 0-7 6L2 17l5 5 5-5a5 5 0 0 0 6-7l-3 3-4-4 3-3Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="m15.5 15.5 5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M4 20h4L20 8l-4-4L4 16v4Zm10-14 4 4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 11v6m0-10v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><path d="M12 9v5m0 3v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="8" cy="8" r="1.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="m4 18 5-5 3 3 3-4 5 6" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a2 2 0 0 1 2 2v10H2V9a2 2 0 0 1 2-2Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/><circle cx="12" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-arrow-left" viewBox="0 0 24 24"><path d="m15 6-6 6 6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="m9 6 6 6-6 6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.9"/></symbol>
+    <symbol id="i-drill" viewBox="0 0 90 90"><path d="M18 24h48l9 10-8 9H44l-7 8H24V40h-6zM47 43v25l-9 7h-9V48M18 28h-8v10h8M66 29v12M51 68h-9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="3"/></symbol>
+  </svg>
+
+  <div class="app">
+    <header class="app-header">
+      <a class="brand" href="#products" aria-label="Арентатор — кабинет менеджера"><span class="brand-mark" aria-hidden="true"></span>Арентатор</a>
+      <div class="header-right"><div class="account"><span class="avatar">А</span><span>Алексей<small>Менеджер</small></span></div></div>
+    </header>
+    <div class="app-body">
+      <aside class="sidebar">
+        <div class="sidebar-label">Управление</div>
+        <nav aria-label="Кабинет менеджера">
+          <a class="side-link" data-nav="overview" href="#products"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</a>
+          <a class="side-link" data-nav="products" href="#products"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои товары</a>
+          <a class="side-link" data-nav="rentals" href="#return-maintenance"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды</a>
+          <a class="side-link" data-nav="maintenance" href="#search-maintenance"><svg aria-hidden="true"><use href="#i-tool"/></svg>Обслуживание <span class="nav-count">2</span></a>
+        </nav>
+        <p class="side-note">Товары, экземпляры и обслуживание вашего каталога.</p>
+      </aside>
+      <main id="main-content">
+        <section class="screen" id="products" data-nav="products" aria-labelledby="products-title">
+          <div class="page-head">
+            <div><h1 id="products-title" tabindex="-1">Мои товары</h1><p>Создавайте карточки и управляйте собственными экземплярами</p></div>
+            <div class="head-actions"><a class="btn btn-secondary" href="#instance-search"><svg aria-hidden="true"><use href="#i-search"/></svg>Найти экземпляр</a><a class="btn btn-primary" href="#products">+ Добавить товар</a></div>
+          </div>
+          <div class="manager-filters-row"><span class="pill active">Все активные · 11</span><span class="pill">Опубликованы · 8</span><span class="pill">На модерации · 0</span><span class="pill">Черновики · 3</span><span class="pill">Отклонённые · 0</span><span class="pill">Архив · 1</span><input class="search-field" name="product-search" autocomplete="off" aria-label="Поиск по своим товарам" placeholder="Поиск по своим товарам"></div>
+          <section class="surface" aria-label="Список товаров"><div class="table-wrap"><table><thead><tr><th>Товар</th><th>Ставка</th><th>Экземпляры</th><th>Статус</th></tr></thead><tbody>
+            <tr><td data-label="Товар"><a class="manager-product-link" href="#product" aria-label="Открыть Аккумуляторная дрель Makita DDF482"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span><span class="product-title">Аккумуляторная дрель Makita DDF482</span><span class="product-sub">Электроинструмент · Москва, Хамовники</span></span></div></a></td><td data-label="Ставка" class="num">3 ₽/мин</td><td data-label="Экземпляры"><span class="inventory-summary partial" aria-label="1 свободно из 3">1/3</span></td><td data-label="Статус"><span class="status good">Опубликован</span></td></tr>
+            <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-box"/></svg></span><span><span class="product-title">Шлифовальная машина Bosch GWS 9-125</span><span class="product-sub">Электроинструмент · Москва, Пресня</span></span></div></td><td data-label="Ставка" class="num">2 ₽/мин</td><td data-label="Экземпляры"><span class="inventory-summary" aria-label="2 свободно из 2">2/2</span></td><td data-label="Статус"><span class="status good">Опубликован</span></td></tr>
+            <tr><td data-label="Товар"><div class="product-cell"><span class="thumb"><svg aria-hidden="true"><use href="#i-image"/></svg></span><span><span class="product-title">Строительный пылесос</span><span class="product-sub">Уборочное оборудование</span></span></div></td><td data-label="Ставка" class="num">—</td><td data-label="Экземпляры"><span class="inventory-summary empty" aria-label="0 свободно из 0">0/0</span></td><td data-label="Статус"><span class="status neutral">Черновик</span></td></tr>
+          </tbody></table></div></section>
+        </section>
+
+        <section class="screen" id="product" data-nav="products" aria-labelledby="product-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / Аккумуляторная дрель Makita DDF482</div>
+          <div class="page-head page-head--compact"><div><span class="status good">Опубликован</span><h1 id="product-title" tabindex="-1">Аккумуляторная дрель Makita DDF482</h1><p>Карточка товара и все экземпляры</p></div><div class="head-actions"><a class="btn btn-secondary" href="#instance-search"><svg aria-hidden="true"><use href="#i-search"/></svg>Найти экземпляр</a><a class="btn btn-primary" href="#product"><svg aria-hidden="true"><use href="#i-edit"/></svg>Редактировать</a></div></div>
+          <section class="product-hero"><div class="product-visual"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="product-copy"><h2>Makita DDF482</h2><details class="product-description"><summary><span>Аккумуляторная дрель в кейсе с зарядным устройством и двумя аккумуляторами.</span><span class="description-more">Подробнее</span><span class="description-less">Свернуть</span></summary><p>Комплект подходит для монтажа и сборочных работ: дрель, зарядное устройство, два аккумулятора, ограничитель глубины и жёсткий кейс.</p></details><div class="product-meta"><div><span>Категория</span><strong>Дрели</strong></div><div><span>Ставка</span><strong>3 ₽/мин</strong></div><div><span>Точка</span><strong><a class="meta-link" href="https://yandex.ru/maps/?text=Москва%2C%20Хамовники" target="_blank" rel="noreferrer">Москва, Хамовники</a></strong></div><div><span>Экземпляры</span><strong>3 всего · <span class="nowrap">1 свободен</span></strong></div></div></div></section>
+          <div class="section-heading"><div><h2>Экземпляры</h2><p>Текущее состояние и история каждого экземпляра</p></div><div class="section-total">Стоимость ремонтов<strong>4 350 ₽</strong></div></div>
+          <div class="instances-list">
+            <article class="instance-card is-expanded">
+              <a class="instance-toggle" href="#product" aria-expanded="true" aria-controls="instance-mk-012"><span class="instance-identity"><span class="instance-icon"><svg aria-hidden="true"><use href="#i-box"/></svg></span><span><strong>MK-012</strong><small>Добавлен 18 мая 2026</small></span></span><span class="status good">Свободен</span><span class="instance-metric"><span>История</span><strong>Без повреждений</strong></span><span class="chevron"><svg aria-hidden="true"><use href="#i-chevron"/></svg></span></a>
+              <div class="instance-content" id="instance-mk-012"><div class="history-summary"><div><span>Повреждения</span><strong>0</strong></div><div><span>Обслуживания</span><strong>0</strong></div><div><span>Стоимость ремонтов</span><strong>0 ₽</strong></div></div><div class="instance-actions"><a class="btn btn-maintenance" href="#start-maintenance"><svg aria-hidden="true"><use href="#i-tool"/></svg>Отправить на обслуживание</a></div></div>
+            </article>
+            <article class="instance-card"><a class="instance-toggle" href="#product" aria-expanded="false"><span class="instance-identity"><span class="instance-icon"><svg aria-hidden="true"><use href="#i-box"/></svg></span><span><strong>MK-013</strong><small>Добавлен 18 мая 2026</small></span></span><span class="status info">В аренде</span><span class="instance-metric"><span>История</span><strong>1 обслуживание · 1 200 ₽</strong></span><span class="chevron"><svg aria-hidden="true"><use href="#i-chevron"/></svg></span></a></article>
+            <article class="instance-card"><a class="instance-toggle" href="#history" aria-expanded="false"><span class="instance-identity"><span class="instance-icon"><svg aria-hidden="true"><use href="#i-box"/></svg></span><span><strong>MK-014</strong><small>Добавлен 21 мая 2026</small></span></span><span class="status maintenance status-icon"><svg aria-hidden="true"><use href="#i-tool"/></svg>На обслуживании</span><span class="instance-metric"><span>История</span><strong>3 записи · 3 150 ₽</strong></span><span class="chevron"><svg aria-hidden="true"><use href="#i-chevron"/></svg></span></a></article>
+          </div>
+        </section>
+
+        <section class="screen" id="history" data-nav="products" aria-labelledby="history-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / <a href="#product">Makita DDF482</a> / MK-014</div>
+          <div class="page-head page-head--compact"><div><span class="status maintenance status-icon"><svg aria-hidden="true"><use href="#i-tool"/></svg>На обслуживании</span><h1 id="history-title" tabindex="-1">Аккумуляторная дрель Makita DDF482</h1><p>Экземпляры и история обслуживания</p></div><div class="head-actions"><a class="btn btn-secondary" href="#instance-search"><svg aria-hidden="true"><use href="#i-search"/></svg>Найти экземпляр</a><a class="btn btn-primary" href="#product"><svg aria-hidden="true"><use href="#i-edit"/></svg>Редактировать</a></div></div>
+          <section class="product-hero"><div class="product-visual"><svg aria-hidden="true"><use href="#i-drill"/></svg></div><div class="product-copy"><h2>Makita DDF482</h2><details class="product-description"><summary><span>Аккумуляторная дрель в кейсе с зарядным устройством и двумя аккумуляторами.</span><span class="description-more">Подробнее</span><span class="description-less">Свернуть</span></summary><p>Комплект подходит для монтажа и сборочных работ: дрель, зарядное устройство, два аккумулятора, ограничитель глубины и жёсткий кейс.</p></details><div class="product-meta"><div><span>Категория</span><strong>Дрели</strong></div><div><span>Ставка</span><strong>3 ₽/мин</strong></div><div><span>Точка</span><strong><a class="meta-link" href="https://yandex.ru/maps/?text=Москва%2C%20Хамовники" target="_blank" rel="noreferrer">Москва, Хамовники</a></strong></div><div><span>Экземпляры</span><strong>3 всего · <span class="nowrap">1 свободен</span></strong></div></div></div></section>
+          <div class="section-heading"><div><h2>Экземпляры</h2><p>Текущее состояние и история каждого экземпляра</p></div><div class="section-total">Стоимость ремонтов<strong>4 350 ₽</strong></div></div>
+          <div class="instances-list">
+            <article class="instance-card"><a class="instance-toggle" href="#product" aria-expanded="false"><span class="instance-identity"><span class="instance-icon"><svg aria-hidden="true"><use href="#i-box"/></svg></span><span><strong>MK-012</strong><small>Добавлен 18 мая 2026</small></span></span><span class="status good">Свободен</span><span class="instance-metric"><span>История</span><strong>Без повреждений</strong></span><span class="chevron"><svg aria-hidden="true"><use href="#i-chevron"/></svg></span></a></article>
+            <article class="instance-card"><a class="instance-toggle" href="#history" aria-expanded="false"><span class="instance-identity"><span class="instance-icon"><svg aria-hidden="true"><use href="#i-box"/></svg></span><span><strong>MK-013</strong><small>Добавлен 18 мая 2026</small></span></span><span class="status info">В аренде</span><span class="instance-metric"><span>История</span><strong>1 обслуживание · 1 200 ₽</strong></span><span class="chevron"><svg aria-hidden="true"><use href="#i-chevron"/></svg></span></a></article>
+            <article class="instance-card is-expanded">
+              <a class="instance-toggle" href="#history" aria-expanded="true" aria-controls="instance-mk-014"><span class="instance-identity"><span class="instance-icon"><svg aria-hidden="true"><use href="#i-box"/></svg></span><span><strong>MK-014</strong><small>Добавлен 21 мая 2026</small></span></span><span class="status maintenance status-icon"><svg aria-hidden="true"><use href="#i-tool"/></svg>На обслуживании</span><span class="instance-metric"><span>История</span><strong>3 записи · 3 150 ₽</strong></span><span class="chevron"><svg aria-hidden="true"><use href="#i-chevron"/></svg></span></a>
+              <div class="instance-content" id="instance-mk-014">
+                <div class="instance-actions"><a class="btn btn-maintenance" href="#complete-maintenance"><svg aria-hidden="true"><use href="#i-check"/></svg>Завершить обслуживание</a></div>
+                <div class="history-summary"><div><span>Повреждения</span><strong>2</strong></div><div><span>Обслуживания</span><strong>2</strong></div><div><span>Стоимость ремонтов</span><strong>3 150 ₽</strong></div></div>
+                <div class="timeline" aria-label="Хронология: от новых событий к старым">
+                  <div class="timeline-item"><span class="timeline-dot maintenance"><svg aria-hidden="true"><use href="#i-tool"/></svg></span><article class="history-entry"><div class="history-entry__head"><div><strong>Замена патрона и диагностика</strong><time datetime="2026-08-14">14 августа 2026</time></div><span class="history-entry__price">2 400 ₽</span></div><p>Патрон заменён, биение устранено. Корпус очищен, работа под нагрузкой проверена.</p><div class="history-entry__source">Обслуживание после аренды D-0978</div><a class="photo-reel" href="#photo-act" aria-label="Открыть фотоакт обслуживания от 14 августа, 6 фотографий"><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><span class="photo-count">+3 фото</span></a></article></div>
+                  <div class="timeline-item"><span class="timeline-dot maintenance"><svg aria-hidden="true"><use href="#i-tool"/></svg></span><article class="history-entry"><div class="history-entry__head"><div><strong>Ремонт корпуса</strong><time datetime="2026-06-03">3 июня 2026</time></div><span class="history-entry__price">750 ₽</span></div><p>Корпус закреплён, вентиляционная решётка заменена.</p><div class="no-photo" aria-label="Фотоакт обслуживания отсутствует"><span class="sad-image"><svg aria-hidden="true"><use href="#i-image"/></svg></span><span><strong>Фотоакт не проводился</strong><span>Для этого обслуживания фотографий нет</span></span></div></article></div>
+                  <div class="timeline-item"><span class="timeline-dot damage"><svg aria-hidden="true"><use href="#i-alert"/></svg></span><article class="history-entry"><div class="history-entry__head"><div><strong>Повреждение корпуса</strong><time datetime="2026-06-02">2 июня 2026</time></div><span class="status damage">После возврата</span></div><p>Трещина у вентиляционной решётки, потёртости на рукоятке.</p><div class="history-entry__source">Возврат аренды D-0831 · расчёт повреждения 600 ₽</div></article></div>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="screen" id="start-maintenance" data-nav="products" aria-labelledby="start-maintenance-title">
+          <div class="dialog-stage"><section class="maintenance-dialog" role="dialog" aria-modal="true" aria-labelledby="start-maintenance-title">
+            <div class="dialog-head"><div><span class="status maintenance">Обслуживание</span><h1 id="start-maintenance-title" tabindex="-1">Отправить экземпляр на обслуживание</h1><p>Укажите причину и подтвердите отправку.</p></div><a class="dialog-close" href="#product" aria-label="Закрыть"><svg aria-hidden="true"><use href="#i-close"/></svg></a></div>
+            <div class="instance-brief"><span class="instance-icon"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Makita DDF482 · MK-012</strong><span>Аккумуляторная дрель</span></div><span class="status good">Свободен</span></div>
+            <div class="dialog-field"><label for="maintenance-reason">Причина обслуживания <span class="required">*</span></label><textarea id="maintenance-reason" name="maintenance-reason" placeholder="Опишите неисправность или нужную проверку…">Появился люфт патрона при работе на высокой скорости.</textarea></div>
+            <div class="dialog-actions"><a class="btn btn-quiet" href="#product">Отмена</a><a class="btn btn-maintenance" href="#maintenance-sent">Отправить на обслуживание</a></div>
+          </section></div>
+        </section>
+
+        <section class="screen" id="return-maintenance" data-nav="rentals" aria-labelledby="return-maintenance-title">
+          <div class="dialog-stage"><section class="maintenance-dialog" role="dialog" aria-modal="true" aria-labelledby="return-maintenance-title">
+            <div class="dialog-head"><div><span class="status damage">После возврата D-1042</span><h1 id="return-maintenance-title" tabindex="-1">Отправить на обслуживание</h1><p>Проверьте причину перед завершением возврата.</p></div><a class="dialog-close" href="#product" aria-label="Закрыть"><svg aria-hidden="true"><use href="#i-close"/></svg></a></div>
+            <div class="instance-brief"><span class="instance-icon"><svg aria-hidden="true"><use href="#i-drill"/></svg></span><div><strong>Makita DDF482 · MK-014</strong><span>Возврат принят сегодня в 18:43 МСК</span></div><span class="status damage">Повреждение</span></div>
+            <div class="dialog-field"><label for="return-reason">Причина обслуживания <span class="required">*</span></label><textarea id="return-reason" name="return-maintenance-reason">Глубокая царапина возле патрона, появился люфт при вращении.</textarea></div>
+            <div class="dialog-actions"><a class="btn btn-quiet" href="#product">Назад</a><a class="btn btn-maintenance" href="#return-maintenance-sent">Завершить возврат и отправить</a></div>
+          </section></div>
+        </section>
+
+        <section class="screen" id="maintenance-sent" data-nav="products" aria-labelledby="maintenance-sent-title">
+          <div class="dialog-stage"><section class="maintenance-dialog" role="dialog" aria-modal="true" aria-labelledby="maintenance-sent-title">
+            <div class="dialog-head"><div><span class="status maintenance">Обслуживание</span><h1 id="maintenance-sent-title" tabindex="-1">Отправлено на обслуживание</h1><p>Makita DDF482 · MK-012</p></div><a class="dialog-close" href="#products" aria-label="Закрыть"><svg aria-hidden="true"><use href="#i-close"/></svg></a></div>
+            <div class="success-inline"><span class="success-mark"><svg aria-hidden="true"><use href="#i-check"/></svg></span><div><strong>Makita DDF482 · MK-012</strong><span>Статус изменён на «На обслуживании»</span></div></div>
+            <div class="reason-copy"><span>Причина обслуживания</span><strong>Появился люфт патрона при работе на высокой скорости.</strong></div>
+            <div class="dialog-actions"><a class="btn btn-primary" href="#products">Вернуться к товарам</a></div>
+          </section></div>
+        </section>
+
+        <section class="screen" id="return-maintenance-sent" data-nav="rentals" aria-labelledby="return-maintenance-sent-title">
+          <div class="dialog-stage"><section class="maintenance-dialog" role="dialog" aria-modal="true" aria-labelledby="return-maintenance-sent-title">
+            <div class="dialog-head"><div><span class="status maintenance">Обслуживание</span><h1 id="return-maintenance-sent-title" tabindex="-1">Отправлено на обслуживание</h1><p>Makita DDF482 · MK-014</p></div><a class="dialog-close" href="#products" aria-label="Закрыть"><svg aria-hidden="true"><use href="#i-close"/></svg></a></div>
+            <div class="success-inline"><span class="success-mark"><svg aria-hidden="true"><use href="#i-check"/></svg></span><div><strong>Makita DDF482 · MK-014</strong><span>Статус изменён на «На обслуживании»</span></div></div>
+            <div class="reason-copy"><span>Причина обслуживания</span><strong>Глубокая царапина возле патрона, появился люфт при вращении.</strong></div>
+            <div class="dialog-actions"><a class="btn btn-primary" href="#products">Вернуться к товарам</a></div>
+          </section></div>
+        </section>
+
+        <section class="screen" id="instance-search" data-nav="maintenance" aria-labelledby="instance-search-title">
+          <div class="dialog-stage"><section class="maintenance-dialog" role="dialog" aria-modal="true" aria-labelledby="instance-search-title">
+            <div class="dialog-head"><div><span class="status info">Поиск по складу</span><h1 id="instance-search-title" tabindex="-1">Найти экземпляр</h1><p>Введите инвентарный номер экземпляра.</p></div><a class="dialog-close" href="#products" aria-label="Закрыть"><svg aria-hidden="true"><use href="#i-close"/></svg></a></div>
+            <div class="search-form"><div class="dialog-field"><label for="instance-number">Инвентарный номер</label><input id="instance-number" name="inventory-number" autocomplete="off" spellcheck="false" placeholder="Например, MK-014…"></div><a class="btn btn-primary" href="#search-available"><svg aria-hidden="true"><use href="#i-search"/></svg>Найти</a></div>
+            <div class="search-tip"><svg aria-hidden="true"><use href="#i-info"/></svg><span>Используйте полный номер с буквами, цифрами и дефисом.</span></div>
+          </section></div>
+        </section>
+
+        <section class="screen" id="search-available" data-nav="maintenance" aria-labelledby="search-available-title">
+          <div class="dialog-stage"><section class="maintenance-dialog" role="dialog" aria-modal="true" aria-labelledby="search-available-title">
+            <div class="dialog-head"><div><span class="status info">Поиск по складу</span><h1 id="search-available-title" tabindex="-1">Найти экземпляр</h1><p>Введите инвентарный номер экземпляра.</p></div><a class="dialog-close" href="#products" aria-label="Закрыть"><svg aria-hidden="true"><use href="#i-close"/></svg></a></div>
+            <div class="search-form"><div class="dialog-field"><label for="available-number">Инвентарный номер</label><input id="available-number" name="inventory-number" autocomplete="off" spellcheck="false" value="MK-012"></div><a class="btn btn-primary" href="#search-available"><svg aria-hidden="true"><use href="#i-search"/></svg>Найти</a></div>
+            <article class="search-result"><div class="search-result__top"><div><h2>Экземпляр MK-012</h2><p>Аккумуляторная дрель Makita DDF482</p></div><span class="status good">Свободен</span></div><dl><dt>Товар</dt><dd>Makita DDF482</dd><dt>Категория</dt><dd>Дрели</dd><dt>Последнее обслуживание</dt><dd>Не проводилось</dd></dl><a class="btn btn-maintenance" href="#start-maintenance"><svg aria-hidden="true"><use href="#i-tool"/></svg>Отправить на обслуживание</a></article>
+            <div class="dialog-actions"><a class="btn btn-quiet" href="#instance-search">Очистить поиск</a><a class="btn btn-secondary" href="#product">Открыть товар</a></div>
+          </section></div>
+        </section>
+
+        <section class="screen" id="search-maintenance" data-nav="maintenance" aria-labelledby="search-maintenance-title">
+          <div class="dialog-stage"><section class="maintenance-dialog" role="dialog" aria-modal="true" aria-labelledby="search-maintenance-title">
+            <div class="dialog-head"><div><span class="status info">Поиск по складу</span><h1 id="search-maintenance-title" tabindex="-1">Найти экземпляр</h1><p>Введите инвентарный номер экземпляра.</p></div><a class="dialog-close" href="#products" aria-label="Закрыть"><svg aria-hidden="true"><use href="#i-close"/></svg></a></div>
+            <div class="search-form"><div class="dialog-field"><label for="maintenance-number">Инвентарный номер</label><input id="maintenance-number" name="inventory-number" autocomplete="off" spellcheck="false" value="MK-014"></div><a class="btn btn-primary" href="#search-maintenance"><svg aria-hidden="true"><use href="#i-search"/></svg>Найти</a></div>
+            <article class="search-result"><div class="search-result__top"><div><h2>Экземпляр MK-014</h2><p>Аккумуляторная дрель Makita DDF482</p></div><span class="status maintenance status-icon"><svg aria-hidden="true"><use href="#i-tool"/></svg>На обслуживании</span></div><dl><dt>Начато</dt><dd>27 сентября 2026, 19:02 МСК</dd><dt>Причина</dt><dd>Глубокая царапина возле патрона, люфт при вращении</dd><dt>Всего ремонтов</dt><dd>3 150 ₽</dd></dl><a class="btn btn-primary" href="#complete-maintenance"><svg aria-hidden="true"><use href="#i-check"/></svg>Вернуть в эксплуатацию</a></article>
+            <div class="dialog-actions"><a class="btn btn-quiet" href="#instance-search">Очистить поиск</a><a class="btn btn-secondary" href="#history">Открыть товар</a></div>
+          </section></div>
+        </section>
+
+        <section class="screen" id="complete-maintenance" data-nav="maintenance" aria-labelledby="complete-maintenance-title">
+          <div class="crumb"><a href="#products">Мои товары</a> / <a href="#history">Makita DDF482 · MK-014</a> / Завершение обслуживания</div>
+          <div class="page-head"><div><span class="status maintenance status-icon"><svg aria-hidden="true"><use href="#i-tool"/></svg>На обслуживании</span><h1 id="complete-maintenance-title" tabindex="-1">Вернуть экземпляр в эксплуатацию</h1><p>Makita DDF482 · MK-014</p></div><a class="btn btn-secondary" href="#history">Отмена</a></div>
+          <div class="complete-layout">
+            <div class="form-stack">
+              <section class="surface"><div class="form-section-head"><div><h2>Результат ремонта</h2><p>Обслуживание начато 27 сентября 2026, 19:02 МСК</p></div><span class="status maintenance">2 дня</span></div><div class="form-grid"><div class="field money-input"><label for="repair-cost">Стоимость ремонта, ₽ <span class="required">*</span></label><input id="repair-cost" name="repair-cost" autocomplete="off" inputmode="decimal" value="1850"><span>₽</span></div><div class="field wide"><label for="damage-description">Описание повреждения <span class="required">*</span></label><textarea id="damage-description" name="damage-description">Глубокая царапина возле патрона, появился люфт при вращении. Патрон заменён, работа под нагрузкой проверена.</textarea></div></div></section>
+              <section class="surface"><div class="form-section-head"><div><h2>Фотоакт после ремонта</h2><p>Добавьте фотографии состояния экземпляра</p></div><span class="status neutral">Необязательно</span></div><div class="upload-actions"><button class="upload-card" type="button"><svg aria-hidden="true"><use href="#i-camera"/></svg><span><strong>Сделать фото</strong><span>Открыть камеру</span></span></button><button class="upload-card" type="button"><svg aria-hidden="true"><use href="#i-image"/></svg><span><strong>Выбрать из устройства</strong><span>PNG или JPEG · до 15 МБ</span></span></button></div><div class="uploaded-strip" aria-label="Добавленные фотографии"><span class="photo-thumb"><svg role="img" aria-label="Общий вид дрели после ремонта"><use href="#i-drill"/></svg></span><span class="photo-thumb"><svg role="img" aria-label="Новый патрон крупным планом"><use href="#i-drill"/></svg></span><span class="photo-thumb"><svg role="img" aria-label="Корпус дрели после очистки"><use href="#i-drill"/></svg></span></div></section>
+            </div>
+            <aside class="surface maintenance-summary"><h2>Итог обслуживания</h2><dl class="summary-list"><dt>Экземпляр</dt><dd>MK-014</dd><dt>Стоимость ремонта</dt><dd>1 850 ₽</dd><dt>Фотоакт</dt><dd>3 фото</dd><dt>Новый статус</dt><dd>Свободен</dd></dl><div class="total">1 850 ₽</div><a class="btn btn-primary" href="#maintenance-done"><svg aria-hidden="true"><use href="#i-check"/></svg>Вернуть в эксплуатацию</a></aside>
+          </div>
+        </section>
+
+        <section class="screen" id="photo-act" data-nav="products" aria-labelledby="photo-act-title">
+          <div class="dialog-stage"><section class="maintenance-dialog carousel-dialog" role="dialog" aria-modal="true" aria-labelledby="photo-act-title">
+            <div class="dialog-head"><div><h1 id="photo-act-title" tabindex="-1">Фотоакт обслуживания · MK-014</h1><p>14 августа 2026 · замена патрона и диагностика</p></div><a class="dialog-close" href="#history" aria-label="Закрыть фотоакт"><svg aria-hidden="true"><use href="#i-close"/></svg></a></div>
+            <div class="carousel-stage"><svg role="img" aria-label="Новый патрон дрели после замены, вид сбоку"><use href="#i-drill"/></svg><span class="repair-mark" aria-hidden="true"></span><button class="carousel-control prev" type="button" aria-label="Предыдущее фото"><svg aria-hidden="true"><use href="#i-arrow-left"/></svg></button><button class="carousel-control next" type="button" aria-label="Следующее фото"><svg aria-hidden="true"><use href="#i-arrow-right"/></svg></button></div>
+            <div class="carousel-caption"><div><strong>Новый патрон после установки</strong><span>Проверка соосности и фиксации</span></div><span class="carousel-count">2 из 6</span></div>
+            <div class="carousel-thumbs" aria-label="Фотографии фотоакта"><button type="button" aria-label="Фото 1"><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button><button type="button" aria-label="Фото 2" aria-current="true"><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button><button type="button" aria-label="Фото 3"><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button><button type="button" aria-label="Фото 4"><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button><button type="button" aria-label="Фото 5"><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button><button type="button" aria-label="Фото 6"><span class="photo-thumb"><svg aria-hidden="true"><use href="#i-drill"/></svg></span></button></div>
+          </section></div>
+        </section>
+
+        <section class="screen" id="maintenance-done" data-nav="maintenance" aria-labelledby="maintenance-done-title">
+          <div class="success-page"><div class="success-mark"><svg aria-hidden="true"><use href="#i-check"/></svg></div><span class="status good">Обслуживание завершено</span><h1 id="maintenance-done-title" tabindex="-1">MK-014 снова доступен</h1><p>Результат ремонта и фотоакт добавлены в историю экземпляра.</p><div class="success-grid"><section class="surface"><h2>Результат</h2><dl class="summary-list"><dt>Товар</dt><dd>Makita DDF482</dd><dt>Экземпляр</dt><dd>MK-014</dd><dt>Стоимость ремонта</dt><dd>1 850 ₽</dd><dt>Фотоакт</dt><dd>3 фото</dd></dl><a class="btn btn-secondary" href="#photo-act">Открыть фотоакт</a></section><section class="surface"><h2>Текущее состояние</h2><dl class="summary-list"><dt>Статус</dt><dd><span class="status good">Свободен</span></dd><dt>Всего ремонтов</dt><dd>5 000 ₽</dd><dt>Завершено</dt><dd>29 сен, 11:26 МСК</dd></dl><a class="btn btn-primary" href="#history">Вернуться к товару</a></section></div></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  <script>
+    const screens = new Set(["products", "product", "history", "start-maintenance", "return-maintenance", "maintenance-sent", "return-maintenance-sent", "instance-search", "search-available", "search-maintenance", "complete-maintenance", "photo-act", "maintenance-done"]);
+    function showScreen(focusHeading = true) {
+      const requested = location.hash.slice(1);
+      const selected = screens.has(requested) ? requested : "products";
+      const selectedScreen = document.getElementById(selected);
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.toggle("active", screen.id === selected));
+      document.querySelectorAll(".side-link").forEach((link) => {
+        if (link.dataset.nav === selectedScreen.dataset.nav) link.setAttribute("aria-current", "page");
+        else link.removeAttribute("aria-current");
+      });
+      window.scrollTo(0, 0);
+      if (focusHeading) requestAnimationFrame(() => selectedScreen.querySelector("h1[tabindex='-1']")?.focus({ preventScroll: true }));
+    }
+    addEventListener("hashchange", () => showScreen(true));
+    showScreen(false);
+  </script>
+</body>
+</html>

@@ -21,7 +21,7 @@ from django.db.models import Count
 from django.utils import timezone
 from rest_framework.exceptions import APIException, ValidationError
 
-from catalog.models import Product, ProductInstance
+from catalog.models import Maintenance, Product, ProductInstance
 from users.models import User
 
 
@@ -899,7 +899,12 @@ def confirm_return(*, rental_id: int, role: str) -> ReturnAct:
 
 
 @transaction.atomic
-def finish_return(*, rental_id: int, next_instance_status: str) -> ReturnAct:
+def finish_return(
+    *,
+    rental_id: int,
+    next_instance_status: str,
+    maintenance_reason: str = "",
+) -> ReturnAct:
     return_act = _locked_return_act(rental_id)
     _ensure_return_materials_completed(return_act)
     if next_instance_status not in (
@@ -909,7 +914,19 @@ def finish_return(*, rental_id: int, next_instance_status: str) -> ReturnAct:
         raise ValidationError(
             {"next_instance_status": "Выберите состояние экземпляра."}
         )
+    normalized_reason = maintenance_reason.strip()
+    if (
+        next_instance_status == ProductInstance.Status.MAINTENANCE
+        and not normalized_reason
+    ):
+        normalized_reason = return_act.damage_description.strip()
+    if (
+        next_instance_status == ProductInstance.Status.MAINTENANCE
+        and not normalized_reason
+    ):
+        raise ValidationError({"maintenance_reason": "Укажите причину обслуживания."})
     return_act.next_instance_status = next_instance_status
+    return_act.maintenance_reason = normalized_reason
     if return_act.manager_confirmed_at is None:
         return_act.manager_confirmed_at = timezone.now()
         RentalEvent.objects.create(
@@ -938,6 +955,15 @@ def _try_complete_return(return_act: ReturnAct) -> None:
     instance = rental.booking.instance
     instance.status = return_act.next_instance_status
     instance.save(update_fields=("status",))
+    if return_act.next_instance_status == ProductInstance.Status.MAINTENANCE:
+        Maintenance.objects.get_or_create(
+            source_return_act=return_act,
+            defaults={
+                "instance": instance,
+                "started_by": rental.booking.application.product.manager,
+                "reason": return_act.maintenance_reason,
+            },
+        )
     RentalEvent.objects.create(
         rental=rental,
         event=RentalEvent.Event.RETURN_COMPLETED,

@@ -5,8 +5,43 @@ import { getJson, mutateJson, postJson } from "./client";
 const photoSchema = z.object({
   id: z.number(), url: z.string(), display_order: z.number(), is_primary: z.boolean(),
 });
+const instanceStatusSchema = z.enum([
+  "AVAILABLE", "RESERVED", "PICKUP_IN_PROGRESS", "RENTED",
+  "RETURN_INSPECTION", "MAINTENANCE", "DELETED",
+]);
+const maintenancePhotoSchema = z.object({
+  id: z.number(), url: z.string(), created_at: z.string(),
+});
+const maintenanceSchema = z.object({
+  id: z.number(), reason: z.string(), damage_description: z.string(),
+  repair_cost: z.string().nullable(), started_at: z.string(),
+  completed_at: z.string().nullable(), source_return_id: z.number().nullable(),
+  photos: z.array(maintenancePhotoSchema),
+});
+const instanceHistorySchema = z.object({
+  id: z.number(),
+  kind: z.enum(["MAINTENANCE", "DAMAGE"]),
+  occurred_at: z.string(),
+  reason: z.string().optional(),
+  damage_description: z.string(),
+  repair_cost: z.string().nullable().optional(),
+  damage_amount: z.string().optional(),
+  rental_id: z.number().optional(),
+  source_return_id: z.number().nullable().optional(),
+  started_at: z.string().optional(),
+  completed_at: z.string().nullable().optional(),
+  photos: z.array(maintenancePhotoSchema),
+});
 const instanceSchema = z.object({
-  id: z.string(), inventory_number: z.string(), status: z.string(),
+  id: z.string(), inventory_number: z.string(), status: instanceStatusSchema,
+  created_at: z.string().default(""),
+  repair_total: z.string().default("0.00"),
+  history_count: z.number().default(0),
+  history: z.array(instanceHistorySchema).default([]),
+  active_maintenance: maintenanceSchema.nullable().default(null),
+});
+const instanceSearchResultSchema = instanceSchema.extend({
+  product: z.object({ id: z.number(), name: z.string() }),
 });
 const pickupSchema = z.object({
   city: z.string(), district: z.string(), full_address: z.string(),
@@ -27,6 +62,10 @@ const characteristicValueSchema = z.object({
 
 export type ManagerProduct = z.infer<typeof managerProductSchema>;
 export type CharacteristicValue = z.infer<typeof characteristicValueSchema>;
+export type ManagerInstance = z.infer<typeof instanceSchema>;
+export type InstanceHistory = z.infer<typeof instanceHistorySchema>;
+export type Maintenance = z.infer<typeof maintenanceSchema>;
+export type InstanceSearchResult = z.infer<typeof instanceSearchResultSchema>;
 export interface ProductFields {
   name: string;
   description: string;
@@ -113,5 +152,44 @@ export async function getCharacteristicValues(id: number): Promise<Characteristi
 export async function saveCharacteristicValues(id: number, values: CharacteristicValue[]): Promise<CharacteristicValue[]> {
   return z.array(characteristicValueSchema).parse(await mutateJson(
     `/api/v1/products/${id}/characteristics/`, "PUT", JSON.stringify({ values }),
+  ));
+}
+
+export async function searchOwnInstance(
+  inventoryNumber: string,
+): Promise<InstanceSearchResult> {
+  const query = new URLSearchParams({ inventory_number: inventoryNumber });
+  return instanceSearchResultSchema.parse(await getJson(
+    `/api/v1/manager/instances/search/?${query.toString()}`,
+  ));
+}
+
+export async function startMaintenance(
+  instanceId: string,
+  reason: string,
+): Promise<Maintenance> {
+  return maintenanceSchema.parse(await postJson(
+    `/api/v1/manager/instances/${instanceId}/maintenance/`,
+    JSON.stringify({ reason }),
+  ));
+}
+
+export interface MaintenanceCompletion {
+  repairCost: string;
+  damageDescription: string;
+  images: File[];
+}
+
+export async function completeMaintenance(
+  maintenanceId: number,
+  completion: MaintenanceCompletion,
+): Promise<Maintenance> {
+  const body = new FormData();
+  body.set("repair_cost", completion.repairCost);
+  body.set("damage_description", completion.damageDescription);
+  completion.images.forEach((image) => body.append("images", image));
+  return maintenanceSchema.parse(await postJson(
+    `/api/v1/manager/maintenances/${maintenanceId}/complete/`,
+    body,
   ));
 }

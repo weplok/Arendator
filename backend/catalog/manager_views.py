@@ -1,9 +1,11 @@
 """Manager-owned catalog mutations for the product editor."""
 
 from decimal import Decimal
+import mimetypes
 from typing import Any
 from uuid import UUID
 
+from applications.models import Rental, ReturnAct
 from applications.services import (
     cancel_excess_applications,
     cancel_waiting_for_product,
@@ -11,6 +13,7 @@ from applications.services import (
 from django.core.exceptions import ValidationError as ModelValidationError
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Prefetch, Q
+from django.http import FileResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import serializers, status
 from rest_framework.exceptions import PermissionDenied, ValidationError
@@ -19,7 +22,15 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from catalog.models import PickupPoint, Product, ProductInstance, ProductPhoto
+from catalog.maintenance import complete_maintenance, start_maintenance
+from catalog.models import (
+    Maintenance,
+    MaintenancePhoto,
+    PickupPoint,
+    Product,
+    ProductInstance,
+    ProductPhoto,
+)
 from catalog.moderation import submit_product_for_moderation
 from catalog.serializers import ProductPhotoSerializer
 from categories.models import Category
@@ -97,6 +108,33 @@ class InstanceInputSerializer(serializers.Serializer):
     )
 
 
+class InstanceSearchSerializer(serializers.Serializer):
+    inventory_number = serializers.CharField(max_length=100, trim_whitespace=True)
+
+
+class MaintenanceStartSerializer(serializers.Serializer):
+    reason = serializers.CharField(max_length=2000, trim_whitespace=True)
+
+
+class MaintenanceCompleteSerializer(serializers.Serializer):
+    repair_cost = serializers.DecimalField(
+        max_digits=12,
+        decimal_places=2,
+        min_value=Decimal("0"),
+    )
+    damage_description = serializers.CharField(
+        max_length=4000,
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+    images = serializers.ListField(
+        child=serializers.ImageField(),
+        required=False,
+        allow_empty=True,
+    )
+
+
 def product_data(product: Product) -> dict[str, Any]:
     instances = [item for item in product.instances.all() if not item.is_deleted]
     photos = list(product.photos.all())
@@ -113,16 +151,102 @@ def product_data(product: Product) -> dict[str, Any]:
         "published_at": product.published_at,
         "pickup_point": manager_pickup_data(product.pickup_point),
         "photos": ProductPhotoSerializer(photos, many=True).data,
-        "instances": [
-            {
-                "id": str(item.pk),
-                "inventory_number": item.inventory_number,
-                "status": item.status,
-            }
-            for item in instances
-        ],
+        "instances": [manager_instance_data(item) for item in instances],
         "available_instances_count": sum(
             item.status == ProductInstance.Status.AVAILABLE for item in instances
+        ),
+    }
+
+
+def maintenance_data(maintenance: Maintenance) -> dict[str, Any]:
+    return {
+        "id": maintenance.pk,
+        "reason": maintenance.reason,
+        "damage_description": (maintenance.damage_description or maintenance.reason),
+        "repair_cost": (
+            str(maintenance.repair_cost)
+            if maintenance.repair_cost is not None
+            else None
+        ),
+        "started_at": maintenance.started_at,
+        "completed_at": maintenance.completed_at,
+        "source_return_id": maintenance.source_return_act_id,
+        "photos": [
+            {
+                "id": photo.pk,
+                "url": f"/api/v1/maintenance-photos/{photo.pk}/",
+                "created_at": photo.created_at,
+            }
+            for photo in maintenance.photos.all()
+        ],
+    }
+
+
+def manager_instance_data(instance: ProductInstance) -> dict[str, Any]:
+    maintenances = list(
+        instance.maintenances.prefetch_related("photos").order_by("-started_at", "-id")
+    )
+    damage_returns = list(
+        ReturnAct.objects.filter(
+            rental__booking__instance=instance,
+            rental__status=Rental.Status.COMPLETED,
+            damage_enabled=True,
+        )
+        .select_related("rental")
+        .order_by("-rental__ended_at", "-id")
+    )
+    history = [
+        {
+            "kind": "MAINTENANCE",
+            **maintenance_data(maintenance),
+            "occurred_at": maintenance.completed_at or maintenance.started_at,
+        }
+        for maintenance in maintenances
+    ]
+    history.extend(
+        {
+            "id": return_act.pk,
+            "kind": "DAMAGE",
+            "occurred_at": return_act.rental.ended_at,
+            "damage_description": return_act.damage_description,
+            "damage_amount": str(return_act.damage_amount),
+            "rental_id": return_act.rental_id,
+            "photos": [],
+        }
+        for return_act in damage_returns
+    )
+    history.sort(
+        key=lambda item: item["occurred_at"],
+        reverse=True,
+    )
+    repair_total = sum(
+        (
+            maintenance.repair_cost or Decimal("0")
+            for maintenance in maintenances
+            if maintenance.completed_at is not None
+        ),
+        Decimal("0"),
+    )
+    active_maintenance = next(
+        (
+            maintenance
+            for maintenance in maintenances
+            if maintenance.completed_at is None
+        ),
+        None,
+    )
+    return {
+        "id": str(instance.pk),
+        "inventory_number": instance.inventory_number,
+        "status": instance.status,
+        "created_at": instance.created_at,
+        "repair_total": str(repair_total),
+        "history_count": len(history),
+        "history": history,
+        "active_maintenance": (
+            maintenance_data(active_maintenance)
+            if active_maintenance is not None
+            else None
         ),
     }
 
@@ -399,6 +523,101 @@ class ManagerInstanceView(APIView):
         instance.save()
         cancel_excess_applications(product)
         return Response(status=204)
+
+
+class ManagerInstanceSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request) -> Response:
+        require_manager(request)
+        serializer = InstanceSearchSerializer(data=request.query_params)
+        serializer.is_valid(raise_exception=True)
+        instance = get_object_or_404(
+            ProductInstance.objects.select_related("product"),
+            manager=request.user,
+            inventory_number=serializer.validated_data["inventory_number"],
+            is_deleted=False,
+        )
+        return Response(
+            {
+                **manager_instance_data(instance),
+                "product": {
+                    "id": instance.product_id,
+                    "name": instance.product.name,
+                },
+            }
+        )
+
+
+class ManagerMaintenanceStartView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request, instance_id: UUID) -> Response:
+        require_manager(request)
+        get_object_or_404(
+            ProductInstance,
+            pk=instance_id,
+            manager=request.user,
+            is_deleted=False,
+        )
+        serializer = MaintenanceStartSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            maintenance = start_maintenance(
+                instance_id=instance_id,
+                manager=request.user,
+                reason=serializer.validated_data["reason"],
+            )
+        except ModelValidationError as exc:
+            raise model_error(exc) from exc
+        return Response(maintenance_data(maintenance), status=201)
+
+
+class ManagerMaintenanceCompleteView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request: Request, maintenance_id: int) -> Response:
+        require_manager(request)
+        get_object_or_404(
+            Maintenance,
+            pk=maintenance_id,
+            instance__manager=request.user,
+        )
+        serializer = MaintenanceCompleteSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            maintenance = complete_maintenance(
+                maintenance_id=maintenance_id,
+                manager=request.user,
+                repair_cost=serializer.validated_data["repair_cost"],
+                damage_description=serializer.validated_data.get(
+                    "damage_description", ""
+                ),
+                images=serializer.validated_data.get("images", []),
+            )
+        except ModelValidationError as exc:
+            raise model_error(exc) from exc
+        return Response(maintenance_data(maintenance))
+
+
+class MaintenancePhotoView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, photo_id: int) -> FileResponse:
+        photo = get_object_or_404(
+            MaintenancePhoto.objects.select_related("maintenance__instance"),
+            pk=photo_id,
+        )
+        if (
+            photo.maintenance.instance.manager_id != request.user.id
+            and not request.user.is_staff
+        ):
+            raise PermissionDenied("Нет доступа к фотографии фотоакта.")
+        content_type = mimetypes.guess_type(photo.image.name or "")[0]
+        return FileResponse(
+            photo.image.open("rb"),
+            content_type=content_type or "image/jpeg",
+        )
 
 
 class ManagerSubmitView(APIView):

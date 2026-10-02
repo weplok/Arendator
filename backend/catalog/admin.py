@@ -13,6 +13,8 @@ from django.urls import path, reverse
 from django.utils.html import format_html
 
 from catalog.models import (
+    Maintenance,
+    MaintenancePhoto,
     ModerationDecision,
     ModerationSettings,
     PickupPoint,
@@ -369,6 +371,62 @@ class ProductCharacteristicValueAdmin(admin.ModelAdmin):
     )
     list_select_related = ("product", "characteristic", "option")
     autocomplete_fields = ("product", "characteristic")
+
+
+class MaintenancePhotoInline(admin.TabularInline):
+    model = MaintenancePhoto
+    fields = ("image", "created_at")
+    readonly_fields = ("image", "created_at")
+    can_delete = False
+    extra = 0
+
+    def has_add_permission(
+        self,
+        request: HttpRequest,
+        obj: Maintenance | None = None,
+    ) -> bool:
+        return False
+
+
+@admin.register(Maintenance)
+class MaintenanceAdmin(admin.ModelAdmin):
+    list_display = (
+        "instance",
+        "reason",
+        "repair_cost",
+        "started_by",
+        "started_at",
+        "completed_at",
+    )
+    list_filter = ("completed_at", "started_at")
+    list_select_related = ("instance", "instance__product", "started_by")
+    search_fields = (
+        "instance__inventory_number",
+        "instance__product__name",
+        "reason",
+        "damage_description",
+    )
+    readonly_fields = (
+        "instance",
+        "started_by",
+        "source_return_act",
+        "reason",
+        "damage_description",
+        "repair_cost",
+        "started_at",
+        "completed_at",
+    )
+    inlines = (MaintenancePhotoInline,)
+
+    def has_add_permission(self, request: HttpRequest) -> bool:
+        return False
+
+    def has_delete_permission(
+        self,
+        request: HttpRequest,
+        obj: Maintenance | None = None,
+    ) -> bool:
+        return False
 
 
 @admin.register(ModerationSettings)

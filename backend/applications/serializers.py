@@ -252,6 +252,10 @@ class ReturnFinishSerializer(serializers.Serializer):
             ProductInstance.Status.MAINTENANCE,
         )
     )
+    maintenance_reason = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
 
 
 class HandoverActSerializer(serializers.ModelSerializer[HandoverAct]):
@@ -327,6 +331,7 @@ class ReturnActSerializer(serializers.ModelSerializer[ReturnAct]):
             "damage_amount",
             "damage_decision",
             "next_instance_status",
+            "maintenance_reason",
             "updated_at",
         )
 

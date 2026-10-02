@@ -34,6 +34,12 @@ def product_photo_upload_to(instance: "ProductPhoto", filename: str) -> str:
     return f"products/{instance.product_id}/{uuid.uuid4().hex}{extension}"
 
 
+def maintenance_photo_upload_to(instance: "MaintenancePhoto", filename: str) -> str:
+    """Generate an opaque storage key for a private maintenance photo."""
+    extension = Path(filename).suffix.lower()
+    return f"maintenance/{instance.maintenance_id}/" f"{uuid.uuid4().hex}{extension}"
+
+
 def validate_product_photo(image: Any) -> None:
     """Validate product photos according to the public image contract."""
     if image.size > MAX_PHOTO_SIZE:
@@ -744,3 +750,114 @@ class ProductInstance(models.Model):
 
     def __str__(self) -> str:
         return self.inventory_number
+
+
+class Maintenance(models.Model):
+    instance = models.ForeignKey(
+        ProductInstance,
+        verbose_name="экземпляр",
+        on_delete=models.PROTECT,
+        related_name="maintenances",
+    )
+    started_by = models.ForeignKey(
+        User,
+        verbose_name="менеджер",
+        on_delete=models.PROTECT,
+        related_name="started_maintenances",
+    )
+    source_return_act = models.OneToOneField(
+        "applications.ReturnAct",
+        verbose_name="возврат-источник",
+        on_delete=models.PROTECT,
+        related_name="maintenance",
+        null=True,
+        blank=True,
+    )
+    reason = models.TextField("причина обслуживания")
+    damage_description = models.TextField("описание повреждения", blank=True)
+    repair_cost = models.DecimalField(
+        "стоимость ремонта",
+        max_digits=12,
+        decimal_places=2,
+        null=True,
+        blank=True,
+    )
+    started_at = models.DateTimeField("начато", auto_now_add=True)
+    completed_at = models.DateTimeField("завершено", null=True, blank=True)
+
+    class Meta:
+        verbose_name = "обслуживание"
+        verbose_name_plural = "обслуживания"
+        ordering = ("-started_at", "-id")
+        constraints = [
+            models.UniqueConstraint(
+                fields=("instance",),
+                condition=models.Q(completed_at__isnull=True),
+                name="instance_one_active_maintenance",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(repair_cost__isnull=True) | models.Q(repair_cost__gte=0)
+                ),
+                name="maintenance_repair_cost_nonnegative",
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=("instance", "completed_at", "started_at"),
+                name="maintenance_history_idx",
+            )
+        ]
+
+    def clean(self) -> None:
+        self.reason = self.reason.strip()
+        self.damage_description = self.damage_description.strip()
+        errors: dict[str, str] = {}
+        if not self.reason:
+            errors["reason"] = "Укажите причину обслуживания."
+        if (
+            self.instance_id
+            and self.started_by_id
+            and self.instance.manager_id != self.started_by_id
+        ):
+            errors["started_by"] = "Обслуживание доступно только владельцу."
+        if self.completed_at is not None and self.repair_cost is None:
+            errors["repair_cost"] = "Укажите стоимость ремонта."
+        if self.repair_cost is not None and self.repair_cost < 0:
+            errors["repair_cost"] = "Стоимость ремонта не может быть отрицательной."
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self) -> str:
+        return f"{self.instance}: {self.reason}"
+
+
+class MaintenancePhoto(models.Model):
+    maintenance = models.ForeignKey(
+        Maintenance,
+        verbose_name="обслуживание",
+        on_delete=models.CASCADE,
+        related_name="photos",
+    )
+    image = models.ImageField(
+        "фотография",
+        upload_to=maintenance_photo_upload_to,
+        validators=[
+            FileExtensionValidator(allowed_extensions=("jpg", "jpeg", "png")),
+            validate_product_photo,
+        ],
+    )
+    created_at = models.DateTimeField("дата создания", auto_now_add=True)
+
+    class Meta:
+        verbose_name = "фотография обслуживания"
+        verbose_name_plural = "фотографии обслуживания"
+        ordering = ("created_at", "id")
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        self.full_clean()
+        super().save(*args, **kwargs)

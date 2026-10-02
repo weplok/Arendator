@@ -105,3 +105,35 @@ export function MenuIcon(props: IconProps) {
     </IconBase>
   );
 }
+
+export function SearchIcon(props: IconProps) {
+  return <IconBase {...props}>
+    <circle cx="11" cy="11" r="6" stroke="currentColor" strokeWidth="1.8" />
+    <path d="m16 16 4 4" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+  </IconBase>;
+}
+
+export function ToolIcon(props: IconProps) {
+  return <IconBase {...props}>
+    <path d="M14.5 6.5a4 4 0 0 0-5 5L4 17l3 3 5.5-5.5a4 4 0 0 0 5-5l-2.4 2.4-3-3 2.4-2.4Z" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.7" />
+  </IconBase>;
+}
+
+export function BoxIcon(props: IconProps) {
+  return <IconBase {...props}>
+    <path d="m4 7 8-4 8 4v10l-8 4-8-4V7Zm0 0 8 4m8-4-8 4m0 0v10" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.7" />
+  </IconBase>;
+}
+
+export function ChevronDownIcon(props: IconProps) {
+  return <IconBase {...props}>
+    <path d="m6 9 6 6 6-6" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" />
+  </IconBase>;
+}
+
+export function SadImageIcon(props: IconProps) {
+  return <IconBase {...props}>
+    <rect x="3" y="4" width="18" height="16" rx="2" stroke="currentColor" strokeWidth="1.7" />
+    <path d="M8 10h.01M16 10h.01M8 17c1-3 7-3 8 0" stroke="currentColor" strokeLinecap="round" strokeWidth="1.7" />
+  </IconBase>;
+}

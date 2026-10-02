@@ -9,6 +9,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import {
   Link as RouterLink,
   NavLink,
@@ -24,6 +25,7 @@ import {
 } from "../api/manager";
 import { formatRate } from "../catalog/formatting";
 import { ImageIcon } from "../ui/Icons";
+import { InstanceSearchDialog } from "./ManagerMaintenance";
 import "./manager.css";
 
 type ManagerSection = "overview" | "products" | "rejected" | "archive";
@@ -90,6 +92,7 @@ export function ManagerListPage({ section }: { section: ManagerSection }) {
 }
 
 function ManagerPageHeader({ section }: { section: ManagerSection }) {
+  const [searchOpen, setSearchOpen] = useState(false);
   const titles: Record<ManagerSection, string> = {
     overview: "Кабинет менеджера",
     products: "Мои товары",
@@ -103,13 +106,15 @@ function ManagerPageHeader({ section }: { section: ManagerSection }) {
     archive: "Замороженные карточки вашего каталога",
   };
   const secondarySection = section === "archive" || section === "rejected";
-  return <div className="manager-head"><div>
+  return <><div className="manager-head"><div>
     <Typography variant="h3" component="h1">{titles[section]}</Typography>
     <Typography color="text.secondary">{subtitles[section]}</Typography>
-  </div>{secondarySection
+  </div><div className="manager-head__actions">{secondarySection
     ? <Button component={RouterLink} to="/manager/products" variant="outlined">К активным товарам</Button>
-    : <Button component={RouterLink} to="/manager/products/new" variant="contained">+ Добавить товар</Button>}
-  </div>;
+    : <>{section === "products" ? <Button variant="outlined" onClick={() => setSearchOpen(true)}>Найти экземпляр</Button> : null}
+      <Button component={RouterLink} to="/manager/products/new" variant="contained">+ Добавить товар</Button></>}
+  </div></div>
+  <InstanceSearchDialog open={searchOpen} onClose={() => setSearchOpen(false)} /></>;
 }
 
 function ManagerStats({ products }: { products: ManagerProduct[] }) {
@@ -191,7 +196,9 @@ function ProductRow({ product }: { product: ManagerProduct }) {
     : product.available_instances_count === totalInstances
       ? "full"
       : "partial";
-  const editorPath = `/manager/products/${product.id}/basic`;
+  const productPath = product.status === "PUBLISHED" || product.status === "FROZEN"
+    ? `/manager/products/${product.id}`
+    : `/manager/products/${product.id}/basic`;
   const chipColor = product.status === "PUBLISHED"
     ? "success"
     : product.status === "REJECTED"
@@ -199,7 +206,7 @@ function ProductRow({ product }: { product: ManagerProduct }) {
       : product.status === "ON_MODERATION"
         ? "warning"
         : "default";
-  return <tr className="manager-product-row"><td data-label="Товар"><RouterLink className="manager-row-link" to={editorPath} aria-label={`Открыть ${product.name}`}><div className="manager-product-cell">
+  return <tr className="manager-product-row"><td data-label="Товар"><RouterLink className="manager-row-link" to={productPath} aria-label={`Открыть ${product.name}`}><div className="manager-product-cell">
     <div className="manager-thumb">{product.photos[0] ? <img src={product.photos.find((photo) => photo.is_primary)?.url ?? product.photos[0].url} alt="" width="56" height="56" loading="lazy" /> : <ImageIcon width="28" height="28" />}</div>
     <div><strong>{product.name}</strong><small>{product.category_name}{product.pickup_point ? ` · ${product.pickup_point.city}, ${product.pickup_point.district}` : ""}</small></div></div></RouterLink></td>
     <td data-label="Ставка">{formatRate(product.minute_rate)} ₽/мин</td>

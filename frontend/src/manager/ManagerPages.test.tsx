@@ -42,6 +42,150 @@ it("shows only own products and navigates to the editor", async () => {
   expect(screen.queryByText("1 Основное")).not.toBeInTheDocument();
 });
 
+it("opens the published product overview and expands instance history", async () => {
+  const published = {
+    ...product,
+    status: "PUBLISHED",
+    published_at: "2026-09-20T10:00:00+03:00",
+    description: "Профессиональная дрель для продолжительных работ и точного сверления.",
+    pickup_point: {
+      city: "Москва", district: "Хамовники", full_address: "ул. Усачёва, 22",
+      latitude: "55.730000", longitude: "37.570000", yandex_maps_url: "https://yandex.ru/maps/",
+    },
+    photos: [{ id: 20, url: "/drill.jpg", display_order: 0, is_primary: true }],
+    instances: [{
+      id: "20a3d31e-7121-42e8-ad38-fecfbed13c11",
+      inventory_number: "MK-014", status: "MAINTENANCE",
+      created_at: "2026-05-21T10:00:00+03:00", repair_total: "750.00",
+      history_count: 2, active_maintenance: null,
+      history: [{
+        id: 4, kind: "MAINTENANCE", reason: "Ремонт корпуса",
+        damage_description: "Корпус закреплён", repair_cost: "750.00",
+        started_at: "2026-06-02T10:00:00+03:00",
+        completed_at: "2026-06-03T10:00:00+03:00",
+        occurred_at: "2026-06-03T10:00:00+03:00",
+        source_return_id: null, photos: [],
+      }, {
+        id: 3, kind: "MAINTENANCE", reason: "Замена патрона",
+        damage_description: "Патрон заменён", repair_cost: "0.00",
+        started_at: "2026-05-02T10:00:00+03:00",
+        completed_at: "2026-05-03T10:00:00+03:00",
+        occurred_at: "2026-05-03T10:00:00+03:00",
+        source_return_id: 9, photos: [
+          { id: 31, url: "/repair-1.jpg", created_at: "2026-05-03T10:00:00+03:00" },
+          { id: 32, url: "/repair-2.jpg", created_at: "2026-05-03T10:01:00+03:00" },
+        ],
+      }],
+    }],
+    available_instances_count: 0,
+  };
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => Promise.resolve(
+    Response.json(url.includes("auth/me") ? manager : url.endsWith("/8/") ? published : [published]),
+  )));
+
+  renderPage("/manager/products");
+  fireEvent.click(await screen.findByRole("link", { name: "Открыть Дрель" }));
+
+  expect(
+    await screen.findByRole("heading", { name: "Дрель", level: 1 }),
+  ).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Редактировать" })).toHaveAttribute(
+    "href", "/manager/products/8/basic",
+  );
+  fireEvent.click(screen.getByRole("button", { name: /MK-014/ }));
+  expect(screen.getByText("Ремонт корпуса")).toBeInTheDocument();
+  expect(screen.getByText("Фотоакт не проводился")).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Фотоакт не проводился/ })).not.toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: /Открыть фотоакт обслуживания/ }));
+  expect(screen.getByRole("dialog", { name: "Фотоакт обслуживания" })).toBeInTheDocument();
+  expect(screen.getByText("1 из 2")).toBeInTheDocument();
+  fireEvent.keyDown(screen.getByRole("dialog"), { key: "ArrowRight" });
+  expect(screen.getByText("2 из 2")).toBeInTheDocument();
+});
+
+it("searches an instance by exact inventory number and offers maintenance", async () => {
+  document.cookie = "csrftoken=manager-token; path=/";
+  const found = {
+    id: "20a3d31e-7121-42e8-ad38-fecfbed13c11",
+    inventory_number: "MK-014", status: "AVAILABLE",
+    created_at: "2026-05-21T10:00:00+03:00",
+    repair_total: "0.00", history_count: 0, history: [], active_maintenance: null,
+    product: { id: 8, name: "Дрель" },
+  };
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("instances/search")) return Promise.resolve(Response.json(found));
+    return Promise.resolve(Response.json([product]));
+  }));
+
+  renderPage("/manager/products");
+  fireEvent.click(await screen.findByRole("button", { name: "Найти экземпляр" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Инвентарный номер" }), {
+    target: { value: "MK-014" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Найти" }));
+
+  expect(await screen.findByText("Свободен")).toBeInTheDocument();
+  expect(screen.getByText("Дрель · MK-014")).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Отправить на обслуживание" })).toBeInTheDocument();
+});
+
+it("keeps the completion success state after returning an instance to service", async () => {
+  document.cookie = "csrftoken=manager-token; path=/";
+  const activeMaintenance = {
+    id: 41,
+    reason: "Трещина на корпусе",
+    damage_description: "Трещина на корпусе",
+    repair_cost: null,
+    started_at: "2026-09-20T10:00:00+03:00",
+    completed_at: null,
+    source_return_id: null,
+    photos: [],
+  };
+  const found = {
+    id: "20a3d31e-7121-42e8-ad38-fecfbed13c11",
+    inventory_number: "MK-014",
+    status: "MAINTENANCE",
+    created_at: "2026-05-21T10:00:00+03:00",
+    repair_total: "0.00",
+    history_count: 1,
+    history: [],
+    active_maintenance: activeMaintenance,
+    product: { id: 8, name: "Дрель" },
+  };
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("instances/search")) return Promise.resolve(Response.json(found));
+    if (url.includes("maintenances/41/complete")) {
+      return Promise.resolve(Response.json({
+        ...activeMaintenance,
+        damage_description: "Корпус заменён",
+        repair_cost: "640.00",
+        completed_at: "2026-09-21T10:00:00+03:00",
+      }));
+    }
+    return Promise.resolve(Response.json([product]));
+  }));
+
+  renderPage("/manager/products");
+  fireEvent.click(await screen.findByRole("button", { name: "Найти экземпляр" }));
+  fireEvent.change(screen.getByRole("textbox", { name: "Инвентарный номер" }), {
+    target: { value: "MK-014" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Найти" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Завершить обслуживание" }));
+  fireEvent.change(screen.getByRole("spinbutton", { name: "Стоимость ремонта, ₽" }), {
+    target: { value: "640" },
+  });
+  fireEvent.change(screen.getByRole("textbox", { name: "Описание повреждения" }), {
+    target: { value: "Корпус заменён" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "Завершить обслуживание" }));
+
+  expect(await screen.findByText("Обслуживание завершено", { exact: true })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Вернуться к товарам" })).toBeInTheDocument();
+});
+
 it("creates a draft then opens its photo step", async () => {
   document.cookie = "csrftoken=manager-token; path=/";
   const requests: { url: string; options?: RequestInit }[] = [];
