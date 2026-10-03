@@ -86,10 +86,10 @@ export function ManagerProfilePage() {
         value={section}
         onChange={(_, value: ManagerProductSection) => changeSection(value)}
         aria-label="Разделы каталога менеджера"
-        className="manager-tabs"
+        className="manager-profile-tabs"
       >
-        <Tab value="active" label={`Активные ${profile.active_products_count}`} />
-        <Tab value="frozen" label={`Архив ${profile.frozen_products_count}`} />
+        <Tab value="active" label={`Активные • ${profile.active_products_count}`} />
+        <Tab value="frozen" label={`Архив • ${profile.frozen_products_count}`} />
       </Tabs>
       <ManagerProducts
         query={productsQuery}

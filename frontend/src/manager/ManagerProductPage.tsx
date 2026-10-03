@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useMemo, useState, type SVGProps } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import {
@@ -47,12 +47,11 @@ export function ManagerProductPage() {
   if (query.isError) return <Alert severity="error" action={<Button onClick={() => query.refetch()}>Повторить</Button>}>Не удалось загрузить товар.</Alert>;
   const product = query.data;
   return <>
-    <div className="manager-product-crumb"><RouterLink to="/manager/products">Мои товары</RouterLink> / {product.name}</div>
+    <div className="manager-product-crumb"><RouterLink to="/manager/products">Мои товары</RouterLink> &gt; {product.name}</div>
     <div className="manager-product-heading">
       <div>
         <Chip size="small" label={productStatusLabel(product.status)} color={product.status === "PUBLISHED" ? "success" : "default"} />
         <Typography component="h1" variant="h3">{product.name}</Typography>
-        <Typography color="text.secondary">Экземпляры и история обслуживания</Typography>
       </div>
       <div className="manager-product-heading__actions">
         <Button variant="outlined" startIcon={<SearchIcon />} onClick={() => setSearchOpen(true)}>Найти экземпляр</Button>
@@ -106,7 +105,7 @@ function InstanceList(props: {
   );
   return <section className="manager-instance-section" aria-labelledby="instances-title">
     <div className="manager-instance-section__head">
-      <div><Typography id="instances-title" component="h2" variant="h5">Экземпляры</Typography><Typography color="text.secondary">Текущее состояние и история каждого экземпляра</Typography></div>
+      <Typography id="instances-title" component="h2" variant="h5">Экземпляры</Typography>
       <div><span>Стоимость ремонтов</span><strong>{formatRubles(totalRepairCost)}</strong></div>
     </div>
     <div className="manager-instance-list">
@@ -142,7 +141,7 @@ function InstanceTimeline({ history }: { history: InstanceHistory[] }) {
   const [photoAct, setPhotoAct] = useState<InstanceHistory | null>(null);
   if (!history.length) return <Typography className="manager-instance-empty">Повреждений и обслуживаний пока нет.</Typography>;
   return <div className="manager-timeline">{history.map((item) => <article className={`manager-timeline-item manager-timeline-item--${item.kind.toLowerCase()}`} key={`${item.kind}-${item.id}`}>
-    <span className="manager-timeline-dot" aria-hidden="true">{item.kind === "MAINTENANCE" ? <ToolIcon /> : "!"}</span>
+    <span className="manager-timeline-dot" aria-hidden="true">{item.kind === "MAINTENANCE" ? <ToolIcon /> : <WarningIcon />}</span>
     <div className="manager-timeline-card">
       <div className="manager-timeline-title"><div><Typography component="h3" variant="h6">{item.kind === "MAINTENANCE" ? item.reason : "Повреждение при возврате"}</Typography><small>{formatDate(item.occurred_at)}</small></div>{item.repair_cost !== undefined ? <strong>{item.repair_cost === null ? "В работе" : formatRubles(Number(item.repair_cost))}</strong> : <Chip size="small" color="error" variant="outlined" label="После возврата" />}</div>
       <p>{item.damage_description}</p>
@@ -214,6 +213,13 @@ function pluralize(value: number, one: string, few: string, many: string): strin
   if (mod10 === 1) return one;
   if (mod10 >= 2 && mod10 <= 4) return few;
   return many;
+}
+
+function WarningIcon(props: SVGProps<SVGSVGElement>) {
+  return <svg aria-hidden="true" fill="none" height="24" viewBox="0 0 24 24" width="24" {...props}>
+    <path d="M12 4.25 20 19H4L12 4.25Z" stroke="currentColor" strokeLinejoin="round" strokeWidth="1.8" />
+    <path d="M12 9v4.5M12 16.5h.01" stroke="currentColor" strokeLinecap="round" strokeWidth="1.8" />
+  </svg>;
 }
 
 function productStatusLabel(status: ManagerProduct["status"]): string {

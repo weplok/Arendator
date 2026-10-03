@@ -142,6 +142,7 @@ export const rentalSchema = z.object({
 export const rentalBookingSchema = z.object({
   id: z.number().int(),
   application_id: z.number().int(),
+  application_created_at: z.string().optional(),
   status: bookingStatusSchema,
   pickup_deadline_at: z.string(),
   planned_return_at: z.string(),

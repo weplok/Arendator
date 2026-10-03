@@ -85,7 +85,7 @@ describe("handover", () => {
     expect(screen.getByText("Без замечаний")).toBeInTheDocument();
   });
 
-  it("uploads files independently and preserves a failed file for retry", async () => {
+  it("uploads dropped files independently and preserves a failed file for retry", async () => {
     document.cookie = "csrftoken=test-token; path=/";
     let uploads = 0;
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
@@ -105,12 +105,13 @@ describe("handover", () => {
       new File(["first"], "first.png", { type: "image/png" }),
       new File(["second"], "second.png", { type: "image/png" }),
     ];
-    fireEvent.change(screen.getByLabelText("Выбрать из устройства"), {
-      target: { files },
+    fireEvent.drop(screen.getByText("Перетащите фото сюда или выберите способ загрузки").parentElement!, {
+      dataTransfer: { files },
     });
 
     expect(await screen.findByText("Не удалось загрузить second.png")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Повторить загрузку second.png" })).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Сохранить комментарий" })).not.toBeInTheDocument();
   });
 
   it("shows review actions only after both sets are completed", async () => {

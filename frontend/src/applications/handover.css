@@ -130,6 +130,24 @@
   margin-bottom: 14px;
 }
 
+.handover-dropzone {
+  padding: 10px;
+  border: 2px dashed transparent;
+  border-radius: 14px;
+  transition: border-color 160ms ease, background-color 160ms ease;
+}
+
+.handover-dropzone.is-drag-active {
+  border-color: var(--color-primary);
+  background: var(--green-50);
+}
+
+.handover-dropzone-hint {
+  grid-column: 1 / -1;
+  color: var(--color-text-muted);
+  font-size: 0.82rem !important;
+}
+
 .handover-upload-choice {
   min-height: 76px;
   display: flex !important;
@@ -193,8 +211,14 @@
 
 .handover-photo > .MuiIconButton-root {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 6px;
+  left: 6px;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 8px;
+  border-radius: 50%;
   color: #fff;
   background: rgba(23, 32, 29, 0.78);
 }

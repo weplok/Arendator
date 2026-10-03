@@ -22,7 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import {
@@ -64,6 +64,7 @@ export function ReturnPage({ audience }: ReturnPageProps) {
     queryKey,
     queryFn: () => getRental(rentalId),
     enabled: Number.isInteger(rentalId) && rentalId > 0,
+    refetchInterval: 2000,
   });
 
   if (query.isPending) return <ReturnSkeleton />;
@@ -100,6 +101,7 @@ function ReturnWorkspace(props: {
   const queryClient = useQueryClient();
   const [comment, setComment] = useState(ownParty.comment);
   const [uploads, setUploads] = useState<PendingUpload[]>([]);
+  const [dragActive, setDragActive] = useState(false);
   const [waived, setWaived] = useState(returnAct.late_surcharge_waived);
   const [waiverReason, setWaiverReason] = useState(returnAct.late_surcharge_waiver_reason);
   const [damageEnabled, setDamageEnabled] = useState(returnAct.damage_enabled);
@@ -190,8 +192,10 @@ function ReturnWorkspace(props: {
       setUploads((current) => replaceUploadState(current, upload.id, "error"));
     }
   };
-  const addFiles = (event: ChangeEvent<HTMLInputElement>) => {
-    const pending = Array.from(event.target.files ?? []).map((file) => {
+  const addFileList = (files: File[]) => {
+    const pending = files
+      .filter((file) => file.type === "image/png" || file.type === "image/jpeg")
+      .map((file) => {
       const previewUrl = URL.createObjectURL(file);
       previewUrls.current.add(previewUrl);
       return {
@@ -203,7 +207,15 @@ function ReturnWorkspace(props: {
     });
     setUploads((current) => [...current, ...pending]);
     pending.forEach((upload) => void uploadOne(upload));
+  };
+  const addFiles = (event: ChangeEvent<HTMLInputElement>) => {
+    addFileList(Array.from(event.target.files ?? []));
     event.target.value = "";
+  };
+  const dropFiles = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    addFileList(Array.from(event.dataTransfer.files));
   };
 
   const mutationError = complete.error ?? confirm.error ?? finish.error
@@ -212,14 +224,35 @@ function ReturnWorkspace(props: {
     ? complete.error.fieldErrors
     : {};
   const reviewReady = returnAct.can_review;
+  const damageResolved = !returnAct.damage_enabled
+    || returnAct.damage_decision === "ACCEPTED";
+  const agreementsComplete = returnAct.renter.is_confirmed
+    && returnAct.manager.is_confirmed
+    && damageResolved;
   const ownEditable = !ownParty.is_completed;
 
   return (
     <Box className="return-page">
       <ReturnHeader rental={rental} />
       <Box className="return-steps" aria-label="Этап возврата">
-        <span className={!reviewReady ? "is-current" : "is-complete"}>1. Фиксация</span>
-        <span className={reviewReady ? "is-current" : ""}>2. Подтверждение</span>
+        <span
+          className={!reviewReady ? "is-current" : "is-complete"}
+          aria-current={!reviewReady ? "step" : undefined}
+        >
+          1. Фиксация
+        </span>
+        <span
+          className={agreementsComplete ? "is-complete" : reviewReady ? "is-current" : ""}
+          aria-current={reviewReady && !agreementsComplete ? "step" : undefined}
+        >
+          2. Согласование
+        </span>
+        <span
+          className={agreementsComplete ? "is-current" : ""}
+          aria-current={agreementsComplete ? "step" : undefined}
+        >
+          3. Завершение
+        </span>
       </Box>
       {returnAct.manager_amount_only && audience === "manager" ? (
         <Alert severity="warning" className="return-alert">
@@ -244,6 +277,9 @@ function ReturnWorkspace(props: {
                 uploads={uploads}
                 onCommentChange={setComment}
                 onFiles={addFiles}
+                dragActive={dragActive}
+                onDragActiveChange={setDragActive}
+                onDrop={dropFiles}
                 onRetry={(upload) => void uploadOne(upload)}
                 onDelete={(photoId) => removePhoto.mutate(photoId)}
               />
@@ -448,6 +484,9 @@ function ReturnEditor(props: {
   uploads: PendingUpload[];
   onCommentChange: (value: string) => void;
   onFiles: (event: ChangeEvent<HTMLInputElement>) => void;
+  dragActive: boolean;
+  onDragActiveChange: (active: boolean) => void;
+  onDrop: (event: DragEvent<HTMLDivElement>) => void;
   onRetry: (upload: PendingUpload) => void;
   onDelete: (photoId: number) => void;
 }) {
@@ -455,7 +494,16 @@ function ReturnEditor(props: {
     <>
       <ReturnPhotoGrid party={props.party} editable onDelete={props.onDelete} />
       <PendingUploads uploads={props.uploads} onRetry={props.onRetry} />
-      <Box className="return-upload-choices">
+      <Box
+        className={`return-upload-choices return-dropzone${props.dragActive ? " is-drag-active" : ""}`}
+        onDragEnter={(event) => { event.preventDefault(); props.onDragActiveChange(true); }}
+        onDragLeave={() => props.onDragActiveChange(false)}
+        onDragOver={(event) => event.preventDefault()}
+        onDrop={props.onDrop}
+      >
+        <Typography className="return-dropzone-hint">
+          Перетащите фото сюда или выберите способ загрузки
+        </Typography>
         <UploadChoice id="return-camera" label="Сделать фото" capture onChange={props.onFiles} />
         <UploadChoice id="return-files" label="Выбрать из устройства" multiple onChange={props.onFiles} />
       </Box>
@@ -673,12 +721,17 @@ function ReturnReviewActions(props: {
   const ownParty = props.audience === "renter" ? returnAct.renter : returnAct.manager;
   const otherLabel = props.audience === "renter" ? "менеджера" : "арендатора";
   const damageResolved = !returnAct.damage_enabled || returnAct.damage_decision === "ACCEPTED";
+  const bothPartiesAgreed = returnAct.renter.is_confirmed && returnAct.manager.is_confirmed;
+  const canFinish = bothPartiesAgreed && damageResolved;
+  const confirmationDisabled = props.pending
+    || ownParty.is_confirmed
+    || (props.audience === "renter" && !damageResolved);
   return (
     <Paper variant="outlined" className="return-action-card">
-      <Typography component="h2" variant="h6">Подтверждение возврата</Typography>
+      <Typography component="h2" variant="h6">Согласование результатов</Typography>
       <Box className="return-review-statuses">
-        <span>{returnAct.renter.is_confirmed ? "Арендатор подтвердил" : "Арендатор проверяет"}</span>
-        <span>{returnAct.manager.is_confirmed ? "Менеджер подтвердил" : "Менеджер проверяет"}</span>
+        <span>{returnAct.renter.is_confirmed ? "Арендатор согласился" : "Арендатор проверяет"}</span>
+        <span>{returnAct.manager.is_confirmed ? "Менеджер согласился" : "Менеджер проверяет"}</span>
       </Box>
       {props.audience === "renter" && returnAct.damage_enabled ? (
         <Box className="return-damage-decision">
@@ -698,26 +751,49 @@ function ReturnReviewActions(props: {
           )}
         </Box>
       ) : null}
-      {props.audience === "manager" ? (
-        <FormControl className="return-instance-state">
-          <FormLabel>Состояние экземпляра после возврата</FormLabel>
-          <RadioGroup value={props.nextStatus} onChange={(event) => props.onNextStatusChange(event.target.value as "AVAILABLE" | "MAINTENANCE")}>
-            <FormControlLabel value="AVAILABLE" control={<Radio />} label="Доступен" />
-            <FormControlLabel value="MAINTENANCE" control={<Radio />} label="На обслуживании" />
-          </RadioGroup>
-        </FormControl>
+      <Button
+        variant="contained"
+        disabled={confirmationDisabled}
+        onClick={props.onConfirm}
+      >
+        {ownParty.is_confirmed
+          ? "Вы согласились с результатами"
+          : "Согласиться с результатами возврата"}
+      </Button>
+      {props.audience === "renter" && !damageResolved ? (
+        <Typography color="text.secondary">
+          Сначала примите решение по актуальной сумме штрафа.
+        </Typography>
       ) : null}
-      {props.audience === "renter" ? (
-        <Button variant="contained" disabled={props.pending || ownParty.is_confirmed || !damageResolved} onClick={props.onConfirm}>
-          {ownParty.is_confirmed ? "Фотоакт подтверждён" : "Подтвердить фотоакт возврата"}
-        </Button>
-      ) : (
-        <Button variant="contained" disabled={props.pending} onClick={props.onFinish}>
-          Подтвердить и завершить возврат
-        </Button>
-      )}
+      {ownParty.is_confirmed && !bothPartiesAgreed ? (
+        <Alert severity="info" role="status">Ожидаем согласия {otherLabel}.</Alert>
+      ) : null}
+      {props.audience === "renter" && canFinish ? (
+        <Alert severity="info" role="status">
+          Ожидаем завершения возврата менеджером.
+        </Alert>
+      ) : null}
+      {props.audience === "manager" && bothPartiesAgreed && !damageResolved ? (
+        <Alert severity="info" role="status">
+          Ожидаем решения арендатора по штрафу.
+        </Alert>
+      ) : null}
+      {props.audience === "manager" && canFinish ? (
+        <>
+          <FormControl className="return-instance-state">
+            <FormLabel>Состояние экземпляра после возврата</FormLabel>
+            <RadioGroup value={props.nextStatus} onChange={(event) => props.onNextStatusChange(event.target.value as "AVAILABLE" | "MAINTENANCE")}>
+              <FormControlLabel value="AVAILABLE" control={<Radio />} label="Доступен" />
+              <FormControlLabel value="MAINTENANCE" control={<Radio />} label="На обслуживании" />
+            </RadioGroup>
+          </FormControl>
+          <Button variant="contained" disabled={props.pending} onClick={props.onFinish}>
+            Завершить возврат
+          </Button>
+        </>
+      ) : null}
       <Button variant="outlined" disabled={props.pending} onClick={props.onRequestChanges}>
-        Попросить {otherLabel} изменить фиксацию
+        Попросить {otherLabel} изменить фотоакт
       </Button>
     </Paper>
   );

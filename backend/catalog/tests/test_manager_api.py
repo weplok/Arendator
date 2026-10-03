@@ -225,6 +225,23 @@ def test_published_product_requires_photo_and_keeps_category_and_pickup(
     assert product.photos.count() == 1
 
 
+def test_rejected_product_category_can_change_before_first_publication(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.REJECTED)
+    category = Category.objects.create(name="Видеотехника")
+
+    response = manager_client(product.manager).patch(
+        f"/api/v1/manager/products/{product.pk}/",
+        {"category": category.pk},
+    )
+
+    assert response.status_code == 200
+    product.refresh_from_db()
+    assert product.category == category
+
+
 def test_manager_can_reorder_photos_and_first_photo_becomes_primary(
     tmp_path: Any, settings: Any
 ) -> None:

@@ -215,7 +215,7 @@ def test_damage_rejection_allows_only_amount_and_requires_new_consent(
     assert new_amount.json()["return_act"]["manager"]["is_confirmed"] is False
 
 
-def test_current_damage_consent_and_confirmations_complete_return(
+def test_return_finish_requires_both_confirmations_and_damage_consent(
     tmp_path: Any,
     settings: Any,
 ) -> None:
@@ -233,13 +233,40 @@ def test_current_damage_consent_and_confirmations_complete_return(
     )
     renter_client.post(f"/api/v1/rentals/{rental.pk}/return/complete/")
     manager_client.post(f"/api/v1/rentals/{rental.pk}/return/complete/")
+    renter_client.post(f"/api/v1/rentals/{rental.pk}/return/confirm/")
+
+    missing_manager_consent = manager_client.post(
+        f"/api/v1/rentals/{rental.pk}/return/finish/",
+        {"next_instance_status": "MAINTENANCE"},
+        format="json",
+    )
+    rental.refresh_from_db()
+    rental.booking.instance.refresh_from_db()
+
+    assert missing_manager_consent.status_code == 400
+    assert missing_manager_consent.json()["field_errors"]["status"] == [
+        "Сначала обе стороны должны согласиться с результатами."
+    ]
+    assert rental.status == Rental.Status.RETURN_INSPECTION
+    assert rental.booking.instance.status == ProductInstance.Status.RETURN_INSPECTION
+
+    manager_client.post(f"/api/v1/rentals/{rental.pk}/return/confirm/")
+    missing_damage_consent = manager_client.post(
+        f"/api/v1/rentals/{rental.pk}/return/finish/",
+        {"next_instance_status": "MAINTENANCE"},
+        format="json",
+    )
+
+    assert missing_damage_consent.status_code == 400
+    assert missing_damage_consent.json()["field_errors"]["damage"] == [
+        "Сначала арендатор должен согласиться со штрафом."
+    ]
+
     renter_client.post(
         f"/api/v1/rentals/{rental.pk}/return/damage-decision/",
         {"accepted": True},
         format="json",
     )
-    renter_client.post(f"/api/v1/rentals/{rental.pk}/return/confirm/")
-
     completed = manager_client.post(
         f"/api/v1/rentals/{rental.pk}/return/finish/",
         {"next_instance_status": "MAINTENANCE"},
@@ -267,6 +294,7 @@ def test_finishing_return_for_maintenance_requires_reason_without_damage(
     renter_client.post(f"/api/v1/rentals/{rental.pk}/return/complete/")
     manager_client.post(f"/api/v1/rentals/{rental.pk}/return/complete/")
     renter_client.post(f"/api/v1/rentals/{rental.pk}/return/confirm/")
+    manager_client.post(f"/api/v1/rentals/{rental.pk}/return/confirm/")
 
     missing_reason = manager_client.post(
         f"/api/v1/rentals/{rental.pk}/return/finish/",

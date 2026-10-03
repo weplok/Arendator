@@ -82,7 +82,13 @@ export function InstanceSearchDialog(props: InstanceSearchDialogProps) {
         {search.isPending ? <div className="maintenance-loading" role="status"><CircularProgress size={24} /> Поиск экземпляра…</div> : null}
         {notFound ? <Alert severity="info" sx={{ mt: 2 }}>Экземпляр с таким номером не найден. Проверьте номер целиком.</Alert> : null}
         {search.isError && !notFound ? <Alert severity="error" sx={{ mt: 2 }}>Не удалось выполнить поиск. Введённый номер сохранён — попробуйте ещё раз.</Alert> : null}
-        {result ? <SearchResultCard result={result} onAction={() => setActionOpen(true)} /> : null}
+        {result ? <SearchResultCard
+          result={result}
+          onAction={() => {
+            setActionOpen(true);
+            props.onClose();
+          }}
+        /> : null}
       </DialogContent>
       <DialogActions><Button onClick={close}>Закрыть</Button></DialogActions>
     </Dialog>

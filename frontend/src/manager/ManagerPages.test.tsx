@@ -174,6 +174,7 @@ it("keeps the completion success state after returning an instance to service", 
   });
   fireEvent.click(screen.getByRole("button", { name: "Найти" }));
   fireEvent.click(await screen.findByRole("button", { name: "Завершить обслуживание" }));
+  expect(screen.queryByRole("dialog", { name: "Найти экземпляр" })).not.toBeInTheDocument();
   fireEvent.change(screen.getByRole("spinbutton", { name: "Стоимость ремонта, ₽" }), {
     target: { value: "640" },
   });
@@ -189,25 +190,33 @@ it("keeps the completion success state after returning an instance to service", 
 it("creates a draft then opens its photo step", async () => {
   document.cookie = "csrftoken=manager-token; path=/";
   const requests: { url: string; options?: RequestInit }[] = [];
+  const childCategory = { ...category, id: 2, parent_id: 1, name: "Дрели" };
   vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options?: RequestInit) => {
     requests.push({ url, options });
     if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
-    if (url.includes("categories")) return Promise.resolve(Response.json([category]));
+    if (url.includes("categories")) return Promise.resolve(Response.json([category, childCategory]));
     if (options?.method === "POST") return Promise.resolve(Response.json(product, { status: 201 }));
     if (url.endsWith("/8/")) return Promise.resolve(Response.json(product));
     return Promise.resolve(Response.json([]));
   }));
   renderPage("/manager/products/new");
   await screen.findByRole("heading", { name: "Новый товар" });
-  fireEvent.change(await screen.findByRole("combobox", { name: /^Категория/ }), { target: { value: "1" } });
+  const rootCategorySelect = await screen.findByRole("combobox", { name: /^Основная категория/ });
+  expect(rootCategorySelect).toHaveValue("");
+  expect(rootCategorySelect.querySelector("option:checked")).toBeEmptyDOMElement();
+  fireEvent.change(rootCategorySelect, { target: { value: "1" } });
+  fireEvent.change(await screen.findByRole("combobox", { name: /^Подкатегория/ }), { target: { value: "2" } });
   fireEvent.change(screen.getByRole("textbox", { name: /^Название/ }), { target: { value: "Дрель" } });
   fireEvent.change(screen.getByRole("textbox", { name: /^Описание/ }), { target: { value: "Для ремонта" } });
   fireEvent.change(screen.getByRole("spinbutton", { name: /^Ставка/ }), { target: { value: "3" } });
   fireEvent.click(screen.getByRole("button", { name: "Сохранить и продолжить" }));
   expect(await screen.findByRole("heading", { name: "Фотографии товара" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "Отправить на модерацию" })).toBeDisabled();
+  expect(screen.getByText("Заполните основные сведения о товаре, прежде чем отправить на модерацию")).toBeInTheDocument();
   await waitFor(() => expect(requests.some(({ url, options }) =>
     url === "/api/v1/manager/products/" && options?.method === "POST" &&
-    new Headers(options.headers).get("X-CSRFToken") === "manager-token",
+    new Headers(options.headers).get("X-CSRFToken") === "manager-token" &&
+    JSON.parse(String(options.body)).category === 2,
   )).toBe(true));
 });
 
@@ -282,11 +291,38 @@ it("confirms freezing and moves the product into the archive", async () => {
     ?.querySelector(".manager-editor-grid");
   expect(editorGrid).toHaveClass("manager-editor-grid--wide");
   expect(screen.queryByRole("heading", { name: "Перед публикацией" })).not.toBeInTheDocument();
-  fireEvent.click(await screen.findByRole("button", { name: "Заморозить" }));
+  const freezeButton = await screen.findByRole("button", { name: "Заморозить" });
+  expect(freezeButton.closest(".manager-editor-status-actions")).not.toBeNull();
+  fireEvent.click(freezeButton);
   expect(screen.getByRole("dialog", { name: "Заморозить товар?" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "Заморозить товар" }));
   expect(await screen.findByRole("heading", { name: "Архив товаров" })).toBeInTheDocument();
   expect(frozen).toBe(true);
+});
+
+it("keeps rejected category editable and shows the rejection dialog only once", async () => {
+  const rejected = {
+    ...product,
+    status: "REJECTED",
+    rejection_reason: "Выберите точную категорию.",
+  };
+  const childCategory = { ...category, id: 2, parent_id: 1, name: "Дрели" };
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("categories")) return Promise.resolve(Response.json([category, childCategory]));
+    if (url.includes("characteristics")) return Promise.resolve(Response.json([]));
+    if (url.endsWith("/8/")) return Promise.resolve(Response.json(rejected));
+    return Promise.resolve(Response.json([rejected]));
+  }));
+
+  renderPage("/manager/products/8/basic");
+  fireEvent.click(await screen.findByRole("button", { name: "Перейти к редактированию" }));
+
+  await waitFor(() => expect(screen.queryByRole("dialog", { name: "Карточка отклонена" })).not.toBeInTheDocument());
+  expect(screen.getByRole("combobox", { name: "Основная категория" })).toBeEnabled();
+  fireEvent.click(screen.getByRole("link", { name: "Фото" }));
+  expect(await screen.findByRole("heading", { name: "Фотографии товара" })).toBeInTheDocument();
+  expect(screen.queryByRole("dialog", { name: "Карточка отклонена" })).not.toBeInTheDocument();
 });
 
 it("sends a completed draft to moderation without publishing it", async () => {
@@ -316,7 +352,10 @@ it("sends a completed draft to moderation without publishing it", async () => {
   }));
 
   renderPage("/manager/products/8/instances");
-  fireEvent.click(await screen.findByRole("button", { name: "Отправить на модерацию" }));
+  const submitButton = await screen.findByRole("button", { name: "Отправить на модерацию" });
+  expect(submitButton.closest(".manager-checklist")).not.toBeNull();
+  expect(screen.queryByText("Заполните основные сведения о товаре, прежде чем отправить на модерацию")).not.toBeInTheDocument();
+  fireEvent.click(submitButton);
 
   expect(await screen.findByRole("heading", { name: "Мои товары" })).toBeInTheDocument();
   expect(screen.getByText("На модерации")).toBeInTheDocument();
@@ -368,6 +407,34 @@ it("formats characteristic numbers and continues to the pickup step after saving
   );
 });
 
+it("keeps an empty characteristic select visually blank", async () => {
+  const categoryWithCharacteristics = {
+    ...category,
+    characteristics: [{
+      id: 12, category_id: 1, name: "Производитель", type: "LIST",
+      is_required: false, unit: "", display_order: 0,
+      options: [{ id: 101, value: "Bosch", display_order: 0 }],
+    }],
+  };
+  vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string) => {
+    if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
+    if (url.includes("categories")) {
+      return Promise.resolve(Response.json([categoryWithCharacteristics]));
+    }
+    if (url.includes("characteristics")) return Promise.resolve(Response.json([]));
+    if (url.endsWith("/8/")) return Promise.resolve(Response.json(product));
+    return Promise.resolve(Response.json([product]));
+  }));
+
+  renderPage("/manager/products/8/features");
+
+  const manufacturerSelect = await screen.findByRole("combobox", {
+    name: "Производитель",
+  });
+  expect(manufacturerSelect).toHaveValue("");
+  expect(manufacturerSelect.querySelector("option:checked")).toBeEmptyDOMElement();
+});
+
 it("moves a selected photo to the first position", async () => {
   document.cookie = "csrftoken=manager-token; path=/";
   const photos = [
@@ -375,6 +442,7 @@ it("moves a selected photo to the first position", async () => {
     { id: 21, url: "/second.jpg", display_order: 1, is_primary: false },
   ];
   let currentProduct = { ...product, photos };
+  let uploadedFileName = "";
   let submittedOrder: number[] = [];
   vi.stubGlobal("fetch", vi.fn().mockImplementation((url: string, options?: RequestInit) => {
     if (url.includes("auth/me")) return Promise.resolve(Response.json(manager));
@@ -391,6 +459,12 @@ it("moves a selected photo to the first position", async () => {
       };
       return Promise.resolve(new Response(null, { status: 204 }));
     }
+    if (url.endsWith("photos/") && options?.method === "POST") {
+      uploadedFileName = (options.body as FormData).get("image") instanceof File
+        ? ((options.body as FormData).get("image") as File).name
+        : "";
+      return Promise.resolve(Response.json({}));
+    }
     if (url.endsWith("/8/")) return Promise.resolve(Response.json(currentProduct));
     if (url.includes("characteristics")) return Promise.resolve(Response.json([]));
     return Promise.resolve(Response.json([currentProduct]));
@@ -405,6 +479,10 @@ it("moves a selected photo to the first position", async () => {
   );
   expect(screen.getByRole("button", { name: "Выбрать файлы" })).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /Раньше|Позже/ })).not.toBeInTheDocument();
+  fireEvent.drop(screen.getByText("Перетащите фотографии сюда или выберите файлы").parentElement!, {
+    dataTransfer: { files: [new File(["photo"], "drill.png", { type: "image/png" })] },
+  });
+  await waitFor(() => expect(uploadedFileName).toBe("drill.png"));
 });
 
 it("previews a dragged photo in its new place and saves the order on drop", async () => {

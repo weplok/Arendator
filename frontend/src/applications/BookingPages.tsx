@@ -163,12 +163,12 @@ function BookingCards({ title, bookings }: { title: string; bookings: RentalBook
     <section className="booking-card-section">
       <Typography component="h2" variant="h6">{title}</Typography>
       {bookings.length === 0 ? <Typography color="text.secondary">В этом разделе броней нет.</Typography> : bookings.map((booking) => (
-        <Paper variant="outlined" className="renter-booking-card" key={booking.id}>
+        <Paper component={RouterLink} to={`/account/bookings/${booking.id}`} variant="outlined" className="renter-booking-card renter-booking-card--link" key={booking.id}>
           <div className="booking-card-main">
             <div className="application-product-cell"><ProductThumb booking={booking} /><div><BookingStatus status={booking.status} /><Typography component="h3" variant="h6">{booking.product.name}</Typography><small>Менеджер: {booking.manager.name}</small></div></div>
             <div className="renter-booking-deadline"><span>Получить до</span><strong>{formatMoscowDateTime(booking.pickup_deadline_at)} МСК</strong></div>
           </div>
-          <div className="booking-card-footer"><span>{booking.product.pickup_point?.full_address ?? "Адрес уточняется"}</span><Button component={RouterLink} to={`/account/bookings/${booking.id}`} variant="outlined">Открыть бронь</Button></div>
+          <div className="booking-card-footer"><span>{booking.product.pickup_point?.full_address ?? "Адрес уточняется"}</span></div>
         </Paper>
       ))}
     </section>
@@ -224,6 +224,9 @@ interface BookingDetailProps {
 function BookingDetail({ booking, audience, onArrival, onCancel }: BookingDetailProps) {
   const canCancel = ACTIVE_STATUSES.has(booking.status);
   const active = booking.status === "ACTIVE";
+  const hasActionCard = active
+    || booking.status === "ARRIVED"
+    || (booking.status === "RENTED" && Boolean(booking.rental));
   return (
     <>
       <Typography className="application-crumb" color="text.secondary">Бронь №BK-{booking.id}</Typography>
@@ -249,18 +252,21 @@ function BookingDetail({ booking, audience, onArrival, onCancel }: BookingDetail
           </Paper>
           <Paper variant="outlined" className="application-detail-card">
             <Typography component="h2" variant="h6">История</Typography>
-            <ol className="application-timeline">{booking.history.map((event) => <li key={`${event.event}-${event.created_at}`}><span aria-hidden="true" /><div><strong>{bookingHistoryLabel(event.event)}</strong><small>{formatMoscowDateTime(event.created_at)} МСК · {actorLabel(event.actor)}{event.note ? ` · ${event.note}` : ""}</small></div></li>)}</ol>
+            <ol className="application-timeline">
+              <li><span aria-hidden="true" /><div><strong>Заявка создана</strong><small>{formatMoscowDateTime(booking.application_created_at ?? booking.created_at)} МСК · Арендатор</small></div></li>
+              {booking.history.map((event) => <li key={`${event.event}-${event.created_at}`}><span aria-hidden="true" /><div><strong>{bookingHistoryLabel(event.event)}</strong><small>{formatMoscowDateTime(event.created_at)} МСК · {actorLabel(event.actor)}{event.note ? ` · ${event.note}` : ""}</small></div></li>)}
+            </ol>
           </Paper>
         </Box>
         <aside>
-          <Paper variant="outlined" className="booking-action-card">
+          {hasActionCard ? <Paper variant="outlined" className="booking-action-card">
             {active && audience === "manager" ? <><Typography component="h2" variant="h6">Арендатор приехал?</Typography><Typography color="text.secondary">Подтверждение остановит автоистечение, но не начнёт аренду.</Typography><Button variant="contained" fullWidth onClick={onArrival}>Подтвердить прибытие</Button></> : null}
             {booking.status === "ARRIVED" ? <><Typography component="h2" variant="h6">Получение оформляется</Typography><Typography color="text.secondary">Добавьте материалы и подтвердите общий фотоакт.</Typography></> : null}
             {booking.status === "ARRIVED" ? <Button component={RouterLink} to={audience === "manager" ? `/manager/bookings/${booking.id}/handover` : `/account/bookings/${booking.id}/handover`} variant="contained" fullWidth>Перейти к приёмке</Button> : null}
             {booking.status === "RENTED" && booking.rental ? <Button component={RouterLink} to={audience === "manager" ? `/manager/rentals/${booking.rental.id}` : `/account/rentals/${booking.rental.id}`} variant="contained" fullWidth>Открыть аренду</Button> : null}
             {canCancel ? <Button color="error" variant="outlined" fullWidth onClick={onCancel}>Отменить бронь</Button> : null}
-          </Paper>
-          <Alert severity="info" sx={{ mt: 2 }}>Бронь гарантирует наличие товара только до срока получения, а не до планового возврата.</Alert>
+          </Paper> : null}
+          {audience === "renter" && canCancel ? <Alert severity="info" sx={{ mt: 2 }}>Бронь гарантирует наличие товара только до срока получения, а не до планового возврата.</Alert> : null}
         </aside>
       </Box>
     </>

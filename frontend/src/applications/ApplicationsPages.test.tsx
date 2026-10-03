@@ -218,6 +218,10 @@ describe("manager application queue", () => {
 
     expect(await screen.findByText("Настройки сохранены")).toBeInTheDocument();
     await waitFor(() => expect(screen.queryByText("Стремянка")).not.toBeInTheDocument());
+    await waitFor(
+      () => expect(screen.queryByText("Настройки сохранены")).not.toBeInTheDocument(),
+      { timeout: 4_000 },
+    );
   });
 
   it("requires a manual instance choice and creates a booking", async () => {
@@ -250,8 +254,8 @@ describe("manager application queue", () => {
     const dialog = screen.getByRole("dialog", { name: "Проверить бронь" });
     fireEvent.click(within(dialog).getByRole("button", { name: "Создать бронь" }));
 
-    expect(await screen.findByText(/Бронь создана. Экземпляр удерживается/)).toBeInTheDocument();
-    expect(screen.getByText("D-1042", { exact: false })).toBeInTheDocument();
+    expect(await screen.findByText(/Экземпляр будет забронирован до срока получения/)).toBeInTheDocument();
+    expect(screen.getAllByText("D-1042", { exact: false })).not.toHaveLength(0);
   });
 
   it("confirms arrival without starting a rental", async () => {
@@ -315,6 +319,7 @@ describe("renter bookings", () => {
     renderApp("/account/bookings/184");
 
     expect(await screen.findByText(/Товар гарантирован до/)).toBeInTheDocument();
+    expect(screen.getByText("Заявка создана")).toBeInTheDocument();
     expect(screen.queryByText("D-1042")).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Отменить бронь" }));
     const dialog = screen.getByRole("dialog", { name: "Отменить бронь?" });

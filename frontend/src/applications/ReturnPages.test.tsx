@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { RentalDetailPage } from "./RentalPages";
+import { RentalDetailPage, RenterRentalsPage } from "./RentalPages";
 import { ReturnPage } from "./ReturnPage";
 
 const party = {
@@ -95,6 +95,47 @@ describe("return flow", () => {
     expect(screen.getByText("Добавьте минимум одно фото")).toBeInTheDocument();
   });
 
+  it("uploads a return photo dropped onto the upload area", async () => {
+    document.cookie = "csrftoken=test-token; path=/";
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/return/photos/")) {
+        return jsonResponse({ id: 11, url: "/photo/11", created_at: "2026-09-27T18:25:00+03:00" }, 201);
+      }
+      return jsonResponse(rental);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderReturnPage("renter");
+    await screen.findByRole("heading", { name: "Перфоратор Bosch" });
+
+    fireEvent.drop(screen.getByText("Перетащите фото сюда или выберите способ загрузки").parentElement!, {
+      dataTransfer: { files: [new File(["photo"], "return.jpg", { type: "image/jpeg" })] },
+    });
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/rentals/31/return/photos/",
+      expect.objectContaining({ method: "POST", body: expect.any(FormData) }),
+    ));
+  });
+
+  it("shows the completed rental cost details and actual return time", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(completedRental())));
+    renderRentalDetail();
+
+    expect(await screen.findByText(/Просроченные минуты · 24/)).toBeInTheDocument();
+    expect(screen.getByText("Штраф за повреждение")).toBeInTheDocument();
+    expect(screen.getByText("Фактически вернули")).toBeInTheDocument();
+  });
+
+  it("separates completed rentals and opens them from the whole card", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse([rental, completedRental()])));
+    renderRentalsList();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Завершённые · 1" }));
+    const completedLink = screen.getByRole("link", { name: /Аренда завершена/ });
+    expect(completedLink).toHaveAttribute("href", "/account/rentals/31");
+    expect(completedLink.querySelector(".rental-hero")).toHaveClass("is-completed");
+  });
+
   it("keeps damage and overdue decisions in a separate manager panel", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(rental)));
 
@@ -108,7 +149,7 @@ describe("return flow", () => {
 
   it("prefills the maintenance reason from the damage description", async () => {
     document.cookie = "csrftoken=test-token; path=/";
-    const reviewed = reviewRental();
+    const reviewed = agreedRental();
     let submittedBody = "";
     vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL, options?: RequestInit) => {
       if (String(input).endsWith("/return/finish/")) submittedBody = String(options?.body);
@@ -116,9 +157,9 @@ describe("return flow", () => {
     }));
     renderReturnPage("manager");
 
-    await screen.findByRole("heading", { name: "Подтверждение возврата" });
+    await screen.findByRole("heading", { name: "Согласование результатов" });
     fireEvent.click(screen.getByRole("radio", { name: "На обслуживании" }));
-    fireEvent.click(screen.getByRole("button", { name: "Подтвердить и завершить возврат" }));
+    fireEvent.click(screen.getByRole("button", { name: "Завершить возврат" }));
 
     const reason = screen.getByRole("textbox", { name: "Причина обслуживания" });
     expect(reason).toHaveValue("Трещина на корпусе");
@@ -128,6 +169,49 @@ describe("return flow", () => {
     ));
     expect(await screen.findByRole("heading", { name: "Отправлено на обслуживание" })).toBeInTheDocument();
     expect(screen.getByText("Экземпляр исключён из доступности", { exact: false })).toBeInTheDocument();
+  });
+
+  it("requires manager agreement before exposing the instance state", async () => {
+    document.cookie = "csrftoken=test-token; path=/";
+    const reviewed = reviewRental();
+    const managerConfirmed = {
+      ...reviewed,
+      return_act: {
+        ...reviewed.return_act,
+        manager: {
+          ...reviewed.return_act.manager,
+          is_confirmed: true,
+          confirmed_at: "2026-09-27T18:31:00+03:00",
+        },
+      },
+    };
+    let current: unknown = reviewed;
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      if (String(input).endsWith("/return/confirm/")) current = managerConfirmed;
+      return jsonResponse(current);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    renderReturnPage("manager");
+
+    expect(await screen.findByRole("button", { name: "Согласиться с результатами возврата" })).toBeEnabled();
+    expect(screen.queryByRole("radio", { name: "Доступен" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Согласиться с результатами возврата" }));
+
+    expect(await screen.findByText("Ожидаем согласия арендатора.")).toBeInTheDocument();
+    expect(screen.queryByRole("radio", { name: "Доступен" })).not.toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/v1/rentals/31/return/confirm/",
+      expect.objectContaining({ method: "POST" }),
+    );
+  });
+
+  it("keeps renter in the return flow until the manager finishes it", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(agreedRental())));
+
+    renderReturnPage("renter");
+
+    expect(await screen.findByText("Ожидаем завершения возврата менеджером.")).toBeInTheDocument();
+    expect(screen.queryByText("Возврат завершён")).not.toBeInTheDocument();
   });
 
   it("lets renter explicitly reject the current damage amount", async () => {
@@ -239,6 +323,38 @@ function reviewRental() {
   };
 }
 
+function agreedRental() {
+  const reviewed = reviewRental();
+  return {
+    ...reviewed,
+    return_act: {
+      ...reviewed.return_act,
+      damage_decision: "ACCEPTED",
+      renter: {
+        ...reviewed.return_act.renter,
+        is_confirmed: true,
+        confirmed_at: "2026-09-27T18:30:00+03:00",
+      },
+      manager: {
+        ...reviewed.return_act.manager,
+        is_confirmed: true,
+        confirmed_at: "2026-09-27T18:31:00+03:00",
+      },
+    },
+  };
+}
+
+function completedRental() {
+  return {
+    ...rental,
+    status: "COMPLETED",
+    damage_amount: "500.00",
+    current_cost: "24964.00",
+    ended_at: "2026-09-27T18:40:00+03:00",
+    return_act: reviewRental().return_act,
+  };
+}
+
 function renderReturnPage(audience: "manager" | "renter"): void {
   const path = audience === "manager"
     ? "/manager/rentals/31/return"
@@ -257,6 +373,14 @@ function renderRentalDetail(): void {
     "/manager/rentals/31",
     "/manager/rentals/:rentalId",
     <RentalDetailPage audience="manager" />,
+  );
+}
+
+function renderRentalsList(): void {
+  renderWithRouter(
+    "/account/rentals",
+    "/account/rentals",
+    <RenterRentalsPage />,
   );
 }
 

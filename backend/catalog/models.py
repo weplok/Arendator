@@ -295,10 +295,14 @@ class Product(models.Model):
                 "published_at",
             ).get(pk=self.pk)
             original_status = original.status
-            if self.category_id != original.category_id and not getattr(
-                self, "_allow_admin_edit", False
+            if (
+                self.category_id != original.category_id
+                and original.published_at is not None
+                and not getattr(self, "_allow_admin_edit", False)
             ):
-                errors["category"] = "Категорию созданного товара менять нельзя."
+                errors["category"] = (
+                    "Категорию товара нельзя менять после первой публикации."
+                )
             if (
                 self.status != original_status
                 and self.status

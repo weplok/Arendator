@@ -278,6 +278,32 @@
   font-size: 14px;
 }
 
+.application-table tbody tr:not(.application-group-row) {
+  position: relative;
+}
+
+.application-table tbody tr:not(.application-group-row):hover,
+.application-table tbody tr:not(.application-group-row):focus-within {
+  background: var(--green-50);
+}
+
+.application-row-link {
+  color: var(--color-text);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.application-row-link::after {
+  position: absolute;
+  inset: 0;
+  content: "";
+}
+
+.application-row-link:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
 .application-product-cell,
 .application-person-cell,
 .application-renter-card {
@@ -325,6 +351,8 @@
 }
 
 .application-row-actions {
+  position: relative;
+  z-index: 1;
   display: flex;
   gap: 4px;
 }
@@ -335,9 +363,13 @@
 
 .application-detail-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 310px;
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 0.6fr);
   align-items: start;
   gap: 18px;
+}
+
+.application-detail-layout > * {
+  min-width: 0;
 }
 
 .application-detail-card {
@@ -394,11 +426,27 @@
 }
 
 .application-queue-controls {
+  position: relative;
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 24px;
   padding: 16px 18px;
   border-radius: 14px !important;
+}
+
+.application-preference-status {
+  width: 100%;
+  height: 20px;
+  margin-top: -12px !important;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 180ms ease;
+}
+
+.application-preference-status.is-visible {
+  opacity: 1;
+  visibility: visible;
 }
 
 .application-queue-controls .MuiTextField-root {
@@ -500,6 +548,23 @@
   border-radius: 16px !important;
 }
 
+.renter-booking-card--link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.renter-booking-card--link:hover {
+  border-color: var(--color-primary);
+  box-shadow: 0 8px 24px rgba(20, 74, 59, 0.1);
+}
+
+.renter-booking-card--link:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
 .booking-card-main,
 .booking-card-footer {
   display: flex;
@@ -556,13 +621,49 @@
 }
 
 .booking-assignment-card {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   margin-top: 16px;
 }
 
+.booking-assignment-card .MuiFormControl-root,
+.booking-assignment-card .MuiRadioGroup-root,
+.booking-assignment-card .MuiButton-root {
+  min-width: 0;
+  max-width: 100%;
+}
+
 .booking-assignment-card .MuiFormControlLabel-root {
+  width: 100%;
   min-height: 48px;
+  margin-left: 0;
   margin-right: 0;
   border-bottom: 1px solid var(--color-border);
+}
+
+.booking-assignment-card .MuiFormControlLabel-label {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.booking-assignment-card .MuiChip-root {
+  width: 100%;
+  height: auto;
+  justify-content: flex-start;
+}
+
+.booking-assignment-card .MuiChip-label {
+  display: block;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+.booking-assignment-card .MuiButton-root {
+  white-space: normal;
 }
 
 @media (max-width: 1023px) {
@@ -733,6 +834,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .application-preference-status,
+  .renter-booking-card--link {
+    transition: none;
+  }
+
   .application-table * {
     scroll-behavior: auto;
   }

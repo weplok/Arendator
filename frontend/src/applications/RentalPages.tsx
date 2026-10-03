@@ -34,7 +34,9 @@ export function RenterRentalSummary() {
   if (!activeRental) return null;
   return (
     <Box className="renter-rental-summary">
-      <RentalHero rental={activeRental} audience="renter" compact />
+      <RouterLink className="rental-card-link" to={`/account/rentals/${activeRental.id}`}>
+        <RentalHero rental={activeRental} audience="renter" compact />
+      </RouterLink>
     </Box>
   );
 }
@@ -66,7 +68,8 @@ export function RentalDetailPage({ audience }: { audience: "manager" | "renter" 
           <dl className="rental-cost-list">
             <dt>Стартовая стоимость</dt><dd>{formatRubles(rental.starting_price_snapshot)}</dd>
             <dt>Своевременные минуты · {rental.timely_minutes}</dt><dd>{formatRubles(rental.timely_cost)}</dd>
-            {rental.late_minutes > 0 ? <><dt className="is-overdue">Просроченные минуты · {rental.late_minutes}</dt><dd className="is-overdue">{formatRubles(rental.late_cost)}</dd></> : null}
+            {rental.status === "COMPLETED" || rental.late_minutes > 0 ? <><dt className={rental.late_minutes > 0 ? "is-overdue" : undefined}>Просроченные минуты · {rental.late_minutes}</dt><dd className={rental.late_minutes > 0 ? "is-overdue" : undefined}>{formatRubles(rental.late_cost)}</dd></> : null}
+            {rental.status === "COMPLETED" || Number(rental.damage_amount) > 0 ? <><dt>Штраф за повреждение</dt><dd>{formatRubles(rental.damage_amount)}</dd></> : null}
             <dt>Итого сейчас</dt><dd>{formatRubles(rental.current_cost)}</dd>
           </dl>
           <Typography variant="body2" color="text.secondary">Расчётная сумма, без реального списания.</Typography>
@@ -76,6 +79,7 @@ export function RentalDetailPage({ audience }: { audience: "manager" | "renter" 
           <dl className="rental-cost-list">
             <dt>Начало</dt><dd>{formatMoscowDateTime(rental.rental_started_at)} МСК</dd>
             <dt>Плановый возврат</dt><dd>{formatMoscowDateTime(rental.planned_return_at)} МСК</dd>
+            {rental.return_received_at ? <><dt>Фактически вернули</dt><dd>{formatMoscowDateTime(rental.return_received_at)} МСК</dd></> : null}
             <dt>Минутная ставка</dt><dd>{formatRubles(rental.minute_rate_snapshot)} / мин</dd>
             {audience === "manager" ? <><dt>Арендатор</dt><dd>{rental.renter.name}</dd><dt>Экземпляр</dt><dd>{rental.instance?.inventory_number ?? "—"}</dd></> : null}
           </dl>
@@ -122,10 +126,9 @@ export function ManagerRentalsPage() {
       {query.data.length === 0 ? (
         <Paper variant="outlined" className="application-empty"><Typography variant="h6">Активных аренд пока нет</Typography></Paper>
       ) : query.data.map((rental) => (
-        <Paper variant="outlined" className="manager-rental-row" key={rental.id}>
+        <Paper component={RouterLink} to={`/manager/rentals/${rental.id}`} variant="outlined" className="manager-rental-row manager-rental-row--link" key={rental.id}>
           <Box><strong>{rental.product.name}</strong><span>{rental.renter.name} · {formatDuration(rental.duration_minutes)}</span></Box>
           <Box><strong>{formatRubles(rental.current_cost)}</strong><span>{rentalStatusLabel(rental.status)}</span></Box>
-          <Button component={RouterLink} to={`/manager/rentals/${rental.id}`} variant="outlined">Открыть аренду</Button>
         </Paper>
       ))}
     </>
@@ -133,6 +136,7 @@ export function ManagerRentalsPage() {
 }
 
 export function RenterRentalsPage() {
+  const [section, setSection] = useState<"current" | "completed">("current");
   const query = useQuery({
     queryKey: RENTALS_KEY,
     queryFn: getRentals,
@@ -142,11 +146,18 @@ export function RenterRentalsPage() {
     return <Box className="application-state" role="status"><CircularProgress /> Загрузка аренд…</Box>;
   }
   if (query.isError) return <Alert severity="error">Не удалось загрузить аренды.</Alert>;
+  const currentRentals = query.data.filter((rental) => rental.status !== "COMPLETED");
+  const completedRentals = query.data.filter((rental) => rental.status === "COMPLETED");
+  const visibleRentals = section === "current" ? currentRentals : completedRentals;
   return (
     <>
       <Box className="application-list-heading"><Box><Typography component="h1" variant="h3">Мои аренды</Typography><Typography color="text.secondary">Таймер и текущая расчётная стоимость</Typography></Box></Box>
-      {query.data.length === 0 ? <Paper variant="outlined" className="application-empty"><Typography variant="h6">Аренд пока нет</Typography></Paper> : query.data.map((rental) => (
-        <Box sx={{ mb: 2 }} key={rental.id}><RentalHero rental={rental} audience="renter" compact /></Box>
+      <Box className="rental-sections" aria-label="Разделы аренд">
+        <Button variant={section === "current" ? "contained" : "outlined"} aria-pressed={section === "current"} onClick={() => setSection("current")}>Текущие · {currentRentals.length}</Button>
+        <Button variant={section === "completed" ? "contained" : "outlined"} aria-pressed={section === "completed"} onClick={() => setSection("completed")}>Завершённые · {completedRentals.length}</Button>
+      </Box>
+      {visibleRentals.length === 0 ? <Paper variant="outlined" className="application-empty"><Typography variant="h6">{section === "current" ? "Текущих аренд пока нет" : "Завершённых аренд пока нет"}</Typography></Paper> : visibleRentals.map((rental) => (
+        <RouterLink className="rental-card-link" to={`/account/rentals/${rental.id}`} key={rental.id}><RentalHero rental={rental} audience="renter" compact /></RouterLink>
       ))}
     </>
   );
@@ -159,24 +170,15 @@ function RentalHero({ rental, audience, compact = false }: {
 }) {
   const overdue = rental.status === "OVERDUE";
   const stopped = rental.status === "RETURN_INSPECTION" || rental.status === "COMPLETED";
+  const completed = rental.status === "COMPLETED";
   return (
-    <Paper className={`rental-hero ${overdue ? "is-overdue" : ""} ${compact ? "is-compact" : ""}`} elevation={0}>
+    <Paper className={`rental-hero ${overdue ? "is-overdue" : ""} ${completed ? "is-completed" : ""} ${compact ? "is-compact" : ""}`} elevation={0}>
       <Box className="rental-hero-head">
         <Box>
-          <Typography className="rental-eyebrow">{stopped ? "Начисление остановлено" : overdue ? "Просрочка" : "Активная аренда"}</Typography>
+          <Typography className="rental-eyebrow">{completed ? "Аренда завершена" : stopped ? "Начисление остановлено" : overdue ? "Просрочка" : "Активная аренда"}</Typography>
           <Typography component={compact ? "h2" : "h1"}>{rental.product.name}</Typography>
-          <Typography>{audience === "manager" ? `Арендатор: ${rental.renter.name}` : stopped ? "Оформляется фотоакт возврата" : "Расчётная стоимость обновляется раз в минуту"}</Typography>
+          <Typography>{audience === "manager" ? `Арендатор: ${rental.renter.name}` : completed ? "Возврат оформлен" : stopped ? "Оформляется фотоакт возврата" : "Расчётная стоимость обновляется раз в минуту"}</Typography>
         </Box>
-        {compact ? (
-          <Button
-            className="rental-open-link"
-            component={RouterLink}
-            to={`/account/rentals/${rental.id}`}
-            variant="contained"
-          >
-            Открыть аренду
-          </Button>
-        ) : null}
       </Box>
       <Box className="rental-metrics">
         <Box><span>{stopped ? "Зафиксированная сумма" : "Стоимость сейчас"}</span><strong>{formatRubles(rental.current_cost)}</strong><small>без реального списания</small></Box>

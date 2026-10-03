@@ -315,8 +315,10 @@ class ManagerProductView(APIView):
         editable_product(product)
         serializer = ProductInputSerializer(data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        if "category" in serializer.validated_data:
-            raise ValidationError({"category": "Категорию менять нельзя."})
+        if "category" in serializer.validated_data and product.published_at is not None:
+            raise ValidationError(
+                {"category": "Категорию нельзя менять после первой публикации."}
+            )
         for field, value in serializer.validated_data.items():
             setattr(product, field, value)
         try:

@@ -246,16 +246,28 @@ def test_product_photo_storage_name_is_generated_by_server(
     assert "private-client-name" not in image_name
 
 
-def test_product_category_cannot_change_after_creation(
+def test_product_category_can_change_before_first_publication(
     tmp_path: Any, settings: Any
 ) -> None:
     settings.MEDIA_ROOT = tmp_path
     product = create_product()
+    category = Category.objects.create(name="Другая")
+    product.category = category
+    product.save()
+
+    product.refresh_from_db()
+    assert product.category == category
+
+
+def test_product_category_cannot_change_after_first_publication(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.PUBLISHED)
     product.category = Category.objects.create(name="Другая")
 
     with pytest.raises(ValidationError) as error:
         product.save()
-
     assert "category" in error.value.message_dict
 
 

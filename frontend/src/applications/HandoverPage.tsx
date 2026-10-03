@@ -15,7 +15,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useRef, useState, type ChangeEvent, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ChangeEvent, type DragEvent, type ReactNode } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -58,6 +58,7 @@ export function HandoverPage({ audience }: HandoverPageProps) {
       ? getManagerBooking(bookingId)
       : getRenterBooking(bookingId),
     enabled: Number.isInteger(bookingId) && bookingId > 0,
+    refetchInterval: 2000,
   });
 
   if (query.isPending) return <HandoverSkeleton />;
@@ -94,6 +95,7 @@ function HandoverWorkspace(props: HandoverWorkspaceProps) {
   const queryClient = useQueryClient();
   const [comment, setComment] = useState(ownParty.comment);
   const [uploads, setUploads] = useState<PendingUpload[]>([]);
+  const [dragActive, setDragActive] = useState(false);
   const [openedPhoto, setOpenedPhoto] = useState<{ url: string; label: string } | null>(null);
   const [photoToDelete, setPhotoToDelete] = useState<number | null>(null);
   const previewUrls = useRef(new Set<string>());
@@ -102,14 +104,19 @@ function HandoverWorkspace(props: HandoverWorkspaceProps) {
     previewUrls.current.forEach((url) => URL.revokeObjectURL(url));
   }, []);
 
+  useEffect(() => {
+    if (!booking.rental) return;
+    navigate(
+      audience === "manager"
+        ? `/manager/rentals/${booking.rental.id}`
+        : `/account/rentals/${booking.rental.id}`,
+    );
+  }, [audience, booking.rental, navigate]);
+
   const updateBooking = (updated: RentalBooking) => {
     queryClient.setQueryData(queryKey, updated);
     queryClient.invalidateQueries({ queryKey: RENTER_ACTIVITY_KEY });
   };
-  const saveComment = useMutation({
-    mutationFn: () => saveHandoverComment(booking.id, comment),
-    onSuccess: updateBooking,
-  });
   const complete = useMutation({
     mutationFn: async () => {
       if (comment !== ownParty.comment) {
@@ -141,10 +148,19 @@ function HandoverWorkspace(props: HandoverWorkspaceProps) {
     onSuccess: () => props.refetch(),
   });
 
+  const addFileList = (files: File[]) => {
+    files
+      .filter((file) => file.type === "image/png" || file.type === "image/jpeg")
+      .forEach((file) => startUpload(file));
+  };
   const addFiles = (event: ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(event.target.files ?? []);
+    addFileList(Array.from(event.target.files ?? []));
     event.target.value = "";
-    files.forEach((file) => startUpload(file));
+  };
+  const dropFiles = (event: DragEvent<HTMLDivElement>) => {
+    event.preventDefault();
+    setDragActive(false);
+    addFileList(Array.from(event.dataTransfer.files));
   };
   const startUpload = (file: File) => {
     const id = `${file.name}-${file.lastModified}-${crypto.randomUUID()}`;
@@ -180,7 +196,7 @@ function HandoverWorkspace(props: HandoverWorkspaceProps) {
     ? Math.max(0, 2 - ownParty.photos.length)
     : 0;
   const completionDisabled = pendingCount > 0 || missingPhotoCount > 0;
-  const actionError = saveComment.error ?? complete.error ?? confirm.error ?? requestChanges.error;
+  const actionError = complete.error ?? confirm.error ?? requestChanges.error;
 
   return (
     <Box className="handover-page">
@@ -213,7 +229,16 @@ function HandoverWorkspace(props: HandoverWorkspaceProps) {
               </>
             ) : (
               <>
-                <Box className="handover-upload-actions">
+                <Box
+                  className={`handover-upload-actions handover-dropzone${dragActive ? " is-drag-active" : ""}`}
+                  onDragEnter={(event) => { event.preventDefault(); setDragActive(true); }}
+                  onDragLeave={() => setDragActive(false)}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={dropFiles}
+                >
+                  <Typography className="handover-dropzone-hint">
+                    Перетащите фото сюда или выберите способ загрузки
+                  </Typography>
                   <UploadChoice
                     id="handover-camera"
                     label="Сделать фото"
@@ -248,13 +273,6 @@ function HandoverWorkspace(props: HandoverWorkspaceProps) {
                   slotProps={{ htmlInput: { maxLength: 2000 } }}
                 />
                 <Box className="handover-material-actions">
-                  <Button
-                    variant="outlined"
-                    disabled={saveComment.isPending || comment === ownParty.comment}
-                    onClick={() => saveComment.mutate()}
-                  >
-                    {saveComment.isPending ? "Сохраняем…" : "Сохранить комментарий"}
-                  </Button>
                   <Button
                     variant="contained"
                     disabled={completionDisabled || complete.isPending}

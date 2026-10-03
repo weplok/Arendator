@@ -521,6 +521,9 @@ class RentalSerializer(serializers.ModelSerializer[Rental]):
 
 class RentalBookingSerializer(serializers.ModelSerializer[RentalBooking]):
     application_id = serializers.IntegerField(read_only=True)
+    application_created_at = serializers.DateTimeField(
+        source="application.created_at", read_only=True
+    )
     pickup_deadline_at = serializers.DateTimeField(
         source="application.pickup_deadline_at", read_only=True
     )
@@ -540,6 +543,7 @@ class RentalBookingSerializer(serializers.ModelSerializer[RentalBooking]):
         fields = (
             "id",
             "application_id",
+            "application_created_at",
             "status",
             "pickup_deadline_at",
             "planned_return_at",

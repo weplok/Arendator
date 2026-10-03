@@ -876,8 +876,6 @@ def decide_return_damage(*, rental_id: int, accepted: bool) -> ReturnAct:
         actor=RentalEvent.Actor.RENTER,
         note=f"Сумма: {return_act.damage_amount}",
     )
-    if accepted:
-        _try_complete_return(return_act)
     return return_act
 
 
@@ -894,8 +892,20 @@ def confirm_return(*, rental_id: int, role: str) -> ReturnAct:
             event=RentalEvent.Event.RETURN_CONFIRMED,
             actor=role,
         )
-    _try_complete_return(return_act)
     return return_act
+
+
+def _ensure_return_ready_to_finish(return_act: ReturnAct) -> None:
+    if not return_act.renter_confirmed_at or not return_act.manager_confirmed_at:
+        raise ValidationError(
+            {"status": "Сначала обе стороны должны согласиться с результатами."}
+        )
+    if return_act.damage_enabled and (
+        return_act.damage_decision != ReturnAct.DamageDecision.ACCEPTED
+    ):
+        raise ValidationError(
+            {"damage": "Сначала арендатор должен согласиться со штрафом."}
+        )
 
 
 @transaction.atomic
@@ -907,6 +917,7 @@ def finish_return(
 ) -> ReturnAct:
     return_act = _locked_return_act(rental_id)
     _ensure_return_materials_completed(return_act)
+    _ensure_return_ready_to_finish(return_act)
     if next_instance_status not in (
         ProductInstance.Status.AVAILABLE,
         ProductInstance.Status.MAINTENANCE,
@@ -927,27 +938,12 @@ def finish_return(
         raise ValidationError({"maintenance_reason": "Укажите причину обслуживания."})
     return_act.next_instance_status = next_instance_status
     return_act.maintenance_reason = normalized_reason
-    if return_act.manager_confirmed_at is None:
-        return_act.manager_confirmed_at = timezone.now()
-        RentalEvent.objects.create(
-            rental=return_act.rental,
-            event=RentalEvent.Event.RETURN_CONFIRMED,
-            actor=RentalEvent.Actor.MANAGER,
-        )
     return_act.save()
-    _try_complete_return(return_act)
+    _complete_return(return_act)
     return return_act
 
 
-def _try_complete_return(return_act: ReturnAct) -> None:
-    if not return_act.renter_confirmed_at or not return_act.manager_confirmed_at:
-        return
-    if return_act.damage_enabled and (
-        return_act.damage_decision != ReturnAct.DamageDecision.ACCEPTED
-    ):
-        return
-    if not return_act.next_instance_status:
-        return
+def _complete_return(return_act: ReturnAct) -> None:
     rental = return_act.rental
     rental.status = Rental.Status.COMPLETED
     rental.ended_at = timezone.now()

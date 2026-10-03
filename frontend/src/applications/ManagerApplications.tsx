@@ -22,7 +22,7 @@ import {
   Typography,
 } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Fragment, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link as RouterLink, useNavigate, useParams } from "react-router-dom";
 
 import {
@@ -70,6 +70,12 @@ export function ManagerApplicationsPage() {
       setSaved(true);
     },
   });
+
+  useEffect(() => {
+    if (!saved) return;
+    const timer = window.setTimeout(() => setSaved(false), 2500);
+    return () => window.clearTimeout(timer);
+  }, [saved]);
 
   if (query.isPending) return <div className="application-state" role="status"><CircularProgress /> Загрузка очереди…</div>;
   if (query.isError) return <Alert severity="error" action={<Button onClick={() => query.refetch()}>Повторить</Button>}>Не удалось загрузить очередь заявок.</Alert>;
@@ -119,14 +125,16 @@ export function ManagerApplicationsPage() {
           )}
           label="Скрыть товары без свободных экземпляров"
         />
-        <Typography role="status" color="primary" variant="body2">
+        <Typography
+          role="status"
+          color="primary"
+          variant="body2"
+          className={`application-preference-status${saved ? " is-visible" : ""}`}
+        >
           {saved ? "Настройки сохранены" : ""}
         </Typography>
       </Paper>
       {preferenceMutation.isError ? <Alert severity="error" sx={{ mt: 2 }}>Не удалось сохранить настройки.</Alert> : null}
-      <Alert severity="info" sx={{ mt: 2 }}>
-        При любой сортировке первыми идут заявки на товары со свободными экземплярами. Вы сами выбираете, какую заявку обработать.
-      </Alert>
       <Paper variant="outlined" className="application-table-surface application-queue-surface">
         {results.length === 0 ? (
           <div className="application-empty"><Typography component="h2" variant="h6">Новых заявок нет</Typography><Typography color="text.secondary">Сохранённые настройки очереди продолжат действовать.</Typography></div>
@@ -145,7 +153,6 @@ function ManagerQueueTable({ applications, ordering, renderedAt }: { application
           <th aria-sort={ordering === "NEAREST" ? "ascending" : "none"}>Получить до</th>
           <th>Плановый срок</th>
           <th aria-sort={ordering === "EARLIEST" ? "ascending" : ordering === "LATEST" ? "descending" : "none"}>Арендатор</th>
-          <th>Действие</th>
         </tr></thead>
         <tbody>{applications.map((application, index) => {
           const available = application.product.available_instances_count > 0;
@@ -155,13 +162,12 @@ function ManagerQueueTable({ applications, ordering, renderedAt }: { application
           const showGroup = index === 0 || available !== previousAvailable;
           return (
             <Fragment key={application.id}>
-              {showGroup ? <tr className="application-group-row"><td colSpan={5}>{available ? "Есть свободные экземпляры" : "Нет свободных экземпляров"}</td></tr> : null}
+              {showGroup ? <tr className="application-group-row"><td colSpan={4}>{available ? "Есть свободные экземпляры" : "Нет свободных экземпляров"}</td></tr> : null}
               <tr>
-                <td data-label="Товар"><div className="application-product-cell"><div className="application-thumb">{application.product.primary_photo ? <img src={application.product.primary_photo.url} alt="" width="56" height="56" loading="lazy" /> : null}</div><div><strong>{application.product.name}</strong><small className={available ? "application-available" : ""}>Свободно: {application.product.available_instances_count} из {application.product.total_instances_count}</small></div></div></td>
+                <td data-label="Товар"><div className="application-product-cell"><div className="application-thumb">{application.product.primary_photo ? <img src={application.product.primary_photo.url} alt="" width="56" height="56" loading="lazy" /> : null}</div><div><RouterLink className="application-row-link" to={`/manager/applications/${application.id}`}>{application.product.name}</RouterLink><small className={available ? "application-available" : ""}>Свободно: {application.product.available_instances_count} из {application.product.total_instances_count}</small></div></div></td>
                 <td data-label="Получить до">{formatMoscowDateTime(application.pickup_deadline_at)}<small>{deadlineHint(application.pickup_deadline_at, renderedAt)}</small></td>
                 <td data-label="Плановый срок">{formatPlannedDuration(application.pickup_deadline_at, application.planned_return_at)}</td>
                 <td data-label="Арендатор"><div className="application-person-cell"><Avatar src={application.renter.avatar ?? undefined} alt="">{application.renter.name.slice(0, 1)}</Avatar><div><strong>{application.renter.name}</strong><time dateTime={application.created_at} title={formatMoscowDateTime(application.created_at)} aria-label={`Подана ${formatMoscowDateTime(application.created_at)} по Москве`}>{formatRelativeTime(application.created_at, renderedAt)}</time></div></div></td>
-                <td data-label="Действие"><Button component={RouterLink} to={`/manager/applications/${application.id}`} variant="outlined" size="small">Открыть</Button></td>
               </tr>
             </Fragment>
           );
@@ -265,7 +271,7 @@ function BookingAssignment({ application, onConflict }: { application: RentalApp
         <Typography><strong>{application.renter.name}</strong> · {application.product.name}</Typography>
         <Typography sx={{ mt: 2 }}>Экземпляр: <strong>{application.instances?.find((instance) => instance.id === selectedInstanceId)?.inventory_number}</strong></Typography>
         <Typography>Удерживать до {formatMoscowDateTime(application.pickup_deadline_at)} МСК</Typography>
-        <Alert severity="info" sx={{ mt: 2 }}>Плановый возврат не создаёт интервальную бронь. Экземпляр удерживается только до срока получения.</Alert>
+        <Alert severity="info" sx={{ mt: 2 }}>Экземпляр будет забронирован до срока получения</Alert>
       </DialogContent>
       <DialogActions>
         <Button onClick={() => setConfirmOpen(false)}>Назад</Button>

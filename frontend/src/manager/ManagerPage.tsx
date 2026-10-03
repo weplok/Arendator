@@ -14,7 +14,6 @@ import {
   Link as RouterLink,
   NavLink,
   Outlet,
-  useLocation,
   useSearchParams,
 } from "react-router-dom";
 
@@ -31,7 +30,6 @@ import "./manager.css";
 type ManagerSection = "overview" | "products" | "rejected" | "archive";
 
 export function ManagerLayout() {
-  const location = useLocation();
   return <Container maxWidth={false} className="manager-layout">
     <nav className="manager-sidebar" aria-label="Кабинет менеджера">
       <span className="manager-sidebar__caption">Управление</span>
@@ -42,9 +40,8 @@ export function ManagerLayout() {
       <NavLink to="/manager/rentals">Аренды</NavLink>
       <NavLink to="/manager/rejected">Отклонённые</NavLink>
       <NavLink to="/manager/archive">Архив</NavLink>
-      <p>Здесь вы управляете только своим каталогом, заявками и бронями на свои товары.</p>
     </nav>
-    <div className="manager-main" key={location.pathname}><Outlet /></div>
+    <div className="manager-main"><Outlet /></div>
   </Container>;
 }
 
@@ -77,9 +74,7 @@ export function ManagerListPage({ section }: { section: ManagerSection }) {
     {section === "overview" ? <ManagerStats products={products} /> : null}
     {section === "products" ? <ProductFilters
       active={active}
-      archiveCount={archive.length}
       filter={filter}
-      rejectedCount={rejected.length}
       search={search}
       onFilterChange={(value) => updateSearchParam("status", value === "all" ? "" : value)}
       onSearchChange={(value) => updateSearchParam("search", value)}
@@ -87,7 +82,6 @@ export function ManagerListPage({ section }: { section: ManagerSection }) {
     {section === "archive" ? <Alert severity="info" sx={{ mb: 2 }}>Замороженный товар не виден в общем каталоге. Его карточка доступна в отдельном архиве публичного профиля.</Alert> : null}
     {section === "rejected" ? <Alert severity="warning" sx={{ mb: 2 }}>Откройте карточку, чтобы увидеть причину отклонения. После исправлений её можно отправить повторно без обязательных изменений.</Alert> : null}
     <ProductTable filter={filter} products={visible} search={search} section={section} />
-    {section === "overview" ? <Alert severity="info" sx={{ mt: 2 }}>В каталог попадают только товары, одобренные модератором. Новые заявки доступны в отдельной очереди.</Alert> : null}
   </>;
 }
 
@@ -132,9 +126,7 @@ function ManagerStats({ products }: { products: ManagerProduct[] }) {
 
 interface ProductFiltersProps {
   active: ManagerProduct[];
-  archiveCount: number;
   filter: string;
-  rejectedCount: number;
   search: string;
   onFilterChange: (value: string) => void;
   onSearchChange: (value: string) => void;
@@ -153,8 +145,6 @@ function ProductFilters(props: ProductFiltersProps) {
       variant={props.filter === value ? "contained" : "outlined"}
       onClick={() => props.onFilterChange(value)}
     >{label}</Button>)}
-    <Button component={RouterLink} to="/manager/rejected" variant="outlined">Отклонённые · {props.rejectedCount}</Button>
-    <Button component={RouterLink} to="/manager/archive" variant="outlined">Архив · {props.archiveCount}</Button>
     <TextField
       name="manager-product-search"
       autoComplete="off"

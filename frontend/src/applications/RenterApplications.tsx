@@ -44,7 +44,6 @@ export function RenterLayout() {
         <NavLink to="/account" end>Заявки</NavLink>
         <NavLink to="/account/bookings">Брони</NavLink>
         <NavLink to="/account/rentals">Аренды</NavLink>
-        <p>Бронь гарантирует наличие товара только до крайнего срока получения.</p>
       </nav>
       <div className="renter-main"><Outlet /></div>
     </Container>
@@ -114,12 +113,11 @@ function ApplicationTable({ title, applications, onCancel }: ApplicationTablePro
             <thead><tr><th>Товар</th><th>Получить до</th><th>Вернуть</th><th>Статус</th><th>Действия</th></tr></thead>
             <tbody>{applications.map((application) => (
               <tr key={application.id}>
-                <td data-label="Товар"><ApplicationProductCell application={application} /></td>
+                <td data-label="Товар"><ApplicationProductCell application={application} to={`/account/applications/${application.id}`} /></td>
                 <td data-label="Получить до">{formatMoscowDateTime(application.pickup_deadline_at)}</td>
                 <td data-label="Вернуть">{formatMoscowDateTime(application.planned_return_at)}</td>
                 <td data-label="Статус"><ApplicationStatus status={application.status} /></td>
                 <td data-label="Действия"><div className="application-row-actions">
-                  <Button component={RouterLink} to={`/account/applications/${application.id}`} size="small">Открыть</Button>
                   {application.status === "WAITING" ? <Button color="error" size="small" onClick={() => onCancel(application)}>Отменить</Button> : null}
                 </div></td>
               </tr>
@@ -131,13 +129,16 @@ function ApplicationTable({ title, applications, onCancel }: ApplicationTablePro
   );
 }
 
-function ApplicationProductCell({ application }: { application: RentalApplication }) {
+function ApplicationProductCell({ application, to }: { application: RentalApplication; to?: string }) {
   return (
     <div className="application-product-cell">
       <div className="application-thumb">
         {application.product.primary_photo ? <img src={application.product.primary_photo.url} alt="" width="56" height="56" loading="lazy" /> : null}
       </div>
-      <div><strong>{application.product.name}</strong><small>{formatRate(application.product.minute_rate)} ₽/мин</small></div>
+      <div>{to
+        ? <RouterLink className="application-row-link" to={to}>{application.product.name}</RouterLink>
+        : <strong>{application.product.name}</strong>}
+      <small>{formatRate(application.product.minute_rate)} ₽/мин</small></div>
     </div>
   );
 }
@@ -224,14 +225,14 @@ export function ApplicationDetail({ application, audience, managerActions, onCan
           </Paper>
         </Box>
         <aside>
-          {audience === "renter" ? (
+          {audience === "renter" && application.status === "WAITING" ? (
             <Alert severity="info">Это ещё не бронь. Дождитесь решения менеджера.</Alert>
-          ) : (
+          ) : audience === "manager" ? (
             <Paper variant="outlined" className="application-renter-card">
               <Avatar src={application.renter.avatar ?? undefined} alt="">{application.renter.name.slice(0, 1)}</Avatar>
               <div><small>Арендатор</small><strong>{application.renter.name}</strong></div>
             </Paper>
-          )}
+          ) : null}
           {audience === "manager" ? managerActions : null}
           {application.status === "WAITING" ? <Button color="error" variant="outlined" fullWidth sx={{ mt: 2 }} onClick={onCancel}>Отменить заявку</Button> : null}
         </aside>

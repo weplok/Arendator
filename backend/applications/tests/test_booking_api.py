@@ -141,6 +141,7 @@ def test_booking_visibility_and_inventory_number_are_role_scoped(
 
     assert renter_response.status_code == 200
     assert renter_response.json()["instance"] is None
+    assert renter_response.json()["application_created_at"]
     assert manager_response.json()["instance"]["inventory_number"]
     assert stranger_response.status_code == 404
 

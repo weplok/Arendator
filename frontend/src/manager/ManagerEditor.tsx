@@ -1,9 +1,9 @@
 import { Alert, Button, CircularProgress, Dialog, DialogActions, DialogContent, DialogTitle, Link, Paper, TextField, Typography } from "@mui/material";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useEffect, useLayoutEffect, useRef, useState, type FormEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type DragEvent, type FormEvent, type ReactNode } from "react";
 import { Link as RouterLink, NavLink, useNavigate, useParams } from "react-router-dom";
 
-import { getCategories, type Category } from "../api/categories";
+import { buildCategoryTree, getCategories, type Category, type CategoryNode } from "../api/categories";
 import { ApiError } from "../api/client";
 import {
   addInstance, addPhoto, deleteProduct, freezeProduct, getCharacteristicValues, getOwnProduct,
@@ -37,6 +37,16 @@ export function ManagerEditor() {
     queryKey: ["manager", "characteristics", id],
     queryFn: () => getCharacteristicValues(id), enabled: Boolean(product),
   });
+  const navigate = useNavigate();
+  const refresh = useProductAction(product?.id ?? 0);
+  const [confirmFreeze, setConfirmFreeze] = useState(false);
+  const freeze = useMutation({
+    mutationFn: () => freezeProduct(product!.id),
+    onSuccess: async () => {
+      navigate("/manager/archive");
+      await refresh();
+    },
+  });
   if (!isNew && productQuery.isPending || categoriesQuery.isPending) return <div role="status" className="manager-state"><CircularProgress /> Загрузка редактора…</div>;
   if (productQuery.isError || categoriesQuery.isError) return <Alert severity="error" action={<Button onClick={() => { productQuery.refetch(); categoriesQuery.refetch(); }}>Повторить</Button>}>Не удалось загрузить редактор товара.</Alert>;
   if (!isNew && !product) return null;
@@ -47,9 +57,11 @@ export function ManagerEditor() {
     <Button className="manager-back-to-products" component={RouterLink} to="/manager/products" startIcon={<ArrowLeftIcon />}>Мои товары</Button>
     <div className="manager-head"><div><Typography variant="h3" component="h1">{archived ? "Просмотр товара" : product && step === "basic" ? "Редактирование товара" : current.title}</Typography>
       <Typography color="text.secondary">{product?.name ?? `Шаг ${steps.indexOf(current) + 1} из 5 · ${current.label}`}</Typography></div>
-      <span className={`manager-status ${product?.status === "PUBLISHED" ? "manager-status--published" : ""}`}>{product ? productStatusLabel(product.status) : "Черновик"}</span>
+      <div className="manager-editor-status-actions">
+        <span className={`manager-status ${product?.status === "PUBLISHED" ? "manager-status--published" : ""}`}>{product ? productStatusLabel(product.status) : "Черновик"}</span>
+        {product?.status === "PUBLISHED" ? <Button variant="outlined" color="error" size="small" onClick={() => setConfirmFreeze(true)}>Заморозить</Button> : null}
+      </div>
     </div>
-    {product?.status === "PUBLISHED" ? <Alert severity="info" sx={{ mb: 2 }}>Изменения названия, фото, ставки, характеристик и экземпляров сохраняются без повторной модерации. Точка самовывоза зафиксирована.</Alert> : null}
     {product?.status === "ON_MODERATION" ? <Alert severity="info" sx={{ mb: 2 }}>Карточка ожидает решения администратора и пока недоступна для редактирования.</Alert> : null}
     {archived ? <Alert severity="info" sx={{ mb: 2 }}>Товар находится в архиве. Возврат из архива не предусмотрен.</Alert> : null}
     <nav className="manager-tabs" aria-label="Разделы редактора">{steps.map((item) =>
@@ -62,8 +74,9 @@ export function ManagerEditor() {
       {product && step === "features" ? <FeaturesStep product={product} categories={categoriesQuery.data ?? []} /> : null}
       {product && step === "pickup" ? <PickupStep product={product} /> : null}
       {product && step === "instances" ? <InstancesStep product={product} categories={categoriesQuery.data ?? []} /> : null}
-    </div>{showChecklist ? <Checklist product={product} categories={categoriesQuery.data ?? []} values={valuesQuery.data ?? []} /> : null}</div>
+    </div>{showChecklist && product ? <Checklist product={product} categories={categoriesQuery.data ?? []} values={valuesQuery.data ?? []} /> : null}</div>
     {product?.status === "REJECTED" ? <RejectedProductDialog product={product} /> : null}
+    <Dialog open={confirmFreeze} onClose={() => setConfirmFreeze(false)} aria-labelledby="freeze-title"><DialogTitle id="freeze-title">Заморозить товар?</DialogTitle><DialogContent><p><strong>{product?.name}</strong> исчезнет из общего каталога и перейдёт в архив публичного профиля.</p><p>Новые заявки станут недоступны. Уже начатые брони и аренды сохраняются. Вернуть товар из архива нельзя.</p><FormError error={freeze.error} /></DialogContent><DialogActions><Button onClick={() => setConfirmFreeze(false)}>Отмена</Button><Button color="error" disabled={freeze.isPending} onClick={() => freeze.mutate()}>Заморозить товар</Button></DialogActions></Dialog>
   </>;
 }
 
@@ -165,7 +178,7 @@ function BasicForm({ product, categories }: { product?: ManagerProduct; categori
   const refresh = useProductAction(product?.id ?? 0);
   const [saved, setSaved] = useState(false);
   const [fields, setFields] = useState<ProductFields>({
-    category: product?.category ?? categories[0]?.id,
+    category: product?.category,
     name: product?.name ?? "", description: product?.description ?? "",
     minute_rate: product?.minute_rate ?? "",
   });
@@ -173,17 +186,23 @@ function BasicForm({ product, categories }: { product?: ManagerProduct; categori
     onSuccess: async (result) => { await refresh(); if (product) setSaved(true); else navigate(`/manager/products/${result.id}/photos`); },
   });
   const readOnly = product ? isProductReadOnly(product) : false;
+  const categoryLocked = Boolean(product?.published_at) || readOnly;
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    mutation.mutate(product ? { name: fields.name, description: fields.description, minute_rate: fields.minute_rate } : fields);
+    mutation.mutate(product && categoryLocked
+      ? { name: fields.name, description: fields.description, minute_rate: fields.minute_rate }
+      : fields);
   }
   return <Paper component="form" onSubmit={submit} variant="outlined" className="manager-surface">
     <Typography variant="h6" component="h2" sx={{ mb: 3 }}>Основная информация</Typography><FormError error={mutation.error} />
     {saved ? <Alert severity="success" role="status" sx={{ mb: 2 }}>Изменения сохранены.</Alert> : null}
     <div className="manager-form-grid">
-      <TextField select autoComplete="off" slotProps={{ select: { native: true }, htmlInput: { name: "category" } }} label="Категория" value={fields.category ?? ""} onChange={(event) => setFields({ ...fields, category: Number(event.target.value) })} required disabled={Boolean(product)} helperText="После создания категорию изменить нельзя.">
-        <option value="" disabled>Выберите категорию</option>{categories.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
-      </TextField>
+      <CategorySelectors
+        categories={categories}
+        selectedCategoryId={fields.category}
+        disabled={categoryLocked}
+        onChange={(category) => setFields({ ...fields, category })}
+      />
       <TextField name="name" autoComplete="off" label="Название" value={fields.name} onChange={(event) => setFields({ ...fields, name: event.target.value })} required slotProps={{ htmlInput: { maxLength: 200 } }} disabled={readOnly} />
       <TextField name="description" autoComplete="off" label="Описание" multiline minRows={4} value={fields.description} onChange={(event) => setFields({ ...fields, description: event.target.value })} required disabled={readOnly} />
       <TextField name="minute_rate" autoComplete="off" label="Ставка, ₽/мин" type="number" slotProps={{ htmlInput: { min: 0.01, step: 0.01 } }} value={fields.minute_rate} onChange={(event) => setFields({ ...fields, minute_rate: event.target.value })} required disabled={readOnly} helperText="Общая ставка для всех экземпляров." />
@@ -192,11 +211,73 @@ function BasicForm({ product, categories }: { product?: ManagerProduct; categori
   </Paper>;
 }
 
+function CategorySelectors(props: {
+  categories: Category[];
+  selectedCategoryId: number | undefined;
+  disabled: boolean;
+  onChange: (categoryId: number) => void;
+}) {
+  const roots = buildCategoryTree(props.categories);
+  const selectedPath = findCategoryPath(roots, props.selectedCategoryId);
+  const levels: { options: CategoryNode[]; value: number | "" }[] = [{
+    options: roots,
+    value: selectedPath[0]?.id ?? "",
+  }];
+  selectedPath.forEach((category, index) => {
+    if (category.children.length > 0) {
+      levels.push({
+        options: category.children,
+        value: selectedPath[index + 1]?.id ?? "",
+      });
+    }
+  });
+
+  return <>{levels.map((level, index) => <TextField
+    key={index === 0 ? "root-category" : `subcategory-${index}`}
+    select
+    autoComplete="off"
+    slotProps={{ select: { native: true }, htmlInput: { name: index === 0 ? "category" : `subcategory_${index}` } }}
+    label={index === 0 ? "Основная категория" : "Подкатегория"}
+    value={level.value}
+    onChange={(event) => {
+      const value = event.target.value;
+      if (value) props.onChange(Number(value));
+      else if (index > 0) props.onChange(selectedPath[index - 1].id);
+    }}
+    required={index === 0}
+    disabled={props.disabled}
+    helperText={props.disabled && index === levels.length - 1
+      ? "Категорию опубликованного товара изменить нельзя."
+      : index > 0 ? "Необязательно" : undefined}
+  >
+    <option
+      value=""
+      disabled={index === 0}
+      aria-label={index === 0 ? "Категория не выбрана" : "Без подкатегории"}
+    />
+    {level.options.map((category) => <option key={category.id} value={category.id}>{category.name}</option>)}
+  </TextField>)}</>;
+}
+
+function findCategoryPath(
+  categories: CategoryNode[],
+  selectedCategoryId: number | undefined,
+): CategoryNode[] {
+  if (selectedCategoryId === undefined) return [];
+  for (const category of categories) {
+    if (category.id === selectedCategoryId) return [category];
+    const childPath = findCategoryPath(category.children, selectedCategoryId);
+    if (childPath.length > 0) return [category, ...childPath];
+  }
+  return [];
+}
+
 function PhotosStep({ product }: { product: ManagerProduct }) {
   const refresh = useProductAction(product.id);
   const readOnly = isProductReadOnly(product);
   const [pendingRemoval, setPendingRemoval] = useState<number | null>(null);
   const [draggedPhotoId, setDraggedPhotoId] = useState<number | null>(null);
+  const [uploadDragActive, setUploadDragActive] = useState(false);
   const [announcement, setAnnouncement] = useState("");
   const [orderedPhotos, setOrderedPhotos] = useState(() => orderPhotos(product.photos));
   const dragOriginOrder = useRef<ManagerProduct["photos"] | null>(null);
@@ -274,13 +355,33 @@ function PhotosStep({ product }: { product: ManagerProduct }) {
     setOrderedPhotos(originalPhotos);
   }
 
+  function uploadFiles(files: File[]): void {
+    const images = files.filter((file) => file.type === "image/png" || file.type === "image/jpeg");
+    if (images.length === 0) return;
+    action.mutate(async () => {
+      for (const file of images) await addPhoto(product.id, file);
+    });
+  }
+
+  function dropFiles(event: DragEvent<HTMLDivElement>): void {
+    event.preventDefault();
+    setUploadDragActive(false);
+    uploadFiles(Array.from(event.dataTransfer.files));
+  }
+
   return <Paper variant="outlined" className="manager-surface"><Typography variant="h6" component="h2">Публичные фотографии</Typography>
-    <Typography color="text.secondary" sx={{ mb: 2 }}>PNG или JPEG, до 15 МБ на файл. Фотоакты здесь не размещаются.</Typography><FormError error={action.error} />
-    {!readOnly ? <div className="manager-upload"><Typography>Перетащите фотографии для изменения порядка</Typography>
+    <Typography color="text.secondary" sx={{ mb: 2 }}>Добавьте фото в карточку товара. PNG или JPEG, до 15 МБ на файл.</Typography><FormError error={action.error} />
+    {!readOnly ? <div
+      className={`manager-upload${uploadDragActive ? " is-drag-active" : ""}`}
+      onDragEnter={(event) => { event.preventDefault(); setUploadDragActive(true); }}
+      onDragLeave={() => setUploadDragActive(false)}
+      onDragOver={(event) => event.preventDefault()}
+      onDrop={dropFiles}
+    ><Typography>Перетащите фотографии сюда или выберите файлы</Typography>
       <Button component="label" variant="outlined">Выбрать файлы
       <input className="visually-hidden" type="file" accept="image/png,image/jpeg,.jpg,.jpeg,.png" multiple onChange={(event) => {
         const files = Array.from(event.target.files ?? []);
-        if (files.length) action.mutate(async () => { for (const file of files) await addPhoto(product.id, file); });
+        uploadFiles(files);
         event.target.value = "";
       }} disabled={action.isPending} /></Button></div> : null}
     <p id="photo-order-instructions" className="visually-hidden">Для изменения порядка с клавиатуры выберите фото и нажмите Alt со стрелкой влево или вправо.</p>
@@ -393,10 +494,10 @@ function FeatureForm({ product, category, initial }: { product: ManagerProduct; 
       boolean_value: definition.type === "BOOLEAN" ? values[definition.id] === "true" : null,
     })));
   }
-  return <Paper component="form" onSubmit={submit} variant="outlined" className="manager-surface"><Typography variant="h6" component="h2" sx={{ mb: 1 }}>Характеристики категории</Typography>
-    <Typography color="text.secondary" sx={{ mb: 2 }}>Поля зависят от выбранной категории, включая унаследованные.</Typography><FormError error={mutation.error} />
+  return <Paper component="form" onSubmit={submit} variant="outlined" className="manager-surface"><Typography variant="h6" component="h2" sx={{ mb: 2 }}>Характеристики товара</Typography>
+    <FormError error={mutation.error} />
     <div className="manager-form-grid">{category?.characteristics.map((definition) => <TextField key={definition.id} name={`characteristic-${definition.id}`} autoComplete="off" label={`${definition.name}${definition.unit ? `, ${definition.unit}` : ""}`} required={definition.is_required} select={definition.type !== "NUMBER"} slotProps={definition.type !== "NUMBER" ? { select: { native: true } } : { htmlInput: { step: "any" } }} type={definition.type === "NUMBER" ? "number" : undefined} value={values[definition.id] ?? ""} onChange={(event) => setValues({ ...values, [definition.id]: event.target.value })} disabled={readOnly}>
-      {definition.type !== "NUMBER" ? [<option value="" key="empty">—</option>, ...(definition.type === "BOOLEAN" ? [<option value="true" key="true">Да</option>, <option value="false" key="false">Нет</option>] : definition.options.map((option) => <option key={option.id} value={option.id}>{option.value}</option>))] : undefined}
+      {definition.type !== "NUMBER" ? [<option value="" key="empty" aria-label="Не выбрано" />, ...(definition.type === "BOOLEAN" ? [<option value="true" key="true">Да</option>, <option value="false" key="false">Нет</option>] : definition.options.map((option) => <option key={option.id} value={option.id}>{option.value}</option>))] : undefined}
     </TextField>)}</div>
     {!category?.characteristics.length ? <Typography color="text.secondary">У этой категории нет характеристик.</Typography> : null}
     <EditorActions busy={mutation.isPending}>{!readOnly ? <Button type="submit" variant="contained" disabled={mutation.isPending}>Сохранить характеристики</Button> : null}</EditorActions>
@@ -418,7 +519,7 @@ function PickupStep({ product }: { product: ManagerProduct }) {
   const locked = Boolean(product.published_at) || isProductReadOnly(product);
   function submit(event: FormEvent<HTMLFormElement>) { event.preventDefault(); mutation.mutate(fields); }
   return <Paper component="form" onSubmit={submit} variant="outlined" className="manager-surface"><Typography variant="h6" component="h2">Точка самовывоза</Typography>
-    <Typography color="text.secondary" sx={{ mb: 2 }}>Одна точка для всех экземпляров. После первой публикации её нельзя изменить.</Typography><FormError error={mutation.error} />
+    <Typography color="text.secondary" sx={{ mb: 2 }}>Укажите адрес для самовывоза экземпляров товара</Typography><FormError error={mutation.error} />
     <div className="manager-form-grid">{([ ["city", "Город"], ["district", "Район"], ["full_address", "Полный адрес"], ["latitude", "Широта"], ["longitude", "Долгота"] ] as const).map(([field, label]) =>
       <TextField key={field} name={field} autoComplete="off" label={label} required value={fields[field]} onChange={(event) => setFields({ ...fields, [field]: event.target.value })} disabled={locked} slotProps={field === "latitude" || field === "longitude" ? { htmlInput: { inputMode: "decimal" } } : undefined} />)}</div>
     {product.pickup_point ? <div className="manager-map"><span aria-hidden="true">●</span><p>Точка на карте: {product.pickup_point.city}, {product.pickup_point.district}</p><Link href={product.pickup_point.yandex_maps_url} target="_blank" rel="noopener noreferrer">Открыть в Яндекс.Картах</Link></div> : null}
@@ -428,39 +529,49 @@ function PickupStep({ product }: { product: ManagerProduct }) {
 
 function InstancesStep({ product, categories }: { product: ManagerProduct; categories: Category[] }) {
   const refresh = useProductAction(product.id);
-  const navigate = useNavigate();
   const readOnly = isProductReadOnly(product);
   const [inventory, setInventory] = useState("");
-  const [confirmFreeze, setConfirmFreeze] = useState(false);
   const [pendingRemoval, setPendingRemoval] = useState<string | null>(null);
   const action = useMutation({ mutationFn: async (operation: () => Promise<unknown>) => operation(), onSuccess: refresh });
-  const submission = useMutation({ mutationFn: () => submitProduct(product.id), onSuccess: async () => { navigate("/manager/products"); await refresh(); } });
-  const freeze = useMutation({ mutationFn: () => freezeProduct(product.id), onSuccess: async () => { navigate("/manager/archive"); await refresh(); } });
   const required = categories.find((item) => item.id === product.category)?.characteristics.filter((item) => item.is_required) ?? [];
   return <><Paper variant="outlined" className="manager-surface"><Typography variant="h6" component="h2" sx={{ mb: 1 }}>Добавить экземпляр</Typography>
-    <Typography color="text.secondary" sx={{ mb: 2 }}>Оставьте поле пустым для автоматического номера {product.catalog_number}-{product.instances.length + 1}. Свой номер должен быть уникален в вашем каталоге.</Typography><FormError error={action.error} />
+    <Typography color="text.secondary" sx={{ mb: 2 }}>Оставьте поле пустым для автоматического номера <strong>{product.catalog_number}-{product.instances.length + 1}</strong>. Свой номер должен быть уникален в вашем каталоге.</Typography><FormError error={action.error} />
     {!readOnly ? <div className="manager-instance-form"><TextField name="inventory_number" autoComplete="off" label="Инвентарный номер" value={inventory} onChange={(event) => setInventory(event.target.value)} /><Button variant="contained" disabled={action.isPending} onClick={() => action.mutate(async () => { await addInstance(product.id, inventory); setInventory(""); })}>Добавить экземпляр</Button></div> : null}
   </Paper><Paper variant="outlined" className="manager-surface"><Typography variant="h6" component="h2" sx={{ mb: 2 }}>Добавленные экземпляры · {product.instances.length}</Typography>
     {product.instances.length ? <div className="manager-table-wrap"><table className="manager-table"><thead><tr><th>Инвентарный номер</th><th>Статус</th><th>Действие</th></tr></thead><tbody>{product.instances.map((instance) => <tr key={instance.id}><td data-label="Номер">{instance.inventory_number}</td><td data-label="Статус">{instance.status === "AVAILABLE" ? "Свободен" : instance.status}</td><td data-label="Действие"><Button color="error" disabled={action.isPending || instance.status !== "AVAILABLE" || readOnly} onClick={() => setPendingRemoval(instance.id)}>Удалить</Button></td></tr>)}</tbody></table></div> : <Typography color="text.secondary">Для отправки на модерацию нужен минимум один экземпляр.</Typography>}
-    <FormError error={submission.error ?? freeze.error} />
-    <EditorActions busy={submission.isPending || freeze.isPending}>
-      {product.status === "DRAFT" || product.status === "REJECTED" ? <Button variant="contained" onClick={() => submission.mutate()} disabled={submission.isPending || !product.pickup_point || !product.photos.length || !product.instances.length}>{product.status === "REJECTED" ? "Повторно отправить на модерацию" : "Отправить на модерацию"}</Button> : null}
-      {product.status === "PUBLISHED" ? <Button variant="outlined" color="error" onClick={() => setConfirmFreeze(true)}>Заморозить</Button> : null}
-    </EditorActions>{required.length && (product.status === "DRAFT" || product.status === "REJECTED") ? <Typography className="manager-muted">Перед отправкой заполните обязательные характеристики на вкладке «Характеристики».</Typography> : null}
+    <EditorActions />{required.length && (product.status === "DRAFT" || product.status === "REJECTED") ? <Typography className="manager-muted">Перед отправкой заполните обязательные характеристики на вкладке «Характеристики».</Typography> : null}
   </Paper>
-    <Dialog open={confirmFreeze} onClose={() => setConfirmFreeze(false)} aria-labelledby="freeze-title"><DialogTitle id="freeze-title">Заморозить товар?</DialogTitle><DialogContent><p><strong>{product.name}</strong> исчезнет из общего каталога и перейдёт в архив публичного профиля.</p><p>Новые заявки станут недоступны. Уже начатые брони и аренды сохраняются. Вернуть товар из архива нельзя.</p></DialogContent><DialogActions><Button onClick={() => setConfirmFreeze(false)}>Отмена</Button><Button color="error" disabled={freeze.isPending} onClick={() => freeze.mutate()}>Заморозить товар</Button></DialogActions></Dialog>
     <Dialog open={pendingRemoval !== null} onClose={() => setPendingRemoval(null)} aria-labelledby="remove-instance-title"><DialogTitle id="remove-instance-title">Удалить экземпляр?</DialogTitle><DialogContent>Экземпляр будет помечен как удалённый; его история сохранится.</DialogContent><DialogActions><Button onClick={() => setPendingRemoval(null)}>Отмена</Button><Button color="error" onClick={() => { if (pendingRemoval) action.mutate(() => removeInstance(product.id, pendingRemoval)); setPendingRemoval(null); }}>Удалить</Button></DialogActions></Dialog>
   </>;
 }
 
-function Checklist({ product, categories, values }: { product?: ManagerProduct; categories: Category[]; values: CharacteristicValue[] }) {
-  const required = categories.find((item) => item.id === product?.category)?.characteristics.filter((item) => item.is_required) ?? [];
+function Checklist({ product, categories, values }: { product: ManagerProduct; categories: Category[]; values: CharacteristicValue[] }) {
+  const navigate = useNavigate();
+  const refresh = useProductAction(product.id);
+  const submission = useMutation({
+    mutationFn: () => submitProduct(product.id),
+    onSuccess: async () => {
+      navigate("/manager/products");
+      await refresh();
+    },
+  });
+  const required = categories.find((item) => item.id === product.category)?.characteristics.filter((item) => item.is_required) ?? [];
   const characteristicsComplete = required.every((definition) => values.some((value) => value.characteristic_id === definition.id));
+  const allFormsComplete = product.photos.length > 0
+    && characteristicsComplete
+    && Boolean(product.pickup_point)
+    && product.instances.length > 0;
   return <Paper component="aside" variant="outlined" className="manager-checklist"><Typography variant="h6">Перед публикацией</Typography><ul>
-    <li className={product ? "done" : ""}>{product ? "✓" : "○"} Основное</li>
-    <li className={product?.photos.length ? "done" : ""}>{product?.photos.length ? "✓" : "○"} Фото</li>
+    <li className="done">✓ Основное</li>
+    <li className={product.photos.length ? "done" : ""}>{product.photos.length ? "✓" : "○"} Фото</li>
     <li className={characteristicsComplete ? "done" : ""}>{characteristicsComplete ? "✓" : "○"} Обязательные характеристики</li>
-    <li className={product?.pickup_point ? "done" : ""}>{product?.pickup_point ? "✓" : "○"} Точка самовывоза</li>
-    <li className={product?.instances.length ? "done" : ""}>{product?.instances.length ? "✓" : "○"} Минимум один экземпляр</li>
-  </ul><p>После отправки карточка получит статус «На модерации». В каталоге она появится только после одобрения.</p></Paper>;
+    <li className={product.pickup_point ? "done" : ""}>{product.pickup_point ? "✓" : "○"} Точка самовывоза</li>
+    <li className={product.instances.length ? "done" : ""}>{product.instances.length ? "✓" : "○"} Минимум один экземпляр</li>
+  </ul>
+  {product.status === "REJECTED" ? <p className="manager-checklist__rejection"><strong>Карточка товара отклонена администратором.</strong> Причина: {product.rejection_reason}</p> : !allFormsComplete ? <p>Заполните основные сведения о товаре, прежде чем отправить на модерацию</p> : null}
+  <FormError error={submission.error} />
+  <Button fullWidth variant="contained" disabled={!allFormsComplete || submission.isPending} onClick={() => submission.mutate()}>
+    {submission.isPending ? "Отправляем…" : product.status === "REJECTED" ? "Повторно отправить на модерацию" : "Отправить на модерацию"}
+  </Button>
+  </Paper>;
 }

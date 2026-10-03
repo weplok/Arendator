@@ -241,7 +241,7 @@ describe("manager profile", () => {
     expect(
       await screen.findByRole("heading", { name: "Алексей Петров" }),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("tab", { name: "Архив 1" }));
+    fireEvent.click(screen.getByRole("tab", { name: "Архив • 1" }));
 
     expect(await screen.findByText("В архиве")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: publicProduct.name })).toBeInTheDocument();
