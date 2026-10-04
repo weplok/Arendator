@@ -52,9 +52,10 @@ export function ManagerBookingsPage() {
   const period: BookingPeriod = requestedPeriod === "three" || requestedPeriod === "all"
     ? requestedPeriod
     : "today";
+  const expiredOnly = searchParams.get("status") === "expired";
   const query = useQuery({
-    queryKey: [...MANAGER_BOOKINGS_KEY, period],
-    queryFn: () => getManagerBookings(period),
+    queryKey: [...MANAGER_BOOKINGS_KEY, period, expiredOnly ? "expired" : "current"],
+    queryFn: () => getManagerBookings(period, expiredOnly ? "expired" : undefined),
   });
   const [renderedAt] = useState(() => new Date());
 
@@ -69,17 +70,17 @@ export function ManagerBookingsPage() {
     <>
       <Box className="application-list-heading">
         <Box>
-          <Typography component="h1" variant="h3">Текущие брони</Typography>
-          <Typography color="text.secondary">Сроки получения и подтверждённые прибытия</Typography>
+          <Typography component="h1" variant="h3">{expiredOnly ? "Истекшие брони" : "Текущие брони"}</Typography>
+          <Typography color="text.secondary">{expiredOnly ? "Брони, завершённые автоматически после срока получения" : "Сроки получения и подтверждённые прибытия"}</Typography>
         </Box>
         <span className="application-timezone">Время указано по Москве</span>
       </Box>
-      <div className="booking-summary" aria-label="Сводка текущих броней">
+      {!expiredOnly ? <div className="booking-summary" aria-label="Сводка текущих броней">
         <Paper variant="outlined"><span>Сегодня</span><strong>{summary.today}</strong></Paper>
         <Paper variant="outlined"><span>Срок в течение 4 часов</span><strong>{summary.urgent}</strong></Paper>
         <Paper variant="outlined"><span>Ближайшие 3 дня</span><strong>{summary.three_days}</strong></Paper>
-      </div>
-      <div className="booking-periods" aria-label="Период списка">
+      </div> : null}
+      {!expiredOnly ? <div className="booking-periods" aria-label="Период списка">
         {(Object.keys(PERIOD_LABELS) as BookingPeriod[]).map((value) => (
           <Button
             key={value}
@@ -90,12 +91,12 @@ export function ManagerBookingsPage() {
             {PERIOD_LABELS[value]}
           </Button>
         ))}
-      </div>
+      </div> : <Button component={RouterLink} to="/manager/bookings" variant="outlined" sx={{ justifySelf: "start", mb: 2 }}>К текущим броням</Button>}
       <Paper variant="outlined" className="application-table-surface booking-list-surface">
         {results.length === 0 ? (
           <div className="application-empty">
-            <Typography component="h2" variant="h6">На выбранный период броней нет</Typography>
-            <Typography color="text.secondary">Выберите другой период или перейдите к заявкам.</Typography>
+            <Typography component="h2" variant="h6">{expiredOnly ? "Истекших броней нет" : "На выбранный период броней нет"}</Typography>
+            <Typography color="text.secondary">{expiredOnly ? "Здесь появятся автоматически завершённые брони." : "Выберите другой период или перейдите к заявкам."}</Typography>
             <Button component={RouterLink} to="/manager/applications" variant="outlined">Открыть заявки</Button>
           </div>
         ) : <BookingTable bookings={results} renderedAt={renderedAt} />}

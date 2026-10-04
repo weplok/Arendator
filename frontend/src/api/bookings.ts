@@ -202,9 +202,13 @@ export async function cancelRenterBooking(
   ));
 }
 
-export async function getManagerBookings(period: BookingPeriod) {
+export async function getManagerBookings(
+  period: BookingPeriod,
+  status?: "expired",
+) {
+  const statusParameter = status ? `&status=${status}` : "";
   return managerBookingListSchema.parse(
-    await getJson(`/api/v1/manager/bookings/?period=${period}`),
+    await getJson(`/api/v1/manager/bookings/?period=${period}${statusParameter}`),
   );
 }
 

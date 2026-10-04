@@ -35,8 +35,11 @@ import {
 import { formatRate } from "../catalog/formatting";
 import { formatMoscowDateTime, formatRubles } from "./formatting";
 import "./applications.css";
+import { useNotifications } from "../notifications/NotificationContext";
 
 export function RenterLayout() {
+  const { state } = useNotifications();
+  const unreadCount = state.notifications?.unread_count ?? 0;
   return (
     <Container maxWidth={false} className="renter-layout">
       <nav className="renter-sidebar" aria-label="Кабинет арендатора">
@@ -44,6 +47,13 @@ export function RenterLayout() {
         <NavLink to="/account" end>Заявки</NavLink>
         <NavLink to="/account/bookings">Брони</NavLink>
         <NavLink to="/account/rentals">Аренды</NavLink>
+        <NavLink
+          aria-label={`Уведомления, ${unreadCount > 0 ? "есть непрочитанные" : "нет непрочитанных"}`}
+          to="/account/notifications"
+        >
+          Уведомления
+          {unreadCount > 0 ? <span aria-hidden="true" className="notification-nav-dot" /> : null}
+        </NavLink>
       </nav>
       <div className="renter-main"><Outlet /></div>
     </Container>

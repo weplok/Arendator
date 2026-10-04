@@ -1,6 +1,7 @@
 import { Alert, Box, Button, CircularProgress, Stack } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router-dom";
+import type { ReactNode } from "react";
 
 import { CURRENT_USER_QUERY_KEY, getCurrentUser } from "./api/auth";
 import { LoginPage } from "./auth/LoginPage";
@@ -37,6 +38,11 @@ import { AppShell } from "./layout/AppShell";
 import { ManagerEditor } from "./manager/ManagerEditor";
 import { ManagerLayout, ManagerListPage } from "./manager/ManagerPage";
 import { ManagerProductPage } from "./manager/ManagerProductPage";
+import { NotificationProvider } from "./notifications/NotificationProvider";
+import {
+  NotificationCenterPage,
+  NotificationSettingsPage,
+} from "./notifications/NotificationPages";
 
 export default function App() {
   return (
@@ -84,7 +90,8 @@ function SessionApp() {
       <Route
         path="*"
         element={
-          <AppShell user={user}>
+          <NotificationBoundary user={user}>
+            <AppShell user={user}>
             <Routes>
               <Route path="/" element={<CatalogPage />} />
               <Route
@@ -108,6 +115,8 @@ function SessionApp() {
                 {user?.role === "RENTER" ? <Route path="rentals/:rentalId" element={<RentalDetailPage audience="renter" />} /> : null}
                 {user?.role === "RENTER" ? <Route path="rentals/:rentalId/return" element={<ReturnPage audience="renter" />} /> : null}
                 {user?.role === "RENTER" ? <Route path="rentals" element={<RenterRentalsPage />} /> : null}
+                {user?.role === "RENTER" ? <Route path="notifications" element={<NotificationCenterPage />} /> : null}
+                {user?.role === "RENTER" ? <Route path="notifications/settings" element={<NotificationSettingsPage user={user} />} /> : null}
               </Route>
               {user?.role === "MANAGER" ? <Route path="/manager" element={<ManagerLayout />}>
                 <Route path="applications" element={<ManagerApplicationsPage />} />
@@ -124,12 +133,29 @@ function SessionApp() {
                 <Route path="products/new" element={<ManagerEditor />} />
                 <Route path="products/:productId" element={<ManagerProductPage />} />
                 <Route path="products/:productId/:step" element={<ManagerEditor />} />
+                <Route path="notifications" element={<NotificationCenterPage />} />
+                <Route path="notifications/settings" element={<NotificationSettingsPage user={user} />} />
               </Route> : null}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>
-          </AppShell>
+            </AppShell>
+          </NotificationBoundary>
         }
       />
     </Routes>
+  );
+}
+
+function NotificationBoundary({
+  children,
+  user,
+}: {
+  children: ReactNode;
+  user: Awaited<ReturnType<typeof getCurrentUser>>;
+}) {
+  return user ? (
+    <NotificationProvider user={user}>{children}</NotificationProvider>
+  ) : (
+    children
   );
 }

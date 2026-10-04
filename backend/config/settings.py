@@ -49,6 +49,7 @@ INSTALLED_APPS = [
     "catalog",
     "categories",
     "core",
+    "notifications",
     "users",
 ]
 

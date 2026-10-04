@@ -2,6 +2,7 @@
 
 from django.core.exceptions import ValidationError as ModelValidationError
 from django.db import transaction
+from notifications.events import notify_moderation_result, notify_product_submitted
 
 from catalog.models import ModerationDecision, ModerationSettings, Product
 from users.models import User
@@ -21,6 +22,7 @@ def submit_product_for_moderation(product_id: int) -> Product:
             )
         product.status = Product.Status.ON_MODERATION
         product.save()
+        notify_product_submitted(product)
         if ModerationSettings.load().auto_approve_new_submissions:
             return _approve_locked_product(product, decided_by=None, automatic=True)
         return product
@@ -71,6 +73,7 @@ def reject_product(product_id: int, reason: str, decided_by: User) -> Product:
             decided_by=decided_by,
             reason=normalized_reason,
         )
+        notify_moderation_result(product, approved=False)
         return product
 
 
@@ -89,6 +92,7 @@ def _approve_locked_product(
         decided_by=decided_by,
         automatic=automatic,
     )
+    notify_moderation_result(product, approved=True)
     return product
 
 

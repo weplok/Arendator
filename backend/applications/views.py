@@ -341,6 +341,7 @@ class ManagerBookingListView(APIView):
         period = request.query_params.get("period", "today")
         if period not in {"today", "three", "all"}:
             period = "today"
+        expired_only = request.query_params.get("status") == "expired"
         current = booking_queryset().filter(
             application__product__manager=request.user,
             status__in=(RentalBooking.Status.ACTIVE, RentalBooking.Status.ARRIVED),
@@ -365,7 +366,13 @@ class ManagerBookingListView(APIView):
                 application__pickup_deadline_at__lt=three_days_end,
             ).count(),
         }
-        if period == "today":
+        if expired_only:
+            current = booking_queryset().filter(
+                application__product__manager=request.user,
+                status=RentalBooking.Status.EXPIRED,
+            )
+            period = "all"
+        elif period == "today":
             current = current.filter(
                 application__pickup_deadline_at__gte=today_start,
                 application__pickup_deadline_at__lt=tomorrow_start,

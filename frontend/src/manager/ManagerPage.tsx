@@ -25,11 +25,14 @@ import {
 import { formatRate } from "../catalog/formatting";
 import { ImageIcon } from "../ui/Icons";
 import { InstanceSearchDialog } from "./ManagerMaintenance";
+import { useNotifications } from "../notifications/NotificationContext";
 import "./manager.css";
 
 type ManagerSection = "overview" | "products" | "rejected" | "archive";
 
 export function ManagerLayout() {
+  const { state } = useNotifications();
+  const unreadCount = state.notifications?.unread_count ?? 0;
   return <Container maxWidth={false} className="manager-layout">
     <nav className="manager-sidebar" aria-label="Кабинет менеджера">
       <span className="manager-sidebar__caption">Управление</span>
@@ -40,6 +43,13 @@ export function ManagerLayout() {
       <NavLink to="/manager/rentals">Аренды</NavLink>
       <NavLink to="/manager/rejected">Отклонённые</NavLink>
       <NavLink to="/manager/archive">Архив</NavLink>
+      <NavLink
+        aria-label={`Уведомления, ${unreadCount > 0 ? "есть непрочитанные" : "нет непрочитанных"}`}
+        to="/manager/notifications"
+      >
+        Уведомления
+        {unreadCount > 0 ? <span aria-hidden="true" className="notification-nav-dot" /> : null}
+      </NavLink>
     </nav>
     <div className="manager-main"><Outlet /></div>
   </Container>;

@@ -1,5 +1,8 @@
 """WebSocket routes shared by the project."""
 
-from typing import Any
+from django.urls import path
+from notifications.consumers import NotificationConsumer
 
-websocket_urlpatterns: list[Any] = []
+websocket_urlpatterns = [
+    path("ws/notifications/", NotificationConsumer.as_asgi()),
+]

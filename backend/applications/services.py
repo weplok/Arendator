@@ -19,6 +19,19 @@ from applications.models import (
 from django.db import IntegrityError, transaction
 from django.db.models import Count
 from django.utils import timezone
+from notifications.events import (
+    notify_application_cancelled,
+    notify_application_expired,
+    notify_booking_cancelled,
+    notify_booking_created,
+    notify_booking_expired,
+    notify_handover_started,
+    notify_new_application,
+    notify_rental_completed,
+    notify_rental_overdue,
+    notify_rental_started,
+    notify_return_started,
+)
 from rest_framework.exceptions import APIException, ValidationError
 
 from catalog.models import Maintenance, Product, ProductInstance
@@ -54,16 +67,17 @@ class PlannedReturnPassed(APIException):
 
 def expire_waiting_applications() -> None:
     with transaction.atomic():
-        expired_ids = list(
+        expired_applications = list(
             RentalApplication.objects.select_for_update()
+            .select_related("renter", "product", "product__manager")
             .filter(
                 status=RentalApplication.Status.WAITING,
                 pickup_deadline_at__lte=timezone.now(),
             )
-            .values_list("id", flat=True)
         )
-        if not expired_ids:
+        if not expired_applications:
             return
+        expired_ids = [application.pk for application in expired_applications]
         RentalApplication.objects.filter(pk__in=expired_ids).update(
             status=RentalApplication.Status.EXPIRED,
             updated_at=timezone.now(),
@@ -78,6 +92,8 @@ def expire_waiting_applications() -> None:
                 for application_id in expired_ids
             ]
         )
+        for application in expired_applications:
+            notify_application_expired(application)
 
 
 @transaction.atomic
@@ -119,6 +135,7 @@ def create_application(
         event=ApplicationEvent.Event.CREATED,
         actor=ApplicationEvent.Actor.RENTER,
     )
+    notify_new_application(application)
     return application
 
 
@@ -141,6 +158,7 @@ def cancel_application(
         actor=actor,
         note=reason.strip(),
     )
+    notify_application_cancelled(locked, actor=actor)
     return locked
 
 
@@ -255,6 +273,7 @@ def create_booking(
         event=BookingEvent.Event.CREATED,
         actor=BookingEvent.Actor.MANAGER,
     )
+    notify_booking_created(booking)
     return booking, True
 
 
@@ -293,6 +312,7 @@ def cancel_booking(
         actor=actor,
         note=reason.strip(),
     )
+    notify_booking_cancelled(locked, actor=actor)
     return locked
 
 
@@ -327,6 +347,7 @@ def confirm_booking_arrival(*, booking: RentalBooking) -> RentalBooking:
                 actor=BookingEvent.Actor.MANAGER,
             )
             HandoverAct.objects.get_or_create(booking=locked)
+            notify_handover_started(locked)
     if deadline_passed:
         raise BookingDeadlinePassed()
     return locked
@@ -360,6 +381,7 @@ def _expire_locked_booking(booking: RentalBooking, expired_at: datetime) -> None
         event=BookingEvent.Event.EXPIRED,
         actor=BookingEvent.Actor.SYSTEM,
     )
+    notify_booking_expired(booking)
 
 
 def handover_actor_role(user: User) -> str:
@@ -546,14 +568,31 @@ def _start_rental(booking: RentalBooking, started_at: datetime) -> Rental:
         event=BookingEvent.Event.RENTAL_STARTED,
         actor=BookingEvent.Actor.MANAGER,
     )
+    notify_rental_started(rental)
     return rental
 
 
 def refresh_overdue_rentals() -> int:
-    return Rental.objects.filter(
-        status=Rental.Status.ACTIVE,
-        planned_return_at__lt=timezone.now(),
-    ).update(status=Rental.Status.OVERDUE, updated_at=timezone.now())
+    with transaction.atomic():
+        now = timezone.now()
+        rentals = list(
+            Rental.objects.select_for_update()
+            .select_related(
+                "booking__application__renter",
+                "booking__application__product__manager",
+            )
+            .filter(
+                status=Rental.Status.ACTIVE,
+                planned_return_at__lt=now,
+            )
+        )
+        Rental.objects.filter(pk__in=[rental.pk for rental in rentals]).update(
+            status=Rental.Status.OVERDUE,
+            updated_at=now,
+        )
+        for rental in rentals:
+            notify_rental_overdue(rental)
+        return len(rentals)
 
 
 def rental_calculation(rental: Rental, calculated_at: datetime) -> dict[str, Any]:
@@ -635,6 +674,7 @@ def receive_return(*, rental_id: int) -> Rental:
         event=RentalEvent.Event.RETURN_RECEIVED,
         actor=RentalEvent.Actor.MANAGER,
     )
+    notify_return_started(rental)
     return rental
 
 
@@ -966,3 +1006,4 @@ def _complete_return(return_act: ReturnAct) -> None:
         actor=RentalEvent.Actor.MANAGER,
         note=return_act.next_instance_status,
     )
+    notify_rental_completed(rental)
