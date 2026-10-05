@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f4f7f5">
+  <title>Арентатор — аналитика</title>
+  <link rel="stylesheet" href="manager-stage-4.css">
+  <link rel="stylesheet" href="analytics-stage-14.css">
+</head>
+<body>
+  <a class="skip-link" href="#manager-main">Перейти к содержимому</a>
+  <svg aria-hidden="true" width="0" height="0" class="icon-sprite">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" fill="none" stroke="currentColor" stroke-width="1.7"/></symbol>
+    <symbol id="i-box" viewBox="0 0 24 24"><path d="m4 7 8-4 8 4v10l-8 4-8-4zM4 7l8 4 8-4m-8 4v10" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v5h4M9 12h6M9 16h6" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M7 3v4m10-4v4M3 10h18" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.8"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 10a6 6 0 0 1 12 0v4l2 3H4l2-3zM10 20h4" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5M18 10a7 7 0 0 0-12-3l-2 2m2 5a7 7 0 0 0 12 3l2-2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3 2.5 20h19L12 3Z" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.8"/><path d="M12 9v5m0 3v.1" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 20v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2m7-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8 4a4 4 0 0 1 4 4v2m-5-18a4 4 0 0 1 0 8" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.7"/></symbol>
+  </svg>
+
+  <div class="prototype-bar">
+    <div class="prototype-head"><strong>Этап №14 · Аналитика</strong><span>Экраны и состояния</span></div>
+    <nav class="prototype-nav" aria-label="Экраны прототипа">
+      <a href="#manager-week">Менеджер · неделя</a>
+      <a href="#manager-custom">Менеджер · диапазон</a>
+      <a href="#manager-empty">Менеджер · нет данных</a>
+      <a href="#manager-states">Загрузка и доступ</a>
+      <a href="#admin-income">Администратор · доход</a>
+      <a href="#admin-rentals">Администратор · аренды</a>
+      <a href="#admin-custom">Администратор · диапазон</a>
+    </nav>
+  </div>
+
+  <div class="manager-shell" id="manager-shell">
+    <header class="app-header">
+      <a class="brand" href="#manager-week" aria-label="Арентатор — кабинет менеджера"><span class="brand-mark" aria-hidden="true"></span>Арентатор</a>
+      <div class="header-right"><div class="account"><span class="avatar">А</span><span><span>Алексей</span><small>Менеджер</small></span></div></div>
+    </header>
+    <div class="app-body">
+      <aside class="sidebar">
+        <div class="sidebar-label">Кабинет менеджера</div>
+        <nav aria-label="Кабинет менеджера">
+          <a class="side-link" href="#manager-week"><svg aria-hidden="true"><use href="#i-grid"/></svg>Обзор</a>
+          <a class="side-link" href="#manager-week"><svg aria-hidden="true"><use href="#i-box"/></svg>Мои товары</a>
+          <a class="side-link" href="#manager-week"><svg aria-hidden="true"><use href="#i-file"/></svg>Заявки</a>
+          <a class="side-link" href="#manager-week"><svg aria-hidden="true"><use href="#i-calendar"/></svg>Брони</a>
+          <a class="side-link" href="#manager-week"><svg aria-hidden="true"><use href="#i-clock"/></svg>Аренды</a>
+          <a class="side-link" data-nav="analytics" href="#manager-week"><svg aria-hidden="true"><use href="#i-chart"/></svg>Аналитика</a>
+          <a class="side-link" href="#manager-week"><svg aria-hidden="true"><use href="#i-bell"/></svg>Уведомления</a>
+        </nav>
+      </aside>
+
+      <main id="manager-main">
+        <section class="screen analytics-screen" id="manager-week" data-shell="manager" aria-labelledby="manager-week-title">
+          <div class="analytics-head">
+            <div><span class="page-eyebrow">Ваш каталог</span><h1 id="manager-week-title" tabindex="-1">Аналитика</h1><p>27 сентября — 3 октября 2026 · МСК</p></div>
+            <div class="period-control" aria-label="Период аналитики">
+              <a class="period-chip active" href="#manager-week" aria-current="true">Неделя</a>
+              <a class="period-chip" href="#manager-week">Месяц</a>
+              <a class="period-chip" href="#manager-week">Год</a>
+              <a class="period-chip" href="#manager-custom">Свой период</a>
+            </div>
+          </div>
+
+          <section class="income-summary money-flow-summary" aria-labelledby="manager-income-title">
+            <div class="income-total"><span>Расчётный итог</span><strong id="manager-income-title">162 820 ₽</strong><small>доходы за вычетом расходов</small></div>
+            <div class="money-flow positive-flow"><div class="flow-head"><span>Доходы</span><strong>+186 420 ₽</strong></div><dl class="flow-lines"><div><dt>Аренда</dt><dd>+151 240 ₽</dd></div><div><dt>Просрочка</dt><dd>+21 180 ₽</dd></div><div><dt>Повреждения</dt><dd>+14 000 ₽</dd></div></dl></div>
+            <div class="money-flow negative-flow"><div class="flow-head"><span>Расходы</span><strong>−23 600 ₽</strong></div><dl class="flow-lines"><div><dt>Обслуживание</dt><dd>−23 600 ₽</dd></div></dl><small>4 завершённых обслуживания</small></div>
+          </section>
+
+          <div class="kpi-grid manager-kpis">
+            <article class="kpi-card"><span class="kpi-label">Средняя загрузка</span><strong>64%</strong><span class="trend up">↑ 7 п. п.</span><small>к предыдущим 7 дням</small></article>
+            <article class="kpi-card"><span class="kpi-label">Активные просрочки</span><strong>3</strong><span class="trend neutral">2 товара</span><small>на 4 октября, 00:00 МСК</small></article>
+            <article class="kpi-card"><span class="kpi-label">Экземпляры в работе</span><strong>17</strong><span class="trend neutral">44% парка</span><small>бронь, аренда или осмотр</small></article>
+          </div>
+
+          <div class="analytics-grid wide-left">
+            <article class="chart-card revenue-card">
+              <header class="chart-head"><div><h2>Расчётный доход по категориям</h2><p>27 сентября — 3 октября 2026 · ₽</p></div><span class="chart-total">186 420 ₽</span></header>
+              <div class="bar-chart" role="img" aria-label="Столбчатая диаграмма расчётного дохода по пяти категориям. Больше всего у строительного инструмента: 72 400 рублей.">
+                <div class="bar-axis"><span>80 тыс.</span><span>60 тыс.</span><span>40 тыс.</span><span>20 тыс.</span><span>0</span></div>
+                <div class="bars">
+                  <div class="bar-item"><span class="bar-value">72 400</span><span class="bar-fill" style="--bar:90.5%"></span><span class="bar-label">Строительный<br>инструмент</span></div>
+                  <div class="bar-item"><span class="bar-value">44 200</span><span class="bar-fill" style="--bar:55.25%"></span><span class="bar-label">Садовая<br>техника</span></div>
+                  <div class="bar-item"><span class="bar-value">33 500</span><span class="bar-fill" style="--bar:41.875%"></span><span class="bar-label">Уборочная<br>техника</span></div>
+                  <div class="bar-item"><span class="bar-value">23 120</span><span class="bar-fill" style="--bar:28.9%"></span><span class="bar-label">Измерительные<br>приборы</span></div>
+                  <div class="bar-item"><span class="bar-value">13 200</span><span class="bar-fill" style="--bar:16.5%"></span><span class="bar-label">Техника для<br>мероприятий</span></div>
+                </div>
+              </div>
+              <p class="chart-insight"><strong>39%</strong> дохода принёс строительный инструмент.</p>
+              <details class="chart-data"><summary>Таблица данных</summary><table><thead><tr><th>Категория</th><th>Расчётный доход</th><th>Завершено</th></tr></thead><tbody><tr><td>Строительный инструмент</td><td>72 400 ₽</td><td>16</td></tr><tr><td>Садовая техника</td><td>44 200 ₽</td><td>9</td></tr><tr><td>Уборочная техника</td><td>33 500 ₽</td><td>8</td></tr><tr><td>Измерительные приборы</td><td>23 120 ₽</td><td>6</td></tr><tr><td>Техника для мероприятий</td><td>13 200 ₽</td><td>3</td></tr></tbody></table></details>
+            </article>
+
+            <article class="chart-card park-card">
+              <header class="chart-head"><div><h2>Состояние парка</h2><p>4 октября 2026, 00:00 МСК · экземпляры</p></div><span class="chart-total">39 всего</span></header>
+              <div class="donut-layout">
+                <div class="donut" role="img" aria-label="Состояние 39 экземпляров: 18 доступно, 5 забронировано, 9 в аренде, 3 на возвратном осмотре, 4 на обслуживании."><span><strong>39</strong><small>экземпляров</small></span></div>
+                <ul class="legend-list" aria-label="Легенда состояния парка"><li><i class="legend available"></i><span>Доступно</span><strong>18</strong></li><li><i class="legend booked"></i><span>Забронировано</span><strong>5</strong></li><li><i class="legend rented"></i><span>В аренде</span><strong>9</strong></li><li><i class="legend inspection"></i><span>На осмотре</span><strong>3</strong></li><li><i class="legend maintenance"></i><span>Обслуживание</span><strong>4</strong></li></ul>
+              </div>
+              <details class="chart-data"><summary>Таблица данных</summary><table><thead><tr><th>Состояние</th><th>Экземпляров</th></tr></thead><tbody><tr><td>Доступно</td><td>18</td></tr><tr><td>Забронировано</td><td>5</td></tr><tr><td>В аренде</td><td>9</td></tr><tr><td>На возвратном осмотре</td><td>3</td></tr><tr><td>На обслуживании</td><td>4</td></tr></tbody></table></details>
+            </article>
+          </div>
+
+          <article class="chart-card utilization-card">
+            <header class="chart-head"><div><h2>Загрузка экземпляров</h2><p>27 сентября — 3 октября 2026 · доля операционных минут</p></div><span class="chart-total">В среднем 64%</span></header>
+            <div class="line-chart-wrap">
+              <svg class="line-chart" viewBox="0 0 820 280" role="img" aria-labelledby="util-title util-desc">
+                <title id="util-title">Загрузка экземпляров по дням</title><desc id="util-desc">От 52 процентов 27 сентября до пика 81 процент 2 октября, затем 68 процентов 3 октября.</desc>
+                <g class="grid-lines"><line x1="58" y1="30" x2="790" y2="30"/><line x1="58" y1="80" x2="790" y2="80"/><line x1="58" y1="130" x2="790" y2="130"/><line x1="58" y1="180" x2="790" y2="180"/><line x1="58" y1="230" x2="790" y2="230"/></g>
+                <g class="axis-labels"><text x="16" y="35">100%</text><text x="23" y="85">75%</text><text x="23" y="135">50%</text><text x="23" y="185">25%</text><text x="39" y="235">0</text></g>
+                <path class="line-area" d="M75 126 L190 110 L305 118 L420 96 L535 88 L650 68 L765 94 L765 230 L75 230 Z"/>
+                <path class="line-path" d="M75 126 L190 110 L305 118 L420 96 L535 88 L650 68 L765 94"/>
+                <g class="line-points"><circle cx="75" cy="126" r="5"/><circle cx="190" cy="110" r="5"/><circle cx="305" cy="118" r="5"/><circle cx="420" cy="96" r="5"/><circle cx="535" cy="88" r="5"/><circle cx="650" cy="68" r="6"/><circle cx="765" cy="94" r="5"/></g>
+                <g class="point-values"><text x="75" y="112">52%</text><text x="190" y="96">60%</text><text x="305" y="104">56%</text><text x="420" y="82">67%</text><text x="535" y="74">71%</text><text x="650" y="52">81%</text><text x="765" y="80">68%</text></g>
+                <g class="day-labels"><text x="75" y="258">27 сен</text><text x="190" y="258">28 сен</text><text x="305" y="258">29 сен</text><text x="420" y="258">30 сен</text><text x="535" y="258">1 окт</text><text x="650" y="258">2 окт</text><text x="765" y="258">3 окт</text></g>
+              </svg>
+            </div>
+            <p class="chart-insight">Пиковая загрузка — <strong>81%</strong> в пятницу, 2 октября.</p>
+            <details class="chart-data"><summary>Таблица данных</summary><table><thead><tr><th>Дата</th><th>Загрузка</th></tr></thead><tbody><tr><td>27 сентября</td><td>52%</td></tr><tr><td>28 сентября</td><td>60%</td></tr><tr><td>29 сентября</td><td>56%</td></tr><tr><td>30 сентября</td><td>67%</td></tr><tr><td>1 октября</td><td>71%</td></tr><tr><td>2 октября</td><td>81%</td></tr><tr><td>3 октября</td><td>68%</td></tr></tbody></table></details>
+          </article>
+        </section>
+
+        <section class="screen analytics-screen" id="manager-custom" data-shell="manager" aria-labelledby="manager-custom-title">
+          <div class="analytics-head"><div><span class="page-eyebrow">Ваш каталог</span><h1 id="manager-custom-title" tabindex="-1">Аналитика</h1><p>5 сентября — 4 октября 2026 · МСК</p></div><div class="period-control" aria-label="Период аналитики"><a class="period-chip" href="#manager-week">Неделя</a><a class="period-chip" href="#manager-week">Месяц</a><a class="period-chip" href="#manager-week">Год</a><a class="period-chip active" href="#manager-custom" aria-current="true">Свой период</a></div></div>
+          <form class="date-range" aria-label="Произвольный период"><label>Дата от<input type="date" value="2026-09-05"></label><label>Дата до<input type="date" value="2026-10-04"></label><button class="btn btn-primary" type="button">Показать</button></form>
+          <section class="income-summary money-flow-summary" aria-labelledby="manager-custom-income"><div class="income-total"><span>Расчётный итог</span><strong id="manager-custom-income">603 440 ₽</strong><small>доходы за вычетом расходов</small></div><div class="money-flow positive-flow"><div class="flow-head"><span>Доходы</span><strong>+692 840 ₽</strong></div><dl class="flow-lines"><div><dt>Аренда</dt><dd>+571 960 ₽</dd></div><div><dt>Просрочка</dt><dd>+78 880 ₽</dd></div><div><dt>Повреждения</dt><dd>+42 000 ₽</dd></div></dl></div><div class="money-flow negative-flow"><div class="flow-head"><span>Расходы</span><strong>−89 400 ₽</strong></div><dl class="flow-lines"><div><dt>Обслуживание</dt><dd>−89 400 ₽</dd></div></dl><small>17 завершённых обслуживаний</small></div></section>
+          <div class="kpi-grid manager-kpis"><article class="kpi-card"><span class="kpi-label">Средняя загрузка</span><strong>61%</strong><span class="trend up">↑ 4 п. п.</span><small>к предыдущим 30 дням</small></article><article class="kpi-card"><span class="kpi-label">Активные просрочки</span><strong>3</strong><span class="trend neutral">2 товара</span><small>на 5 октября, 00:00 МСК</small></article><article class="kpi-card"><span class="kpi-label">Экземпляры в работе</span><strong>17</strong><span class="trend neutral">44% парка</span><small>текущее состояние</small></article></div>
+          <article class="chart-card compact-bars"><header class="chart-head"><div><h2>Расчётный доход по категориям</h2><p>5 сентября — 4 октября 2026 · ₽</p></div><span class="chart-total">692 840 ₽</span></header><div class="horizontal-bars" role="img" aria-label="Расчётный доход по категориям за произвольный период"><div><span>Строительный инструмент</span><i style="--w:100%"></i><strong>261 300 ₽</strong></div><div><span>Садовая техника</span><i style="--w:71%"></i><strong>184 900 ₽</strong></div><div><span>Уборочная техника</span><i style="--w:52%"></i><strong>135 600 ₽</strong></div><div><span>Измерительные приборы</span><i style="--w:28%"></i><strong>72 340 ₽</strong></div><div><span>Техника для мероприятий</span><i style="--w:15%"></i><strong>38 700 ₽</strong></div></div><details class="chart-data"><summary>Таблица данных</summary><table><thead><tr><th>Категория</th><th>Расчётный доход</th></tr></thead><tbody><tr><td>Строительный инструмент</td><td>261 300 ₽</td></tr><tr><td>Садовая техника</td><td>184 900 ₽</td></tr><tr><td>Уборочная техника</td><td>135 600 ₽</td></tr><tr><td>Измерительные приборы</td><td>72 340 ₽</td></tr><tr><td>Техника для мероприятий</td><td>38 700 ₽</td></tr></tbody></table></details></article>
+        </section>
+
+        <section class="screen analytics-screen" id="manager-empty" data-shell="manager" aria-labelledby="manager-empty-title">
+          <div class="analytics-head"><div><span class="page-eyebrow">Ваш каталог</span><h1 id="manager-empty-title" tabindex="-1">Аналитика</h1><p>1 января — 7 января 2025 · МСК</p></div><div class="period-control"><a class="period-chip active" href="#manager-empty">Неделя</a><a class="period-chip" href="#manager-week">Месяц</a><a class="period-chip" href="#manager-week">Год</a><a class="period-chip" href="#manager-custom">Свой период</a></div></div>
+          <section class="income-summary money-flow-summary empty-income"><div class="income-total"><span>Расчётный итог</span><strong>0 ₽</strong><small>доходы за вычетом расходов</small></div><div class="money-flow positive-flow"><div class="flow-head"><span>Доходы</span><strong>+0 ₽</strong></div><dl class="flow-lines"><div><dt>Аренда</dt><dd>+0 ₽</dd></div><div><dt>Просрочка</dt><dd>+0 ₽</dd></div><div><dt>Повреждения</dt><dd>+0 ₽</dd></div></dl></div><div class="money-flow negative-flow"><div class="flow-head"><span>Расходы</span><strong>−0 ₽</strong></div><dl class="flow-lines"><div><dt>Обслуживание</dt><dd>−0 ₽</dd></div></dl><small>0 завершённых обслуживаний</small></div></section>
+          <div class="kpi-grid manager-kpis"><article class="kpi-card"><span class="kpi-label">Средняя загрузка</span><strong>0%</strong><small>за выбранный период</small></article><article class="kpi-card"><span class="kpi-label">Активные просрочки</span><strong>0</strong><small>на 8 января, 00:00 МСК</small></article><article class="kpi-card"><span class="kpi-label">Экземпляры в работе</span><strong>0</strong><small>на 8 января, 00:00 МСК</small></article></div>
+          <div class="empty-analytics"><svg aria-hidden="true"><use href="#i-chart"/></svg><h2>За этот период данных нет</h2><p>Выберите другой период, чтобы посмотреть денежные показатели и загрузку.</p><a class="btn btn-secondary" href="#manager-custom">Выбрать период</a></div>
+        </section>
+
+        <section class="screen analytics-screen" id="manager-states" data-shell="manager" aria-labelledby="manager-states-title">
+          <div class="analytics-head"><div><span class="page-eyebrow">Ваш каталог</span><h1 id="manager-states-title" tabindex="-1">Аналитика</h1><p>Состояния страницы</p></div></div>
+          <div class="state-grid">
+            <article class="state-panel"><div class="state-icon skeleton-icon"></div><h2>Загрузка аналитики</h2><div class="skeleton-lines" aria-hidden="true"><i></i><i></i><i></i></div></article>
+            <article class="state-panel error-panel"><span class="state-symbol"><svg aria-hidden="true"><use href="#i-alert"/></svg></span><h2>Не удалось загрузить аналитику</h2><p>Попробуйте ещё раз.</p><button class="btn btn-secondary" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>Повторить</button></article>
+            <article class="state-panel forbidden-panel"><span class="state-symbol"><svg aria-hidden="true"><use href="#i-lock"/></svg></span><h2>Доступ закрыт</h2><p>Этот раздел недоступен для вашей роли.</p><a class="btn btn-secondary" href="#manager-week">В кабинет</a></article>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="admin-shell" id="admin-shell" hidden>
+    <header class="admin-header"><a class="admin-brand" href="#admin-income">Администрирование Арентатора</a><div><span>ДОБРО ПОЖАЛОВАТЬ, АДМИНИСТРАТОР.</span><a href="#admin-income">ПОСМОТРЕТЬ САЙТ</a><a href="#admin-income">ВЫЙТИ</a></div></header>
+    <div class="admin-layout">
+      <aside class="admin-sidebar"><label class="admin-search"><span class="sr-only">Поиск в администрировании</span><input type="search" placeholder="Начните вводить для фильтрации…"></label><nav aria-label="Разделы администрирования"><h2>ПЛОЩАДКА</h2><a class="admin-nav active" href="#admin-income"><svg aria-hidden="true"><use href="#i-chart"/></svg>Аналитика</a><a class="admin-nav" href="#admin-income"><svg aria-hidden="true"><use href="#i-users"/></svg>Пользователи</a><a class="admin-nav" href="#admin-income"><svg aria-hidden="true"><use href="#i-box"/></svg>Категории</a><a class="admin-nav" href="#admin-income"><svg aria-hidden="true"><use href="#i-file"/></svg>Товары и модерация</a><a class="admin-nav" href="#admin-income"><svg aria-hidden="true"><use href="#i-calendar"/></svg>Заявки и аренды</a></nav></aside>
+      <main class="admin-main" id="admin-main">
+        <section class="screen admin-screen" id="admin-income" data-shell="admin" aria-labelledby="admin-income-title">
+          <nav class="breadcrumbs" aria-label="Хлебные крошки"><a href="#admin-income">Главная</a><span>›</span><span>Аналитика</span></nav>
+          <div class="admin-title-row"><div><h1 id="admin-income-title" tabindex="-1">Аналитика площадки</h1><p>27 сентября — 3 октября 2026 · МСК</p></div><div class="admin-period"><a class="active" href="#admin-income">Неделя</a><a href="#admin-income">Месяц</a><a href="#admin-income">Год</a><a href="#admin-custom">Свой период</a></div></div>
+          <div class="admin-kpi-grid primary-admin-kpis"><article class="net-kpi"><span>Расчётный итог</span><strong>1 604 360 ₽</strong><small>доходы за вычетом расходов</small></article><article class="positive-kpi"><span>Доходы</span><strong>+1 842 760 ₽</strong><small>428 завершённых аренд</small></article><article class="negative-kpi"><span>Расходы на обслуживание</span><strong>−238 400 ₽</strong><small>53 завершённых обслуживания</small></article><article><span>Средняя загрузка</span><strong>61%</strong><small>по всей площадке</small></article><article><span>Активные просрочки</span><strong>27</strong><small>на 4 октября, 00:00 МСК</small></article></div>
+          <div class="admin-kpi-grid platform-kpis"><article><span>Экземпляры</span><strong>624</strong><small>в парках менеджеров</small></article><article><span>Опубликовано товаров</span><strong>286</strong></article><article><span>На модерации</span><strong>17</strong></article><article><span>Менеджеры</span><strong>24</strong></article><article><span>Арендаторы</span><strong>1 348</strong></article><article><span>Заявки</span><strong>313</strong><small>96 ожидают сейчас</small></article><article><span>Созданные брони</span><strong>214</strong></article><article class="conversion-kpi"><span>Конверсия в бронь</span><strong>68,4%</strong><div class="progress"><i style="--progress:68.4%"></i></div></article></div>
+
+          <div class="admin-content-grid">
+            <article class="admin-module category-module">
+              <header><div><h2>Категории</h2><p>27 сентября — 3 октября 2026</p></div><nav class="metric-toggle" aria-label="Показатель категорий"><a class="active" href="#admin-income">Расчётный доход</a><a href="#admin-rentals">Завершённые аренды</a></nav></header>
+              <div class="admin-bars" role="img" aria-label="Столбчатая диаграмма расчётного дохода по категориям площадки"><div><span>Строительный инструмент</span><i style="--w:100%"></i><strong>612 400 ₽</strong></div><div><span>Садовая техника</span><i style="--w:79%"></i><strong>483 600 ₽</strong></div><div><span>Уборочная техника</span><i style="--w:55%"></i><strong>338 900 ₽</strong></div><div><span>Техника для мероприятий</span><i style="--w:39%"></i><strong>241 260 ₽</strong></div><div><span>Измерительные приборы</span><i style="--w:27%"></i><strong>166 600 ₽</strong></div></div>
+              <p class="admin-insight">Строительный инструмент формирует <strong>33%</strong> расчётного дохода площадки.</p>
+              <details class="admin-data"><summary>Таблица данных</summary><table><thead><tr><th>Категория</th><th>Расчётный доход</th></tr></thead><tbody><tr><td>Строительный инструмент</td><td>612 400 ₽</td></tr><tr><td>Садовая техника</td><td>483 600 ₽</td></tr><tr><td>Уборочная техника</td><td>338 900 ₽</td></tr><tr><td>Техника для мероприятий</td><td>241 260 ₽</td></tr><tr><td>Измерительные приборы</td><td>166 600 ₽</td></tr></tbody></table></details>
+            </article>
+            <article class="admin-module"><header><div><h2>Товары по статусам</h2><p>4 октября 2026, 00:00 МСК · товары</p></div><strong>366 всего</strong></header><div class="status-stack" role="img" aria-label="286 опубликованных товаров, 34 черновика, 17 на модерации, 8 отклонено и 21 заморожен"><i class="published" style="--s:78.1%"></i><i class="draft" style="--s:9.3%"></i><i class="moderation" style="--s:4.6%"></i><i class="rejected" style="--s:2.2%"></i><i class="frozen" style="--s:5.8%"></i></div><ul class="admin-status-list"><li><i class="published"></i><span>Опубликованы</span><strong>286</strong></li><li><i class="draft"></i><span>Черновики</span><strong>34</strong></li><li><i class="moderation"></i><span>На модерации</span><strong>17</strong></li><li><i class="rejected"></i><span>Отклонены</span><strong>8</strong></li><li><i class="frozen"></i><span>Заморожены</span><strong>21</strong></li></ul><details class="admin-data"><summary>Таблица данных</summary><table><thead><tr><th>Статус</th><th>Товаров</th></tr></thead><tbody><tr><td>Опубликованы</td><td>286</td></tr><tr><td>Черновики</td><td>34</td></tr><tr><td>На модерации</td><td>17</td></tr><tr><td>Отклонены</td><td>8</td></tr><tr><td>Заморожены</td><td>21</td></tr></tbody></table></details></article>
+          </div>
+        </section>
+
+        <section class="screen admin-screen" id="admin-rentals" data-shell="admin" aria-labelledby="admin-rentals-title">
+          <nav class="breadcrumbs"><a href="#admin-income">Главная</a><span>›</span><span>Аналитика</span></nav>
+          <div class="admin-title-row"><div><h1 id="admin-rentals-title" tabindex="-1">Аналитика площадки</h1><p>27 сентября — 3 октября 2026 · МСК</p></div><div class="admin-period"><a class="active" href="#admin-rentals">Неделя</a><a href="#admin-rentals">Месяц</a><a href="#admin-rentals">Год</a><a href="#admin-custom">Свой период</a></div></div>
+          <div class="admin-kpi-grid primary-admin-kpis"><article class="net-kpi"><span>Расчётный итог</span><strong>1 604 360 ₽</strong><small>доходы за вычетом расходов</small></article><article class="positive-kpi"><span>Доходы</span><strong>+1 842 760 ₽</strong><small>428 завершённых аренд</small></article><article class="negative-kpi"><span>Расходы на обслуживание</span><strong>−238 400 ₽</strong><small>53 завершённых обслуживания</small></article><article><span>Средняя загрузка</span><strong>61%</strong><small>по всей площадке</small></article><article><span>Активные просрочки</span><strong>27</strong><small>на 4 октября, 00:00 МСК</small></article></div>
+          <article class="admin-module category-module full-admin-module"><header><div><h2>Категории</h2><p>27 сентября — 3 октября 2026 · завершённые аренды</p></div><nav class="metric-toggle"><a href="#admin-income">Расчётный доход</a><a class="active" href="#admin-rentals">Завершённые аренды</a></nav></header><div class="admin-bars count-bars" role="img" aria-label="Столбчатая диаграмма завершённых аренд по категориям"><div><span>Строительный инструмент</span><i style="--w:100%"></i><strong>148</strong></div><div><span>Садовая техника</span><i style="--w:78%"></i><strong>116</strong></div><div><span>Уборочная техника</span><i style="--w:51%"></i><strong>76</strong></div><div><span>Техника для мероприятий</span><i style="--w:36%"></i><strong>53</strong></div><div><span>Измерительные приборы</span><i style="--w:24%"></i><strong>35</strong></div></div><p class="admin-insight">Больше всего завершённых аренд у строительного инструмента — <strong>148</strong>.</p><details class="admin-data"><summary>Таблица данных</summary><table><thead><tr><th>Категория</th><th>Завершённые аренды</th></tr></thead><tbody><tr><td>Строительный инструмент</td><td>148</td></tr><tr><td>Садовая техника</td><td>116</td></tr><tr><td>Уборочная техника</td><td>76</td></tr><tr><td>Техника для мероприятий</td><td>53</td></tr><tr><td>Измерительные приборы</td><td>35</td></tr></tbody></table></details></article>
+        </section>
+
+        <section class="screen admin-screen" id="admin-custom" data-shell="admin" aria-labelledby="admin-custom-title">
+          <nav class="breadcrumbs"><a href="#admin-income">Главная</a><span>›</span><span>Аналитика</span></nav>
+          <div class="admin-title-row"><div><h1 id="admin-custom-title" tabindex="-1">Аналитика площадки</h1><p>1 сентября — 30 сентября 2026 · МСК</p></div><div class="admin-period"><a href="#admin-income">Неделя</a><a href="#admin-income">Месяц</a><a href="#admin-income">Год</a><a class="active" href="#admin-custom">Свой период</a></div></div>
+          <form class="admin-date-range"><label>Дата от<input type="date" value="2026-09-01"></label><label>Дата до<input type="date" value="2026-09-30"></label><button type="button">Показать</button></form>
+          <div class="admin-kpi-grid primary-admin-kpis"><article class="net-kpi"><span>Расчётный итог</span><strong>6 521 020 ₽</strong><small>доходы за вычетом расходов</small></article><article class="positive-kpi"><span>Доходы</span><strong>+7 486 920 ₽</strong><small>1 736 завершённых аренд</small></article><article class="negative-kpi"><span>Расходы на обслуживание</span><strong>−965 900 ₽</strong><small>214 завершённых обслуживаний</small></article><article><span>Средняя загрузка</span><strong>59%</strong><small>по всей площадке</small></article><article><span>Активные просрочки</span><strong>31</strong><small>на 1 октября, 00:00 МСК</small></article></div>
+          <article class="admin-module category-module full-admin-module"><header><div><h2>Категории по расчётному доходу</h2><p>1 сентября — 30 сентября 2026 · ₽</p></div></header><div class="admin-bars" role="img" aria-label="Расчётный доход категорий за произвольный период"><div><span>Строительный инструмент</span><i style="--w:100%"></i><strong>2 432 000 ₽</strong></div><div><span>Садовая техника</span><i style="--w:82%"></i><strong>1 994 300 ₽</strong></div><div><span>Уборочная техника</span><i style="--w:57%"></i><strong>1 386 420 ₽</strong></div><div><span>Техника для мероприятий</span><i style="--w:42%"></i><strong>1 020 600 ₽</strong></div><div><span>Измерительные приборы</span><i style="--w:27%"></i><strong>653 600 ₽</strong></div></div><details class="admin-data"><summary>Таблица данных</summary><table><thead><tr><th>Категория</th><th>Расчётный доход</th></tr></thead><tbody><tr><td>Строительный инструмент</td><td>2 432 000 ₽</td></tr><tr><td>Садовая техника</td><td>1 994 300 ₽</td></tr><tr><td>Уборочная техника</td><td>1 386 420 ₽</td></tr><tr><td>Техника для мероприятий</td><td>1 020 600 ₽</td></tr><tr><td>Измерительные приборы</td><td>653 600 ₽</td></tr></tbody></table></details></article>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <script>
+    const screens = new Set(["manager-week", "manager-custom", "manager-empty", "manager-states", "admin-income", "admin-rentals", "admin-custom"]);
+    function showScreen(focusHeading = false) {
+      const requested = location.hash.slice(1);
+      const selected = screens.has(requested) ? requested : "manager-week";
+      const isAdmin = selected.startsWith("admin-");
+      document.body.classList.toggle("admin-mode", isAdmin);
+      document.querySelector("#manager-shell").hidden = isAdmin;
+      document.querySelector("#admin-shell").hidden = !isAdmin;
+      document.querySelectorAll(".screen").forEach((screen) => screen.classList.toggle("active", screen.id === selected));
+      document.querySelectorAll(".prototype-nav a").forEach((link) => link.toggleAttribute("aria-current", link.hash === `#${selected}`));
+      document.querySelectorAll("[data-nav='analytics']").forEach((link) => link.setAttribute("aria-current", "page"));
+      const skip = document.querySelector(".skip-link");
+      skip.href = isAdmin ? "#admin-main" : "#manager-main";
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => {
+        if (!isAdmin) {
+          const nav = document.querySelector(".sidebar nav");
+          const current = document.querySelector("[data-nav='analytics']");
+          if (nav && current && nav.scrollWidth > nav.clientWidth) nav.scrollLeft = current.offsetLeft - 16;
+        }
+        if (focusHeading && !document.body.classList.contains("clean-view")) document.querySelector(".screen.active h1[tabindex='-1']")?.focus({ preventScroll: true });
+      });
+    }
+    if (new URLSearchParams(location.search).has("clean")) document.body.classList.add("clean-view");
+    addEventListener("hashchange", () => showScreen(true));
+    showScreen(false);
+  </script>
+</body>
+</html>

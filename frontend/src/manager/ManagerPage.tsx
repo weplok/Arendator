@@ -41,6 +41,7 @@ export function ManagerLayout() {
       <NavLink to="/manager/applications">Заявки</NavLink>
       <NavLink to="/manager/bookings">Брони</NavLink>
       <NavLink to="/manager/rentals">Аренды</NavLink>
+      <NavLink to="/manager/analytics">Аналитика</NavLink>
       <NavLink to="/manager/rejected">Отклонённые</NavLink>
       <NavLink to="/manager/archive">Архив</NavLink>
       <NavLink

@@ -30,6 +30,7 @@ import {
   RenterRentalsPage,
 } from "./applications/RentalPages";
 import { ReturnPage } from "./applications/ReturnPage";
+import { ManagerAnalyticsPage } from "./analytics/ManagerAnalyticsPage";
 import { CatalogPage } from "./catalog/CatalogPage";
 import { ManagerProfilePage } from "./catalog/ManagerProfilePage";
 import { ProductDetailPage } from "./catalog/ProductDetailPage";
@@ -127,6 +128,7 @@ function SessionApp() {
                 <Route path="rentals" element={<ManagerRentalsPage />} />
                 <Route path="rentals/:rentalId" element={<RentalDetailPage audience="manager" />} />
                 <Route path="rentals/:rentalId/return" element={<ReturnPage audience="manager" />} />
+                <Route path="analytics" element={<ManagerAnalyticsPage />} />
                 <Route path="products" element={<ManagerListPage section="products" />} />
                 <Route path="rejected" element={<ManagerListPage section="rejected" />} />
                 <Route path="archive" element={<ManagerListPage section="archive" />} />

@@ -1,0 +1,119 @@
+{% extends "admin/base_site.html" %}
+{% load static analytics_tags %}
+
+{% block extrastyle %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'analytics/admin_analytics.css' %}">
+{% endblock %}
+
+{% block breadcrumbs %}
+<div class="breadcrumbs">
+  <a href="{% url 'admin:index' %}">Главная</a> &rsaquo; Аналитика
+</div>
+{% endblock %}
+
+{% block content_title %}{% endblock %}
+
+{% block content %}
+<main class="analytics-admin">
+  <div class="analytics-admin__heading">
+    <div>
+      <h1>Аналитика площадки</h1>
+      <p>{{ analytics.period.label }} · МСК</p>
+    </div>
+    <nav class="analytics-periods" aria-label="Период аналитики">
+      <a href="?period=week&metric={{ metric }}"{% if analytics.period.key == "week" %} aria-current="page"{% endif %}>Неделя</a>
+      <a href="?period=month&metric={{ metric }}"{% if analytics.period.key == "month" %} aria-current="page"{% endif %}>Месяц</a>
+      <a href="?period=year&metric={{ metric }}"{% if analytics.period.key == "year" %} aria-current="page"{% endif %}>Год</a>
+      <a href="?period=custom&date_from={{ analytics.period.date_from }}&date_to={{ analytics.period.date_to }}&metric={{ metric }}"{% if analytics.period.key == "custom" %} aria-current="page"{% endif %}>Свой период</a>
+    </nav>
+  </div>
+
+  {% if analytics.period.key == "custom" %}
+  <form class="analytics-custom-period" method="get">
+    <input type="hidden" name="period" value="custom">
+    <input type="hidden" name="metric" value="{{ metric }}">
+    <label>Дата от <input type="date" name="date_from" value="{{ analytics.period.date_from }}" autocomplete="off" required></label>
+    <label>Дата до <input type="date" name="date_to" value="{{ analytics.period.date_to }}" autocomplete="off" required></label>
+    <button type="submit">Показать</button>
+    <span>Полные дни, МСК</span>
+  </form>
+  {% endif %}
+
+  <section class="analytics-kpis analytics-kpis--primary" aria-label="Суммарные показатели менеджеров">
+    <article class="analytics-kpi analytics-kpi--net">
+      <span>Расчётный итог</span>
+      <strong>{% if analytics.financials.net|slice:":1" != "-" %}+{% endif %}{{ analytics.financials.net|rubles }} ₽</strong>
+      <small>доходы за вычетом расходов</small>
+    </article>
+    <article class="analytics-kpi">
+      <span>Расчётный доход</span>
+      <strong class="positive">+{{ analytics.financials.income|rubles }} ₽</strong>
+      <small>{{ analytics.financials.completed_rentals }} завершённых аренд</small>
+    </article>
+    <article class="analytics-kpi analytics-kpi--expense">
+      <span>Расходы на обслуживание</span>
+      <strong class="negative">−{{ analytics.financials.expenses|rubles }} ₽</strong>
+      <small>{{ analytics.financials.completed_maintenances }} завершённых обслуживаний</small>
+    </article>
+    <article class="analytics-kpi">
+      <span>Средняя загрузка</span>
+      <strong>{{ analytics.utilization.average_percent }}%</strong>
+      <small>по всей площадке</small>
+    </article>
+    <article class="analytics-kpi">
+      <span>Активные просрочки</span>
+      <strong>{{ analytics.active_overdues.rentals }}</strong>
+      <small>на {{ analytics.snapshot_label }}</small>
+    </article>
+  </section>
+
+  <section class="analytics-kpis analytics-kpis--platform" aria-label="Показатели площадки">
+    <article><span>Экземпляры</span><strong>{{ analytics.park.total }}</strong></article>
+    <article><span>Опубликовано товаров</span><strong>{{ analytics.platform.published_products }}</strong></article>
+    <article><span>На модерации</span><strong>{{ analytics.platform.products_on_moderation }}</strong></article>
+    <article><span>Менеджеры</span><strong>{{ analytics.platform.managers }}</strong></article>
+    <article><span>Арендаторы</span><strong>{{ analytics.platform.renters }}</strong></article>
+    <article><span>Заявки</span><strong>{{ analytics.platform.applications }}</strong><small>{{ analytics.platform.waiting_applications }} ожидают сейчас</small></article>
+    <article><span>Созданные брони</span><strong>{{ analytics.platform.bookings }}</strong></article>
+    <article><span>Конверсия в бронь</span><strong>{{ analytics.platform.conversion_percent }}%</strong><progress max="100" value="{{ analytics.platform.conversion_percent }}">{{ analytics.platform.conversion_percent }}%</progress></article>
+  </section>
+
+  <div class="analytics-admin__charts">
+    <section class="analytics-panel" aria-labelledby="category-chart-title">
+      <header>
+        <div><h2 id="category-chart-title">Категории</h2><p>{{ analytics.period.label }} · {% if metric == "income" %}₽{% else %}завершённые аренды{% endif %}</p></div>
+        <nav class="analytics-metric" aria-label="Показатель категорий">
+          <a href="?period={{ analytics.period.key }}&date_from={{ analytics.period.date_from }}&date_to={{ analytics.period.date_to }}&metric=income"{% if metric == "income" %} aria-current="page"{% endif %}>Расчётный доход</a>
+          <a href="?period={{ analytics.period.key }}&date_from={{ analytics.period.date_from }}&date_to={{ analytics.period.date_to }}&metric=completed_rentals"{% if metric == "completed_rentals" %} aria-current="page"{% endif %}>Завершённые аренды</a>
+        </nav>
+      </header>
+      {% if analytics.categories %}
+      <div class="admin-bar-chart" role="img" aria-label="Столбчатая диаграмма категорий">
+        {% for item in analytics.categories %}
+        <div class="admin-bar-chart__row">
+          <span>{{ item.name }}</span>
+          <i style="--bar-value: {% widthratio item|get_item:metric metric_max 100 %}%"></i>
+          <strong>{% if metric == "income" %}{{ item.income|rubles }} ₽{% else %}{{ item.completed_rentals }}{% endif %}</strong>
+        </div>
+        {% endfor %}
+      </div>
+      <details><summary>Таблица данных</summary>
+        <table><thead><tr><th>Категория</th><th>Расчётный доход</th><th>Завершённые аренды</th></tr></thead><tbody>
+        {% for item in analytics.categories %}<tr><td>{{ item.name }}</td><td>{{ item.income|rubles }} ₽</td><td>{{ item.completed_rentals }}</td></tr>{% endfor %}
+        </tbody></table>
+      </details>
+      {% else %}<p class="analytics-empty">За выбранный период завершённых аренд нет.</p>{% endif %}
+    </section>
+
+    <section class="analytics-panel" aria-labelledby="status-chart-title">
+      <header><div><h2 id="status-chart-title">Товары по статусам</h2><p>{{ analytics.snapshot_label }} · товары</p></div><strong>{{ analytics.product_statuses|sum_counts }} всего</strong></header>
+      <div class="status-bars" role="img" aria-label="Распределение товаров по статусам">
+        {% with total=analytics.product_statuses|sum_counts %}{% for item in analytics.product_statuses %}<span class="status-bars__{{ forloop.counter }}" style="width: {% widthratio item.count total 100 %}%" title="{{ item.label }}: {{ item.count }}"></span>{% endfor %}{% endwith %}
+      </div>
+      <ul class="status-legend">{% for item in analytics.product_statuses %}<li><i class="status-bars__{{ forloop.counter }}"></i><span>{{ item.label }}</span><strong>{{ item.count }}</strong></li>{% endfor %}</ul>
+      <details><summary>Таблица данных</summary><table><thead><tr><th>Статус</th><th>Товаров</th></tr></thead><tbody>{% for item in analytics.product_statuses %}<tr><td>{{ item.label }}</td><td>{{ item.count }}</td></tr>{% endfor %}</tbody></table></details>
+    </section>
+  </div>
+</main>
+{% endblock %}

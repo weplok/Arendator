@@ -37,7 +37,7 @@ COOKIE_SECURE = env_bool("DJANGO_COOKIE_SECURE", default=not DEBUG)
 INSTALLED_APPS = [
     "daphne",
     "channels",
-    "django.contrib.admin",
+    "config.apps.ArendatorAdminConfig",
     "django.contrib.auth",
     "django.contrib.contenttypes",
     "django.contrib.sessions",
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "drf_spectacular",
     "rest_framework",
+    "analytics",
     "applications",
     "catalog",
     "categories",
