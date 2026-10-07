@@ -1,56 +1,164 @@
 import { Alert, Box, Button, CircularProgress, Stack } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, Route, Routes } from "react-router-dom";
-import type { ReactNode } from "react";
+import { lazy, Suspense, type ReactNode } from "react";
 
 import { CURRENT_USER_QUERY_KEY, getCurrentUser } from "./api/auth";
-import { LoginPage } from "./auth/LoginPage";
-import { RegisterPage } from "./auth/RegisterPage";
-import { ApplicationFormPage } from "./applications/ApplicationFormPage";
-import {
-  ManagerBookingDetailPage,
-  ManagerBookingsPage,
-  RenterBookingDetailPage,
-  RenterBookingsPage,
-} from "./applications/BookingPages";
-import { HandoverPage } from "./applications/HandoverPage";
-import {
-  ManagerApplicationDetailPage,
-  ManagerApplicationsPage,
-} from "./applications/ManagerApplications";
-import {
-  RenterApplicationDetailPage,
-  RenterApplicationsPage,
-  RenterLayout,
-} from "./applications/RenterApplications";
-import {
-  ManagerRentalsPage,
-  RentalDetailPage,
-  RenterRentalSummary,
-  RenterRentalsPage,
-} from "./applications/RentalPages";
-import { ReturnPage } from "./applications/ReturnPage";
-import { ManagerAnalyticsPage } from "./analytics/ManagerAnalyticsPage";
-import { CatalogPage } from "./catalog/CatalogPage";
-import { ManagerProfilePage } from "./catalog/ManagerProfilePage";
-import { ProductDetailPage } from "./catalog/ProductDetailPage";
 import { CategoriesPage } from "./categories/CategoriesPage";
 import { AppShell } from "./layout/AppShell";
-import { ManagerEditor } from "./manager/ManagerEditor";
-import { ManagerLayout, ManagerListPage } from "./manager/ManagerPage";
-import { ManagerProductPage } from "./manager/ManagerProductPage";
 import { NotificationProvider } from "./notifications/NotificationProvider";
-import {
-  NotificationCenterPage,
-  NotificationSettingsPage,
-} from "./notifications/NotificationPages";
+
+const LoginPage = lazy(() =>
+  import("./auth/LoginPage").then((module) => ({ default: module.LoginPage })),
+);
+const RegisterPage = lazy(() =>
+  import("./auth/RegisterPage").then((module) => ({ default: module.RegisterPage })),
+);
+const ApplicationFormPage = lazy(() =>
+  import("./applications/ApplicationFormPage").then((module) => ({
+    default: module.ApplicationFormPage,
+  })),
+);
+const ManagerBookingDetailPage = lazy(() =>
+  import("./applications/BookingPages").then((module) => ({
+    default: module.ManagerBookingDetailPage,
+  })),
+);
+const ManagerBookingsPage = lazy(() =>
+  import("./applications/BookingPages").then((module) => ({
+    default: module.ManagerBookingsPage,
+  })),
+);
+const RenterBookingDetailPage = lazy(() =>
+  import("./applications/BookingPages").then((module) => ({
+    default: module.RenterBookingDetailPage,
+  })),
+);
+const RenterBookingsPage = lazy(() =>
+  import("./applications/BookingPages").then((module) => ({
+    default: module.RenterBookingsPage,
+  })),
+);
+const HandoverPage = lazy(() =>
+  import("./applications/HandoverPage").then((module) => ({
+    default: module.HandoverPage,
+  })),
+);
+const ManagerApplicationDetailPage = lazy(() =>
+  import("./applications/ManagerApplications").then((module) => ({
+    default: module.ManagerApplicationDetailPage,
+  })),
+);
+const ManagerApplicationsPage = lazy(() =>
+  import("./applications/ManagerApplications").then((module) => ({
+    default: module.ManagerApplicationsPage,
+  })),
+);
+const RenterApplicationDetailPage = lazy(() =>
+  import("./applications/RenterApplications").then((module) => ({
+    default: module.RenterApplicationDetailPage,
+  })),
+);
+const RenterApplicationsPage = lazy(() =>
+  import("./applications/RenterApplications").then((module) => ({
+    default: module.RenterApplicationsPage,
+  })),
+);
+const RenterLayout = lazy(() =>
+  import("./applications/RenterApplications").then((module) => ({
+    default: module.RenterLayout,
+  })),
+);
+const ManagerRentalsPage = lazy(() =>
+  import("./applications/RentalPages").then((module) => ({
+    default: module.ManagerRentalsPage,
+  })),
+);
+const RentalDetailPage = lazy(() =>
+  import("./applications/RentalPages").then((module) => ({
+    default: module.RentalDetailPage,
+  })),
+);
+const RenterRentalSummary = lazy(() =>
+  import("./applications/RentalPages").then((module) => ({
+    default: module.RenterRentalSummary,
+  })),
+);
+const RenterRentalsPage = lazy(() =>
+  import("./applications/RentalPages").then((module) => ({
+    default: module.RenterRentalsPage,
+  })),
+);
+const ReturnPage = lazy(() =>
+  import("./applications/ReturnPage").then((module) => ({
+    default: module.ReturnPage,
+  })),
+);
+const ManagerAnalyticsPage = lazy(() =>
+  import("./analytics/ManagerAnalyticsPage").then((module) => ({
+    default: module.ManagerAnalyticsPage,
+  })),
+);
+const CatalogPage = lazy(() =>
+  import("./catalog/CatalogPage").then((module) => ({ default: module.CatalogPage })),
+);
+const ManagerProfilePage = lazy(() =>
+  import("./catalog/ManagerProfilePage").then((module) => ({
+    default: module.ManagerProfilePage,
+  })),
+);
+const ProductDetailPage = lazy(() =>
+  import("./catalog/ProductDetailPage").then((module) => ({
+    default: module.ProductDetailPage,
+  })),
+);
+const ManagerEditor = lazy(() =>
+  import("./manager/ManagerEditor").then((module) => ({
+    default: module.ManagerEditor,
+  })),
+);
+const ManagerLayout = lazy(() =>
+  import("./manager/ManagerPage").then((module) => ({
+    default: module.ManagerLayout,
+  })),
+);
+const ManagerListPage = lazy(() =>
+  import("./manager/ManagerPage").then((module) => ({
+    default: module.ManagerListPage,
+  })),
+);
+const ManagerProductPage = lazy(() =>
+  import("./manager/ManagerProductPage").then((module) => ({
+    default: module.ManagerProductPage,
+  })),
+);
+const NotificationCenterPage = lazy(() =>
+  import("./notifications/NotificationPages").then((module) => ({
+    default: module.NotificationCenterPage,
+  })),
+);
+const NotificationSettingsPage = lazy(() =>
+  import("./notifications/NotificationPages").then((module) => ({
+    default: module.NotificationSettingsPage,
+  })),
+);
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/categories" element={<CategoriesPage />} />
-      <Route path="*" element={<SessionApp />} />
-    </Routes>
+    <Suspense fallback={<RouteLoading />}>
+      <Routes>
+        <Route path="/categories" element={<CategoriesPage />} />
+        <Route path="*" element={<SessionApp />} />
+      </Routes>
+    </Suspense>
+  );
+}
+
+function RouteLoading() {
+  return (
+    <Box className="full-page-state" role="status" aria-label="Загрузка страницы">
+      <CircularProgress size={32} />
+    </Box>
   );
 }
 

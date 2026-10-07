@@ -135,7 +135,7 @@ def test_product_card_returns_ordered_carousel_photos(
     assert response.json()["photos"] == [response.json()["primary_photo"]]
 
 
-def test_hidden_product_card_returns_not_found(
+def test_hidden_product_card_is_publicly_archived(
     tmp_path: Any,
     settings: Any,
 ) -> None:
@@ -146,7 +146,8 @@ def test_hidden_product_card_returns_not_found(
         reverse("catalog:product-detail", kwargs={"pk": product.pk})
     )
 
-    assert response.status_code == status.HTTP_404_NOT_FOUND
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["status"] == Product.Status.HIDDEN_BY_ADMIN
 
 
 def test_manager_profile_splits_active_and_frozen_products(
@@ -165,6 +166,11 @@ def test_manager_profile_splits_active_and_frozen_products(
         name="Архивный товар",
         status=Product.Status.FROZEN,
     )
+    hidden = create_product(
+        manager=manager,
+        name="Скрытый товар",
+        status=Product.Status.HIDDEN_BY_ADMIN,
+    )
     create_product(manager=manager, name="Черновик", status=Product.Status.DRAFT)
     client = APIClient()
 
@@ -180,9 +186,12 @@ def test_manager_profile_splits_active_and_frozen_products(
 
     assert profile_response.status_code == status.HTTP_200_OK
     assert profile_response.json()["active_products_count"] == 1
-    assert profile_response.json()["frozen_products_count"] == 1
+    assert profile_response.json()["frozen_products_count"] == 2
     assert [item["id"] for item in active_response.json()["results"]] == [active.id]
-    assert [item["id"] for item in frozen_response.json()["results"]] == [frozen.id]
+    assert [item["id"] for item in frozen_response.json()["results"]] == [
+        frozen.id,
+        hidden.id,
+    ]
 
 
 def test_root_characteristic_filter_matches_products_across_child_branches(

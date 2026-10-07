@@ -178,7 +178,7 @@ class Product(models.Model):
         Status.REJECTED: {Status.DRAFT},
         Status.PUBLISHED: {Status.FROZEN, Status.HIDDEN_BY_ADMIN},
         Status.FROZEN: set(),
-        Status.HIDDEN_BY_ADMIN: set(),
+        Status.HIDDEN_BY_ADMIN: {Status.PUBLISHED},
     }
 
     manager = models.ForeignKey(
@@ -353,7 +353,7 @@ class Product(models.Model):
         if (
             self.pk
             and self.status == self.Status.PUBLISHED
-            and original_status != self.Status.PUBLISHED
+            and self.published_at is None
         ):
             if not self.pickup_point_id:
                 errors["pickup_point"] = "Укажите точку самовывоза."

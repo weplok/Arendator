@@ -3,8 +3,10 @@
 from decimal import Decimal
 from typing import Any
 
-from django.test import Client
+from django.contrib import admin
+from django.test import Client, RequestFactory
 from django.urls import reverse
+from notifications.models import Notification
 import pytest
 
 from catalog.models import (
@@ -33,6 +35,41 @@ def create_admin_client() -> Client:
     client = Client()
     client.force_login(administrator)
     return client
+
+
+def product_change_payload(product: Product, action: str) -> dict[str, Any]:
+    photo = product.photos.get()
+    instance = product.instances.get()
+    return {
+        "manager": product.manager_id,
+        "category": product.category_id,
+        "pickup_point": product.pickup_point_id,
+        "name": product.name,
+        "description": product.description,
+        "minute_rate": str(product.minute_rate),
+        "moderation_action": action,
+        "moderation_reason": "",
+        "manager_moderation_label": product.manager.moderation_label,
+        "photos-TOTAL_FORMS": "1",
+        "photos-INITIAL_FORMS": "1",
+        "photos-MIN_NUM_FORMS": "0",
+        "photos-MAX_NUM_FORMS": "1000",
+        "photos-0-id": photo.pk,
+        "photos-0-display_order": photo.display_order,
+        "photos-0-is_primary": "on",
+        "characteristic_values-TOTAL_FORMS": "0",
+        "characteristic_values-INITIAL_FORMS": "0",
+        "characteristic_values-MIN_NUM_FORMS": "0",
+        "characteristic_values-MAX_NUM_FORMS": "1000",
+        "instances-TOTAL_FORMS": "1",
+        "instances-INITIAL_FORMS": "1",
+        "instances-MIN_NUM_FORMS": "0",
+        "instances-MAX_NUM_FORMS": "1000",
+        "instances-0-id": instance.pk,
+        "instances-0-inventory_number": instance.inventory_number,
+        "instances-0-status": instance.status,
+        "_save": "Сохранить",
+    }
 
 
 def test_instance_add_form_derives_manager_and_generates_inventory_number(
@@ -263,3 +300,69 @@ def test_admin_rejects_product_with_reason_and_marks_manager(
         decision=ModerationDecision.Decision.REJECTED,
         reason="Нужна фотография серийного номера.",
     ).exists()
+
+
+def test_admin_hides_published_product_and_warns_manager(
+    tmp_path: Any,
+    settings: Any,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.PUBLISHED)
+    client = create_admin_client()
+
+    response = client.post(
+        reverse("admin:catalog_product_change", args=(product.pk,)),
+        product_change_payload(product, "HIDE"),
+    )
+
+    product.refresh_from_db()
+    notification = Notification.objects.get(
+        recipient=product.manager,
+        event_type=Notification.Event.MODERATION_RESULT,
+    )
+    assert response.status_code == 302
+    assert product.status == Product.Status.HIDDEN_BY_ADMIN
+    assert notification.level == Notification.Level.WARNING
+    assert notification.title == "Карточка скрыта администратором"
+
+
+def test_admin_restores_hidden_product_and_informs_manager(
+    tmp_path: Any,
+    settings: Any,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status=Product.Status.HIDDEN_BY_ADMIN)
+    client = create_admin_client()
+
+    response = client.post(
+        reverse("admin:catalog_product_change", args=(product.pk,)),
+        product_change_payload(product, "RESTORE"),
+    )
+
+    product.refresh_from_db()
+    notification = Notification.objects.get(
+        recipient=product.manager,
+        event_type=Notification.Event.MODERATION_RESULT,
+    )
+    assert response.status_code == 302
+    assert product.status == Product.Status.PUBLISHED
+    assert notification.level == Notification.Level.INFO
+    assert notification.title == "Карточка снова опубликована"
+
+
+def test_existing_user_active_state_is_read_only_in_admin() -> None:
+    administrator = User.objects.create_superuser(
+        email="readonly-admin@example.com",
+        password=TEST_PASSWORD,
+        name="Администратор",
+    )
+    user = User.objects.create_user(
+        email="renter@example.com",
+        password=TEST_PASSWORD,
+        name="Арендатор",
+    )
+    request = RequestFactory().get(f"/admin/users/user/{user.pk}/change/")
+    request.user = administrator
+    user_admin = admin.site._registry[User]
+
+    assert "is_active" in user_admin.get_readonly_fields(request, user)

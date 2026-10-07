@@ -286,7 +286,13 @@ class ProductDetailView(RetrieveAPIView):
         values = ProductCharacteristicValue.objects.order_by("characteristic_id")
         queryset = (
             public_product_queryset()
-            .filter(status__in=(Product.Status.PUBLISHED, Product.Status.FROZEN))
+            .filter(
+                status__in=(
+                    Product.Status.PUBLISHED,
+                    Product.Status.FROZEN,
+                    Product.Status.HIDDEN_BY_ADMIN,
+                )
+            )
             .prefetch_related(
                 Prefetch(
                     "characteristic_values",
@@ -406,7 +412,12 @@ class ManagerProfileView(RetrieveAPIView):
             ),
             frozen_products_count=Count(
                 "products",
-                filter=Q(products__status=Product.Status.FROZEN),
+                filter=Q(
+                    products__status__in=(
+                        Product.Status.FROZEN,
+                        Product.Status.HIDDEN_BY_ADMIN,
+                    )
+                ),
                 distinct=True,
             ),
         )
@@ -418,20 +429,23 @@ class ManagerProductListView(ListAPIView):
     permission_classes = [AllowAny]
     pagination_class = CatalogPagination
     serializer_class = ProductSummarySerializer
-    product_status: str
+    product_statuses: tuple[str, ...]
 
     def get_queryset(self) -> QuerySet[Product]:
         return public_product_queryset().filter(
             manager_id=self.kwargs["pk"],
             manager__role=User.Role.MANAGER,
             manager__is_active=True,
-            status=self.product_status,
+            status__in=self.product_statuses,
         )
 
 
 class ManagerActiveProductListView(ManagerProductListView):
-    product_status = Product.Status.PUBLISHED
+    product_statuses = (Product.Status.PUBLISHED,)
 
 
 class ManagerFrozenProductListView(ManagerProductListView):
-    product_status = Product.Status.FROZEN
+    product_statuses = (
+        Product.Status.FROZEN,
+        Product.Status.HIDDEN_BY_ADMIN,
+    )

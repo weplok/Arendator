@@ -246,9 +246,21 @@ describe("manager profile", () => {
     expect(await screen.findByText("В архиве")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: publicProduct.name })).toBeInTheDocument();
   });
+
+  it("shows an administrator-hidden product as archived", async () => {
+    stubCatalogApi(null, "HIDDEN_BY_ADMIN");
+
+    renderApp("/managers/4?section=frozen");
+
+    expect(await screen.findByText("В архиве")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: publicProduct.name })).toBeInTheDocument();
+  });
 });
 
-function stubCatalogApi(currentUser: typeof renter | null = null) {
+function stubCatalogApi(
+  currentUser: typeof renter | null = null,
+  archivedStatus: "FROZEN" | "HIDDEN_BY_ADMIN" = "FROZEN",
+) {
   const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
     const path = String(input);
     if (path === "/api/v1/auth/me/") {
@@ -328,7 +340,7 @@ function stubCatalogApi(currentUser: typeof renter | null = null) {
       return paginatedResponse([publicProduct]);
     }
     if (path.includes("/api/v1/managers/4/products/frozen/")) {
-      return paginatedResponse([{ ...publicProduct, status: "FROZEN" }]);
+      return paginatedResponse([{ ...publicProduct, status: archivedStatus }]);
     }
     return new Response(null, { status: 404 });
   });

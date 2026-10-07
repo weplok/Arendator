@@ -26,7 +26,9 @@ from catalog.models import (
 from catalog.moderation import (
     approve_all_pending_products,
     approve_product,
+    hide_product,
     reject_product,
+    restore_product,
 )
 from users.models import User
 
@@ -36,6 +38,15 @@ class ProductAdminForm(forms.ModelForm):
         KEEP = "", "Без решения"
         APPROVE = "APPROVE", "Одобрить"
         REJECT = "REJECT", "Отклонить"
+        HIDE = "HIDE", "Скрыть товар"
+        RESTORE = "RESTORE", "Вернуть в каталог"
+
+    ACTION_STATUSES: dict[str, str] = {
+        ModerationAction.APPROVE: Product.Status.ON_MODERATION,
+        ModerationAction.REJECT: Product.Status.ON_MODERATION,
+        ModerationAction.HIDE: Product.Status.PUBLISHED,
+        ModerationAction.RESTORE: Product.Status.HIDDEN_BY_ADMIN,
+    }
 
     moderation_action = forms.ChoiceField(
         label="Решение модерации",
@@ -65,14 +76,32 @@ class ProductAdminForm(forms.ModelForm):
             self.fields["manager_moderation_label"].initial = (
                 self.instance.manager.moderation_label
             )
+        allowed_actions = {
+            "",
+            *(
+                action
+                for action, status in self.ACTION_STATUSES.items()
+                if status == self.instance.status
+            ),
+        }
+        moderation_action_field = cast(
+            forms.ChoiceField,
+            self.fields["moderation_action"],
+        )
+        moderation_action_field.choices = [
+            choice
+            for choice in self.ModerationAction.choices
+            if choice[0] in allowed_actions
+        ]
 
     def clean(self) -> dict[str, Any]:
         cleaned_data = super().clean() or {}
-        action = cleaned_data.get("moderation_action")
-        if action and self.instance.status != Product.Status.ON_MODERATION:
+        action = cast(str, cleaned_data.get("moderation_action", ""))
+        expected_status = self.ACTION_STATUSES.get(action)
+        if action and self.instance.status != expected_status:
             self.add_error(
                 "moderation_action",
-                "Решение доступно только для товара на модерации.",
+                "Это действие недоступно для текущего статуса товара.",
             )
         if (
             action == self.ModerationAction.REJECT
@@ -306,6 +335,10 @@ class ProductAdmin(admin.ModelAdmin):
                     form.cleaned_data["moderation_reason"],
                     administrator,
                 )
+            elif action == ProductAdminForm.ModerationAction.HIDE:
+                moderated_product = hide_product(obj.pk)
+            elif action == ProductAdminForm.ModerationAction.RESTORE:
+                moderated_product = restore_product(obj.pk)
             else:
                 return
         except ValidationError as exc:

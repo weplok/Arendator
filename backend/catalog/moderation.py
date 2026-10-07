@@ -2,7 +2,12 @@
 
 from django.core.exceptions import ValidationError as ModelValidationError
 from django.db import transaction
-from notifications.events import notify_moderation_result, notify_product_submitted
+from notifications.events import (
+    notify_moderation_result,
+    notify_product_hidden,
+    notify_product_restored,
+    notify_product_submitted,
+)
 
 from catalog.models import ModerationDecision, ModerationSettings, Product
 from users.models import User
@@ -74,6 +79,34 @@ def reject_product(product_id: int, reason: str, decided_by: User) -> Product:
             reason=normalized_reason,
         )
         notify_moderation_result(product, approved=False)
+        return product
+
+
+def hide_product(product_id: int) -> Product:
+    """Hide a published product from the catalog through moderation."""
+    with transaction.atomic():
+        product = Product.objects.select_for_update().get(pk=product_id)
+        if product.status != Product.Status.PUBLISHED:
+            raise ModelValidationError(
+                {"status": "Скрыть можно только опубликованный товар."}
+            )
+        product.status = Product.Status.HIDDEN_BY_ADMIN
+        product.save()
+        notify_product_hidden(product)
+        return product
+
+
+def restore_product(product_id: int) -> Product:
+    """Return an administrator-hidden product to the public catalog."""
+    with transaction.atomic():
+        product = Product.objects.select_for_update().get(pk=product_id)
+        if product.status != Product.Status.HIDDEN_BY_ADMIN:
+            raise ModelValidationError(
+                {"status": "Вернуть можно только скрытый администратором товар."}
+            )
+        product.status = Product.Status.PUBLISHED
+        product.save()
+        notify_product_restored(product)
         return product
 
 

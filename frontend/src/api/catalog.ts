@@ -2,7 +2,11 @@ import { z } from "zod";
 
 import { getJson } from "./client";
 
-const productStatusSchema = z.enum(["PUBLISHED", "FROZEN"]);
+const productStatusSchema = z.enum([
+  "PUBLISHED",
+  "FROZEN",
+  "HIDDEN_BY_ADMIN",
+]);
 const productPhotoSchema = z.object({
   id: z.number().int(),
   url: z.string(),

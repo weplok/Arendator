@@ -57,5 +57,5 @@ class CustomUserAdmin(UserAdmin):
         obj: User | None = None,
     ) -> tuple[str, ...]:
         if obj is not None:
-            return ("email", "role")
+            return ("email", "role", "is_active")
         return ()

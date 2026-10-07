@@ -176,7 +176,7 @@ function ManagerLink({ product }: ProductCardProps) {
 }
 
 function AvailabilityLabel({ product, variant = "profile" }: ProductCardProps) {
-  if (product.status === "FROZEN") {
+  if (product.status !== "PUBLISHED") {
     return <Chip label="В архиве" className="availability availability--archived" />;
   }
   if (product.available_instances_count === 0) {

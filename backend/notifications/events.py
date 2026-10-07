@@ -226,6 +226,30 @@ def notify_moderation_result(product: Product, *, approved: bool) -> None:
     )
 
 
+def notify_product_hidden(product: Product) -> None:
+    create_notification(
+        recipient=product.manager,
+        event_type=Notification.Event.MODERATION_RESULT,
+        level=Notification.Level.WARNING,
+        title="Карточка скрыта администратором",
+        message=(f"Карточка товара {product.name} скрыта из каталога администратором."),
+        target_url=f"/manager/products/{product.pk}",
+        target_label="К товару",
+    )
+
+
+def notify_product_restored(product: Product) -> None:
+    create_notification(
+        recipient=product.manager,
+        event_type=Notification.Event.MODERATION_RESULT,
+        level=Notification.Level.INFO,
+        title="Карточка снова опубликована",
+        message=f"Карточка товара {product.name} возвращена в каталог.",
+        target_url=f"/manager/products/{product.pk}",
+        target_label="К товару",
+    )
+
+
 def notify_product_submitted(product: Product) -> None:
     administrators = User.objects.filter(is_staff=True, is_active=True)
     for administrator in administrators:

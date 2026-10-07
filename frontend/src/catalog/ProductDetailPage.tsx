@@ -77,7 +77,7 @@ function ProductDetailContent({ product, user, categories }: ProductDetailConten
         <Typography color="text.secondary">{product.category.name}</Typography>
         <Typography color="text.primary">{product.name}</Typography>
       </Breadcrumbs>
-      {product.status === "FROZEN" ? (
+      {product.status !== "PUBLISHED" ? (
         <Alert severity="info" className="archive-alert">
           Товар находится в архиве. Новые заявки не принимаются.
         </Alert>
@@ -123,7 +123,7 @@ function Rate({ product }: { product: ProductDetail }) {
 }
 
 function ProductAvailability({ product }: { product: ProductDetail }) {
-  const archived = product.status === "FROZEN";
+  const archived = product.status !== "PUBLISHED";
   const available = product.available_instances_count > 0 && !archived;
   const label = archived
     ? "В архиве"
@@ -246,7 +246,7 @@ function ManagerSummary({ product }: { product: ProductDetail }) {
 }
 
 function RequestAction({ product, user }: ProductUserProps) {
-  if (product.status === "FROZEN") {
+  if (product.status !== "PUBLISHED") {
     return <Typography color="text.secondary">Новые заявки не принимаются</Typography>;
   }
   if (product.total_instances_count === 0) {
