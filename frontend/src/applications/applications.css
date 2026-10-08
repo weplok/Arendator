@@ -843,3 +843,16 @@
     scroll-behavior: auto;
   }
 }
+.previous-condition-dialog {
+  display: grid;
+  gap: 16px;
+  overscroll-behavior: contain;
+}
+
+.previous-condition-dialog .product-gallery {
+  min-width: 0;
+}
+
+.previous-condition-dialog .gallery-main-button {
+  max-height: 520px;
+}

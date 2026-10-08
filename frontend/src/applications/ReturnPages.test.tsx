@@ -73,6 +73,32 @@ const rental = {
     updated_at: "2026-09-27T18:24:00+03:00",
   },
   history: [],
+  timeline: [
+    {
+      id: "application-1",
+      stage: "APPLICATION",
+      event: "CREATED",
+      created_at: "2026-09-24T12:00:00+03:00",
+      actor_role: "RENTER",
+      actor_name: "Анна Смирнова",
+      description: "Заявка создана",
+      note: "",
+      old_state: "",
+      new_state: "WAITING",
+    },
+    {
+      id: "rental-1",
+      stage: "RETURN",
+      event: "RETURN_RECEIVED",
+      created_at: "2026-09-27T18:24:00+03:00",
+      actor_role: "MANAGER",
+      actor_name: "Алексей Петров",
+      description: "Возврат принят",
+      note: "",
+      old_state: "ACTIVE",
+      new_state: "RETURN_INSPECTION",
+    },
+  ],
   waiting_applications: [],
 };
 
@@ -124,6 +150,9 @@ describe("return flow", () => {
     expect(await screen.findByText(/Просроченные минуты · 24/)).toBeInTheDocument();
     expect(screen.getByText("Штраф за повреждение")).toBeInTheDocument();
     expect(screen.getByText("Фактически вернули")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Полная история" })).toBeInTheDocument();
+    expect(screen.getByText("Заявка создана")).toBeInTheDocument();
+    expect(screen.getByText("Возврат принят")).toBeInTheDocument();
   });
 
   it("separates completed rentals and opens them from the whole card", async () => {

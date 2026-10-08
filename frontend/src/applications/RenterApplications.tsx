@@ -47,6 +47,7 @@ export function RenterLayout() {
         <NavLink to="/account" end>Заявки</NavLink>
         <NavLink to="/account/bookings">Брони</NavLink>
         <NavLink to="/account/rentals">Аренды</NavLink>
+        <NavLink to="/account/settings">Настройки</NavLink>
         <NavLink
           aria-label={`Уведомления, ${unreadCount > 0 ? "есть непрочитанные" : "нет непрочитанных"}`}
           to="/account/notifications"

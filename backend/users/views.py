@@ -19,6 +19,7 @@ from users.models import User
 from users.serializers import (
     CurrentUserSerializer,
     LoginSerializer,
+    ProfileUpdateSerializer,
     RegistrationSerializer,
 )
 
@@ -87,6 +88,22 @@ class CurrentUserView(APIView):
     def get(self, request: Request) -> Response:
         user = cast(User, request.user)
         return Response(CurrentUserSerializer(user, context={"request": request}).data)
+
+    @extend_schema(
+        request=ProfileUpdateSerializer,
+        responses={200: CurrentUserSerializer},
+    )
+    def patch(self, request: Request) -> Response:
+        user = cast(User, request.user)
+        serializer = ProfileUpdateSerializer(user, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated_user = serializer.save()
+        return Response(
+            CurrentUserSerializer(
+                updated_user,
+                context={"request": request},
+            ).data
+        )
 
 
 @method_decorator(csrf_protect, name="dispatch")

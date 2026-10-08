@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { ApiError, getJson, postJson } from "./client";
+import { ApiError, getJson, mutateJson, postJson } from "./client";
 
 export const registrationRoleSchema = z.enum(["RENTER", "MANAGER"]);
 const accountRoleSchema = z.enum(["RENTER", "MANAGER", "ADMIN"]);
@@ -24,6 +24,12 @@ export interface RegistrationInput extends LoginInput {
   name: string;
   role: RegistrationRole;
   avatar?: File;
+}
+
+export interface ProfileUpdateInput {
+  name: string;
+  avatar?: File;
+  removeAvatar?: boolean;
 }
 
 export const CURRENT_USER_QUERY_KEY = ["auth", "current-user"] as const;
@@ -62,4 +68,20 @@ export async function registerUser(
 
 export async function logout(): Promise<void> {
   await postJson("/api/v1/auth/logout/");
+}
+
+export async function updateProfile(
+  input: ProfileUpdateInput,
+): Promise<CurrentUser> {
+  const formData = new FormData();
+  formData.set("name", input.name);
+  if (input.avatar) {
+    formData.set("avatar", input.avatar);
+  }
+  if (input.removeAvatar) {
+    formData.set("avatar_remove", "true");
+  }
+  return currentUserSchema.parse(
+    await mutateJson("/api/v1/auth/me/", "PATCH", formData),
+  );
 }

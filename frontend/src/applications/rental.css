@@ -307,3 +307,56 @@
     transition: none;
   }
 }
+.rental-timeline-card {
+  display: grid;
+  gap: 24px;
+  padding: clamp(20px, 4vw, 32px);
+}
+
+.rental-timeline {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.rental-timeline li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 20px minmax(0, 1fr);
+  gap: 14px;
+  padding-bottom: 24px;
+}
+
+.rental-timeline li:not(:last-child)::before {
+  position: absolute;
+  top: 18px;
+  bottom: 0;
+  left: 9px;
+  width: 2px;
+  background: var(--color-border);
+  content: "";
+}
+
+.rental-timeline__marker {
+  position: relative;
+  z-index: 1;
+  width: 20px;
+  height: 20px;
+  border: 5px solid #dcebe4;
+  border-radius: 50%;
+  background: var(--color-primary);
+}
+
+.rental-timeline__content {
+  display: grid;
+  gap: 5px;
+}
+
+.rental-timeline__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+}

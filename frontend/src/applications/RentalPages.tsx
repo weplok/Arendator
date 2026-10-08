@@ -2,6 +2,7 @@ import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -104,8 +105,76 @@ export function RentalDetailPage({ audience }: { audience: "manager" | "renter" 
           )}
         </Paper>
       </Box>
+      <RentalTimeline rental={rental} />
     </Box>
   );
+}
+
+function RentalTimeline({ rental }: { rental: Rental }) {
+  return (
+    <Paper variant="outlined" className="rental-timeline-card">
+      <Box>
+        <Typography component="h2" variant="h6">Полная история</Typography>
+        <Typography color="text.secondary">
+          Заявка, бронь, фотоакты, аренда, штрафы и возврат в одной хронологии.
+        </Typography>
+      </Box>
+      {rental.timeline.length === 0 ? (
+        <Typography color="text.secondary">Событий пока нет.</Typography>
+      ) : (
+        <ol className="rental-timeline">
+          {rental.timeline.map((event) => (
+            <li key={event.id}>
+              <span className="rental-timeline__marker" aria-hidden="true" />
+              <Box className="rental-timeline__content">
+                <Box className="rental-timeline__head">
+                  <Chip size="small" variant="outlined" label={timelineStageLabel(event.stage)} />
+                  <Typography component="strong">{event.description}</Typography>
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  {formatMoscowDateTime(event.created_at)} МСК · {event.actor_name}
+                  {event.actor_role === "SYSTEM" ? " (система)" : ""}
+                </Typography>
+                {event.old_state && event.new_state ? (
+                  <Typography variant="body2">
+                    {stateLabel(event.old_state)} → {stateLabel(event.new_state)}
+                  </Typography>
+                ) : null}
+                {event.note ? <Typography variant="body2">{event.note}</Typography> : null}
+              </Box>
+            </li>
+          ))}
+        </ol>
+      )}
+    </Paper>
+  );
+}
+
+function timelineStageLabel(stage: Rental["timeline"][number]["stage"]): string {
+  const labels = {
+    APPLICATION: "Заявка",
+    BOOKING: "Бронь",
+    HANDOVER: "Фотоакт выдачи",
+    RENTAL: "Аренда",
+    PENALTY: "Штрафы",
+    RETURN: "Возврат",
+  } as const;
+  return labels[stage];
+}
+
+function stateLabel(state: string): string {
+  const labels: Record<string, string> = {
+    WAITING: "Ожидает решения",
+    BOOKED: "Забронирована",
+    ACTIVE: "Активна",
+    ARRIVED: "Арендатор прибыл",
+    RENTED: "Аренда началась",
+    RETURN_INSPECTION: "Оформляется возврат",
+    COMPLETED: "Завершена",
+    CANCELLED: "Отменена",
+    EXPIRED: "Истекла",
+  };
+  return labels[state] ?? state;
 }
 
 export function ManagerRentalsPage() {

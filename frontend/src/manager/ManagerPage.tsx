@@ -44,6 +44,7 @@ export function ManagerLayout() {
       <NavLink to="/manager/analytics">Аналитика</NavLink>
       <NavLink to="/manager/rejected">Отклонённые</NavLink>
       <NavLink to="/manager/archive">Архив</NavLink>
+      <NavLink to="/manager/settings">Настройки</NavLink>
       <NavLink
         aria-label={`Уведомления, ${unreadCount > 0 ? "есть непрочитанные" : "нет непрочитанных"}`}
         to="/manager/notifications"

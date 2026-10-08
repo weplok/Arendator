@@ -17,6 +17,8 @@ from applications.views import (
     ManagerBookingListView,
     ManagerQueuePreferenceView,
     ManagerReturnReceiveView,
+    PreviousConditionPhotoView,
+    PreviousConditionView,
     ProductApplicationCreateView,
     RentalDetailView,
     RentalListView,
@@ -89,6 +91,16 @@ urlpatterns = [
         "bookings/<int:pk>/",
         RenterBookingDetailView.as_view(),
         name="renter-booking-detail",
+    ),
+    path(
+        "bookings/<int:pk>/previous-condition/",
+        PreviousConditionView.as_view(),
+        name="booking-previous-condition",
+    ),
+    path(
+        "bookings/<int:pk>/previous-condition/photos/<str:source>/<int:photo_id>/",
+        PreviousConditionPhotoView.as_view(),
+        name="booking-previous-condition-photo",
     ),
     path(
         "bookings/<int:pk>/cancel/",

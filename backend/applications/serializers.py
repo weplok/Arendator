@@ -1,5 +1,6 @@
 """API representations and input validation for rental applications."""
 
+from datetime import datetime
 from decimal import Decimal, ROUND_CEILING
 from typing import Any, cast
 
@@ -396,6 +397,7 @@ class RentalSerializer(serializers.ModelSerializer[Rental]):
     current_cost = serializers.SerializerMethodField()
     return_act = serializers.SerializerMethodField()
     history = RentalEventSerializer(many=True, read_only=True)
+    timeline = serializers.SerializerMethodField()
     waiting_applications = serializers.SerializerMethodField()
 
     class Meta:
@@ -423,6 +425,7 @@ class RentalSerializer(serializers.ModelSerializer[Rental]):
             "current_cost",
             "return_act",
             "history",
+            "timeline",
             "waiting_applications",
             "product",
             "renter",
@@ -512,11 +515,182 @@ class RentalSerializer(serializers.ModelSerializer[Rental]):
             for application in applications
         ]
 
+    def get_timeline(self, rental: Rental) -> list[dict[str, Any]]:
+        application = rental.booking.application
+        manager = application.product.manager
+        renter = application.renter
+        items: list[dict[str, Any]] = []
+        booking_events = list(rental.booking.history.all())
+        has_booking_created = any(
+            event.event == BookingEvent.Event.CREATED for event in booking_events
+        )
+        handover_completion = successful_fixation_event(
+            event_id="handover-completed",
+            stage="HANDOVER",
+            event="HANDOVER_COMPLETED",
+            description="Фиксация приёма завершена",
+            confirmation_times=handover_confirmation_times(rental),
+        )
+        return_completion = successful_fixation_event(
+            event_id="return-fixation-completed",
+            stage="RETURN",
+            event="RETURN_FIXATION_COMPLETED",
+            description="Фиксация возврата завершена",
+            confirmation_times=return_confirmation_times(rental),
+        )
+        event_groups = (
+            ("APPLICATION", application.history.all()),
+            ("BOOKING", booking_events),
+            ("RENTAL", rental.history.all()),
+        )
+        for default_stage, events in event_groups:
+            for event in events:
+                if (
+                    default_stage == "APPLICATION"
+                    and event.event == ApplicationEvent.Event.BOOKED
+                    and has_booking_created
+                ):
+                    continue
+                if handover_completion and is_handover_progress_event(
+                    default_stage,
+                    event.event,
+                ):
+                    continue
+                if return_completion and is_return_progress_event(
+                    default_stage,
+                    event.event,
+                ):
+                    continue
+                stage = timeline_stage(default_stage, event.event)
+                actor_name = "Система"
+                if event.actor == "MANAGER":
+                    actor_name = manager.name
+                elif event.actor == "RENTER":
+                    actor_name = renter.name
+                old_state, new_state = timeline_transition(
+                    default_stage,
+                    event.event,
+                )
+                items.append(
+                    {
+                        "id": f"{default_stage.lower()}-{event.pk}",
+                        "stage": stage,
+                        "event": event.event,
+                        "created_at": event.created_at,
+                        "actor_role": event.actor,
+                        "actor_name": actor_name,
+                        "description": event.get_event_display(),
+                        "note": event.note,
+                        "old_state": old_state,
+                        "new_state": new_state,
+                    }
+                )
+        if handover_completion:
+            items.append(handover_completion)
+        if return_completion:
+            items.append(return_completion)
+        return sorted(items, key=lambda item: (item["created_at"], item["id"]))
+
     def _calculation(self, rental: Rental) -> dict[str, Any]:
         cache = self.context.setdefault("rental_calculations", {})
         if rental.pk not in cache:
             cache[rental.pk] = rental_calculation(rental, timezone.now())
         return cast(dict[str, Any], cache[rental.pk])
+
+
+def handover_confirmation_times(
+    rental: Rental,
+) -> tuple[datetime | None, datetime | None]:
+    try:
+        handover = rental.booking.handover
+    except HandoverAct.DoesNotExist:
+        return None, None
+    return handover.renter_confirmed_at, handover.manager_confirmed_at
+
+
+def return_confirmation_times(
+    rental: Rental,
+) -> tuple[datetime | None, datetime | None]:
+    try:
+        return_act = rental.return_act
+    except ReturnAct.DoesNotExist:
+        return None, None
+    return return_act.renter_confirmed_at, return_act.manager_confirmed_at
+
+
+def successful_fixation_event(
+    *,
+    event_id: str,
+    stage: str,
+    event: str,
+    description: str,
+    confirmation_times: tuple[datetime | None, datetime | None],
+) -> dict[str, Any] | None:
+    renter_confirmed_at, manager_confirmed_at = confirmation_times
+    if renter_confirmed_at is None or manager_confirmed_at is None:
+        return None
+    return {
+        "id": event_id,
+        "stage": stage,
+        "event": event,
+        "created_at": max(renter_confirmed_at, manager_confirmed_at),
+        "actor_role": "SYSTEM",
+        "actor_name": "Система",
+        "description": description,
+        "note": "",
+        "old_state": "",
+        "new_state": "",
+    }
+
+
+def is_handover_progress_event(default_stage: str, event: str) -> bool:
+    return default_stage == "BOOKING" and event in {
+        BookingEvent.Event.MATERIALS_COMPLETED,
+        BookingEvent.Event.HANDOVER_CONFIRMED,
+    }
+
+
+def is_return_progress_event(default_stage: str, event: str) -> bool:
+    return default_stage == "RENTAL" and event in {
+        RentalEvent.Event.MATERIALS_COMPLETED,
+        RentalEvent.Event.RETURN_CONFIRMED,
+    }
+
+
+def timeline_stage(default_stage: str, event: str) -> str:
+    if default_stage == "BOOKING" and event in {
+        "MATERIALS_COMPLETED",
+        "CHANGES_REQUESTED",
+        "HANDOVER_CONFIRMED",
+    }:
+        return "HANDOVER"
+    if default_stage == "RENTAL" and event in {
+        "DAMAGE_UPDATED",
+        "DAMAGE_ACCEPTED",
+        "DAMAGE_REJECTED",
+        "SURCHARGE_WAIVED",
+    }:
+        return "PENALTY"
+    if default_stage == "RENTAL" and event != "RETURN_RECEIVED":
+        return "RETURN"
+    return default_stage
+
+
+def timeline_transition(stage: str, event: str) -> tuple[str, str]:
+    transitions = {
+        ("APPLICATION", "CREATED"): ("", "WAITING"),
+        ("APPLICATION", "BOOKED"): ("WAITING", "BOOKED"),
+        ("APPLICATION", "CANCELLED"): ("WAITING", "CANCELLED"),
+        ("APPLICATION", "EXPIRED"): ("WAITING", "EXPIRED"),
+        ("BOOKING", "CREATED"): ("", "ACTIVE"),
+        ("BOOKING", "ARRIVAL_CONFIRMED"): ("ACTIVE", "ARRIVED"),
+        ("BOOKING", "RENTAL_STARTED"): ("ARRIVED", "RENTED"),
+        ("BOOKING", "CANCELLED"): ("ACTIVE", "CANCELLED"),
+        ("BOOKING", "EXPIRED"): ("ACTIVE", "EXPIRED"),
+        ("RENTAL", "RETURN_RECEIVED"): ("ACTIVE", "RETURN_INSPECTION"),
+        ("RENTAL", "RETURN_COMPLETED"): ("RETURN_INSPECTION", "COMPLETED"),
+    }
+    return transitions.get((stage, event), ("", ""))
 
 
 class RentalBookingSerializer(serializers.ModelSerializer[RentalBooking]):

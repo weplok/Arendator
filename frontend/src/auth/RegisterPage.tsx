@@ -168,7 +168,7 @@ export function RegisterPage() {
             <input
               className="visually-hidden"
               type="file"
-              accept="image/jpeg,image/png,image/webp"
+              accept="image/jpeg,image/png"
               {...form.register("avatar")}
             />
           </Button>

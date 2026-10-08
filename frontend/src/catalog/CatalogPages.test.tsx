@@ -221,14 +221,21 @@ describe("public catalog", () => {
 
     expect(await screen.findByText("ул. Усачёва, 22")).toBeInTheDocument();
     expect(
-      screen.getByRole("link", { name: "Открыть в Яндекс.Картах" }),
-    ).toHaveAttribute("href", "https://yandex.ru/maps/?pt=37.56,55.73&z=16&l=map");
-    expect(
       screen.getAllByRole("link", { name: "Подать заявку" })[0],
     ).toHaveAttribute("href", "/products/7/apply");
     expect(
       screen.getAllByText("Ваши ожидающие заявки: 1 из 3")[0],
     ).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Открыть встроенную карту точки самовывоза",
+      }),
+    );
+    expect(
+      screen.getByRole("link", { name: "Перейти на сайт Яндекс Карт" }),
+    ).toHaveAttribute("href", "https://yandex.ru/maps/?pt=37.56,55.73&z=16&l=map");
+    expect(screen.getByTitle("Карта точки самовывоза: ул. Усачёва, 22"))
+      .toHaveAttribute("src", expect.stringContaining("https://yandex.ru/map-widget/v1/"));
   });
 });
 

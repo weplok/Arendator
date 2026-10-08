@@ -5,17 +5,23 @@ import {
   Breadcrumbs,
   Button,
   Container,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  IconButton,
   Link,
   Paper,
   Typography,
 } from "@mui/material";
 import { useQuery } from "@tanstack/react-query";
+import { useState } from "react";
 import { Link as RouterLink, useParams } from "react-router-dom";
 
 import type { CurrentUser } from "../api/auth";
 import { getProduct, type ProductDetail } from "../api/catalog";
 import { getCategories, type Category } from "../api/categories";
-import { LaunchIcon, LocationIcon } from "../ui/Icons";
+import { CloseIcon, LaunchIcon, LocationIcon } from "../ui/Icons";
 import { CatalogError, CatalogLoading } from "./CatalogState";
 import { formatRate } from "./formatting";
 import { ProductGallery } from "./ProductGallery";
@@ -141,6 +147,10 @@ function ProductAvailability({ product }: { product: ProductDetail }) {
 
 function PickupPoint({ product, user }: ProductUserProps) {
   const pickup = product.pickup_point;
+  const [mapOpen, setMapOpen] = useState(false);
+  const canShowMap = Boolean(
+    user && pickup.latitude && pickup.longitude && pickup.yandex_maps_url,
+  );
   return (
     <Paper component="section" className="product-information pickup-point" elevation={0}>
       <Typography component="h2" variant="h6">Точка самовывоза</Typography>
@@ -149,25 +159,80 @@ function PickupPoint({ product, user }: ProductUserProps) {
         <Typography>{pickup.city} · {pickup.district}</Typography>
       </div>
       {user && pickup.full_address ? (
-        <div className="pickup-point__address">
+        <>
           <Typography color="text.secondary">{pickup.full_address}</Typography>
-          {pickup.yandex_maps_url ? (
-            <Button
-              component="a"
-              href={pickup.yandex_maps_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              endIcon={<LaunchIcon />}
+          {canShowMap ? (
+            <button
+              type="button"
+              className="pickup-map-preview"
+              onClick={() => setMapOpen(true)}
+              aria-label="Открыть встроенную карту точки самовывоза"
             >
-              Открыть в Яндекс.Картах
-            </Button>
+              <span className="pickup-map-preview__pin" aria-hidden="true">
+                <LocationIcon />
+              </span>
+              <span>
+                <strong>Посмотреть на карте</strong>
+                <small>Откроется крупная карта с отмеченной точкой</small>
+              </span>
+            </button>
           ) : null}
-        </div>
+          {mapOpen && canShowMap ? (
+            <Dialog
+              open
+              onClose={() => setMapOpen(false)}
+              fullWidth
+              maxWidth="lg"
+              className="pickup-map-dialog"
+            >
+              <DialogTitle>
+                Точка самовывоза
+                <IconButton
+                  onClick={() => setMapOpen(false)}
+                  aria-label="Закрыть карту"
+                >
+                  <CloseIcon />
+                </IconButton>
+              </DialogTitle>
+              <DialogContent>
+                <iframe
+                  title={`Карта точки самовывоза: ${pickup.full_address}`}
+                  src={createYandexMapEmbedUrl(pickup.longitude!, pickup.latitude!)}
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setMapOpen(false)}>Закрыть</Button>
+                <Button
+                  component="a"
+                  href={pickup.yandex_maps_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="contained"
+                  endIcon={<LaunchIcon />}
+                >
+                  Перейти на сайт Яндекс Карт
+                </Button>
+              </DialogActions>
+            </Dialog>
+          ) : null}
+        </>
       ) : (
         <Typography color="text.secondary">Точный адрес доступен после входа</Typography>
       )}
     </Paper>
   );
+}
+
+function createYandexMapEmbedUrl(longitude: string, latitude: string): string {
+  const coordinates = `${longitude},${latitude}`;
+  const parameters = new URLSearchParams({
+    ll: coordinates,
+    z: "16",
+    pt: `${coordinates},pm2rdm`,
+  });
+  return `https://yandex.ru/map-widget/v1/?${parameters.toString()}`;
 }
 
 function Characteristics({

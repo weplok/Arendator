@@ -49,7 +49,7 @@ INSTALLED_APPS = [
     "applications",
     "catalog",
     "categories",
-    "core",
+    "core.apps.CoreConfig",
     "notifications",
     "users",
 ]

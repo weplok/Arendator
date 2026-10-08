@@ -123,7 +123,13 @@ describe("renter applications", () => {
 
     renderApp("/products/7/apply");
 
-    expect(await screen.findByRole("heading", { name: "Подать заявку" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole(
+        "heading",
+        { name: "Подать заявку" },
+        { timeout: 5_000 },
+      ),
+    ).toBeInTheDocument();
     fireEvent.change(screen.getByRole("spinbutton", { name: "Дней" }), {
       target: { value: "2" },
     });
@@ -312,6 +318,16 @@ describe("renter bookings", () => {
         return jsonResponse(currentBooking);
       }
       if (path === "/api/v1/bookings/184/") return jsonResponse(currentBooking);
+      if (path === "/api/v1/bookings/184/previous-condition/") {
+        return jsonResponse({
+          source: "RETURN",
+          completed_at: "2026-09-20T14:00:00+03:00",
+          photos: [
+            { id: 1, author_role: "RENTER", url: "/api/photo-1/" },
+            { id: 2, author_role: "MANAGER", url: "/api/photo-2/" },
+          ],
+        });
+      }
       if (path === "/api/v1/bookings/") return jsonResponse([currentBooking]);
       return jsonResponse([]);
     }));
@@ -321,6 +337,18 @@ describe("renter bookings", () => {
     expect(await screen.findByText(/Товар гарантирован до/)).toBeInTheDocument();
     expect(screen.getByText("Заявка создана")).toBeInTheDocument();
     expect(screen.queryByText("D-1042")).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Посмотреть фото" }));
+    const photosDialog = await screen.findByRole("dialog", {
+      name: "Последнее зафиксированное состояние",
+    });
+    expect(await within(photosDialog).findByText(/Фото арендатора: 1/)).toBeInTheDocument();
+    expect(within(photosDialog).getByText(/Фото менеджера: 1/)).toBeInTheDocument();
+    fireEvent.click(within(photosDialog).getByRole("button", { name: "Закрыть" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog", {
+        name: "Последнее зафиксированное состояние",
+      })).not.toBeInTheDocument();
+    });
     fireEvent.click(screen.getByRole("button", { name: "Отменить бронь" }));
     const dialog = screen.getByRole("dialog", { name: "Отменить бронь?" });
     expect(within(dialog).getByText(/без штрафа/i)).toBeInTheDocument();

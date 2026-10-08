@@ -32,6 +32,59 @@ class CurrentUserSerializer(serializers.ModelSerializer[User]):
         return user.role
 
 
+def validate_avatar_file(value: Any, *, square_required: bool = False) -> Any:
+    """Validate the public avatar contract shared by account write endpoints."""
+    if value.size > 15 * 1024 * 1024:
+        raise serializers.ValidationError(
+            "Размер изображения не должен превышать 15 МБ."
+        )
+    image = getattr(value, "image", None)
+    image_format = getattr(image, "format", "")
+    if image_format.upper() not in {"JPEG", "PNG"}:
+        raise serializers.ValidationError(
+            "Поддерживаются только изображения JPEG и PNG."
+        )
+    if square_required and image is not None and image.width != image.height:
+        raise serializers.ValidationError("Аватар должен иметь соотношение сторон 1:1.")
+    return value
+
+
+class ProfileUpdateSerializer(serializers.ModelSerializer[User]):
+    """Update only the editable fields of the signed-in account."""
+
+    avatar_remove = serializers.BooleanField(write_only=True, required=False)
+
+    class Meta:
+        model = User
+        fields = ("name", "avatar", "avatar_remove")
+        extra_kwargs = {
+            "name": {"required": False, "allow_blank": False, "max_length": 150},
+            "avatar": {"required": False},
+        }
+
+    def validate_name(self, value: str) -> str:
+        normalized_name = value.strip()
+        if not normalized_name:
+            raise serializers.ValidationError("Укажите имя.")
+        return normalized_name
+
+    def validate_avatar(self, value: Any) -> Any:
+        return validate_avatar_file(value, square_required=True)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if attrs.get("avatar_remove") and attrs.get("avatar"):
+            raise serializers.ValidationError(
+                {"avatar": "Нельзя одновременно загрузить и удалить аватар."}
+            )
+        return attrs
+
+    def update(self, instance: User, validated_data: dict[str, Any]) -> User:
+        remove_avatar = validated_data.pop("avatar_remove", False)
+        if remove_avatar:
+            instance.avatar = ""
+        return cast(User, super().update(instance, validated_data))
+
+
 class RegistrationSerializer(serializers.ModelSerializer[User]):
     """Validate and create an ordinary renter or manager account."""
 
@@ -55,16 +108,7 @@ class RegistrationSerializer(serializers.ModelSerializer[User]):
         return normalized_email
 
     def validate_avatar(self, value: Any) -> Any:
-        if value.size > 15 * 1024 * 1024:
-            raise serializers.ValidationError(
-                "Размер изображения не должен превышать 15 МБ."
-            )
-        image_format = getattr(getattr(value, "image", None), "format", "")
-        if image_format.upper() not in {"JPEG", "PNG", "WEBP"}:
-            raise serializers.ValidationError(
-                "Поддерживаются только изображения JPEG, PNG и WebP."
-            )
-        return value
+        return validate_avatar_file(value)
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         candidate = User(

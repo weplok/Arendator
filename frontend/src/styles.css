@@ -886,6 +886,72 @@ h6 {
   }
 }
 
+.profile-settings {
+  display: grid;
+  gap: 24px;
+  max-width: 720px;
+}
+
+.profile-settings__heading {
+  display: grid;
+  gap: 6px;
+}
+
+.profile-settings__form {
+  display: grid;
+  gap: 20px;
+  padding: clamp(20px, 4vw, 32px);
+}
+
+.profile-settings__avatar {
+  align-items: flex-start;
+}
+
+.profile-settings__avatar-preview {
+  width: 112px !important;
+  height: 112px !important;
+  font-size: 2.5rem !important;
+  background: var(--color-primary) !important;
+}
+
+.profile-settings__form > .MuiButton-root {
+  min-height: 48px;
+  justify-self: start;
+}
+
+.avatar-crop-dialog {
+  display: grid;
+  gap: 20px;
+}
+
+.avatar-crop-dialog,
+.pickup-map-dialog .MuiDialog-paper {
+  overscroll-behavior: contain;
+}
+
+.avatar-crop-frame {
+  width: min(100%, 360px);
+  aspect-ratio: 1;
+  justify-self: center;
+  overflow: hidden;
+  border: 2px solid var(--color-primary);
+  border-radius: 16px;
+  background: #e8eeeb;
+  cursor: grab;
+  touch-action: none;
+}
+
+.avatar-crop-frame.is-dragging {
+  cursor: grabbing;
+  user-select: none;
+}
+
+.avatar-crop-frame canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
 /* Public catalog and product layouts from DESIGN.md. */
 .catalog-page,
 .product-page {
@@ -1198,6 +1264,80 @@ h6 {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.pickup-map-preview {
+  min-height: 168px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 24px;
+  border: 1px solid #b9cec5;
+  border-radius: 14px;
+  color: var(--color-text);
+  text-align: left;
+  background:
+    linear-gradient(rgba(237, 245, 241, 0.88), rgba(237, 245, 241, 0.88)),
+    repeating-linear-gradient(45deg, #d8e6df 0 2px, transparent 2px 18px);
+  cursor: pointer;
+}
+
+.pickup-map-preview:hover {
+  border-color: var(--color-primary);
+  background:
+    linear-gradient(rgba(226, 241, 234, 0.9), rgba(226, 241, 234, 0.9)),
+    repeating-linear-gradient(45deg, #cadfd5 0 2px, transparent 2px 18px);
+}
+
+.pickup-map-preview:focus-visible {
+  outline: 3px solid var(--color-primary);
+  outline-offset: 3px;
+}
+
+.pickup-map-preview span:last-child {
+  display: grid;
+  gap: 4px;
+}
+
+.pickup-map-preview small {
+  color: var(--color-text-muted);
+}
+
+.pickup-map-preview__pin {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--color-primary);
+}
+
+.pickup-map-dialog .MuiDialogTitle-root {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pickup-map-dialog .MuiDialogContent-root {
+  min-height: min(68vh, 720px);
+  padding: 0;
+}
+
+.pickup-map-dialog iframe {
+  width: 100%;
+  height: min(68vh, 720px);
+  display: block;
+  border: 0;
+}
+
+@media (max-width: 600px) {
+  .pickup-map-dialog .MuiDialogActions-root {
+    align-items: stretch;
+    flex-direction: column-reverse;
+  }
 }
 
 .pickup-point__location svg {

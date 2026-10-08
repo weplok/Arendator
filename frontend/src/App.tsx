@@ -14,6 +14,11 @@ const LoginPage = lazy(() =>
 const RegisterPage = lazy(() =>
   import("./auth/RegisterPage").then((module) => ({ default: module.RegisterPage })),
 );
+const ProfileSettingsPage = lazy(() =>
+  import("./auth/ProfileSettingsPage").then((module) => ({
+    default: module.ProfileSettingsPage,
+  })),
+);
 const ApplicationFormPage = lazy(() =>
   import("./applications/ApplicationFormPage").then((module) => ({
     default: module.ApplicationFormPage,
@@ -226,6 +231,7 @@ function SessionApp() {
                 {user?.role === "RENTER" ? <Route path="rentals" element={<RenterRentalsPage />} /> : null}
                 {user?.role === "RENTER" ? <Route path="notifications" element={<NotificationCenterPage />} /> : null}
                 {user?.role === "RENTER" ? <Route path="notifications/settings" element={<NotificationSettingsPage user={user} />} /> : null}
+                {user?.role === "RENTER" ? <Route path="settings" element={<ProfileSettingsPage user={user} />} /> : null}
               </Route>
               {user?.role === "MANAGER" ? <Route path="/manager" element={<ManagerLayout />}>
                 <Route path="applications" element={<ManagerApplicationsPage />} />
@@ -245,6 +251,7 @@ function SessionApp() {
                 <Route path="products/:productId/:step" element={<ManagerEditor />} />
                 <Route path="notifications" element={<NotificationCenterPage />} />
                 <Route path="notifications/settings" element={<NotificationSettingsPage user={user} />} />
+                <Route path="settings" element={<ProfileSettingsPage user={user} />} />
               </Route> : null}
               <Route path="*" element={<Navigate to="/" replace />} />
             </Routes>

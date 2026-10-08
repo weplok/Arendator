@@ -187,6 +187,18 @@ def test_second_confirmation_starts_rental_and_returns_live_calculation(
     assert rental.minute_rate_snapshot == Decimal("1.25")
     assert rental.starting_price_snapshot == Decimal("12.50")
     assert detail.json()["current_cost"] == "13.75"
+    timeline_descriptions = [item["description"] for item in detail.json()["timeline"]]
+    assert timeline_descriptions.count("Бронь создана") == 1
+    assert "Создана бронь" not in timeline_descriptions
+    assert timeline_descriptions.count("Фиксация приёма завершена") == 1
+    assert "Фиксация завершена" not in timeline_descriptions
+    assert "Фотоакт подтверждён" not in timeline_descriptions
+    assert (
+        booking.history.filter(
+            event__in=("MATERIALS_COMPLETED", "HANDOVER_CONFIRMED")
+        ).count()
+        == 4
+    )
     booking.instance.refresh_from_db()
     assert booking.instance.status == ProductInstance.Status.RENTED
 

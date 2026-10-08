@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 import mimetypes
-from typing import Any
+from typing import Any, cast
 
 from applications.models import (
     HandoverPhoto,
@@ -10,6 +10,7 @@ from applications.models import (
     Rental,
     RentalApplication,
     RentalBooking,
+    ReturnAct,
     ReturnPhoto,
 )
 from applications.serializers import (
@@ -68,7 +69,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from catalog.models import Product, ProductInstance, ProductPhoto
+from catalog.models import (
+    Maintenance,
+    MaintenancePhoto,
+    Product,
+    ProductInstance,
+    ProductPhoto,
+)
 from users.models import User
 
 
@@ -158,6 +165,133 @@ def participant_booking(request: Request, booking_id: int) -> RentalBooking:
     return get_object_or_404(query, pk=booking_id)
 
 
+def previous_condition_source(
+    booking: RentalBooking,
+) -> tuple[str, ReturnAct | Maintenance] | None:
+    """Return the newest completed condition act available before this booking."""
+    return_act = (
+        ReturnAct.objects.filter(
+            rental__booking__instance=booking.instance,
+            rental__status=Rental.Status.COMPLETED,
+            rental__ended_at__lte=booking.created_at,
+            photos__isnull=False,
+        )
+        .exclude(rental__booking=booking)
+        .select_related("rental")
+        .distinct()
+        .order_by("-rental__ended_at", "-pk")
+        .first()
+    )
+    maintenance = (
+        Maintenance.objects.filter(
+            instance=booking.instance,
+            completed_at__isnull=False,
+            completed_at__lte=booking.created_at,
+            photos__isnull=False,
+        )
+        .distinct()
+        .order_by("-completed_at", "-pk")
+        .first()
+    )
+    return_time = return_act.rental.ended_at if return_act else None
+    maintenance_time = maintenance.completed_at if maintenance else None
+    if maintenance is not None and (
+        return_time is None
+        or maintenance_time is not None
+        and maintenance_time > return_time
+    ):
+        return "MAINTENANCE", maintenance
+    if return_act is not None:
+        return "RETURN", return_act
+    return None
+
+
+class PreviousConditionView(APIView):
+    """Expose only photos from the latest completed condition act."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request: Request, pk: int) -> Response:
+        booking = participant_booking(request, pk)
+        source = previous_condition_source(booking)
+        if source is None:
+            return Response({"source": None, "completed_at": None, "photos": []})
+        source_type, act = source
+        if source_type == "RETURN":
+            return_act = cast(ReturnAct, act)
+            photos = [
+                {
+                    "id": photo.id,
+                    "author_role": photo.author_role,
+                    "url": (
+                        f"/api/v1/bookings/{booking.pk}/previous-condition/"
+                        f"photos/return/{photo.pk}/"
+                    ),
+                }
+                for photo in return_act.photos.all().order_by("created_at", "id")
+            ]
+            completed_at = return_act.rental.ended_at
+        else:
+            maintenance = cast(Maintenance, act)
+            photos = [
+                {
+                    "id": photo.id,
+                    "author_role": "MANAGER",
+                    "url": (
+                        f"/api/v1/bookings/{booking.pk}/previous-condition/"
+                        f"photos/maintenance/{photo.pk}/"
+                    ),
+                }
+                for photo in maintenance.photos.all().order_by("created_at", "id")
+            ]
+            completed_at = maintenance.completed_at
+        return Response(
+            {
+                "source": source_type,
+                "completed_at": completed_at,
+                "photos": photos,
+            }
+        )
+
+
+class PreviousConditionPhotoView(APIView):
+    """Stream a selected previous-condition photo after booking authorization."""
+
+    permission_classes = [IsAuthenticated]
+
+    def get(
+        self,
+        request: Request,
+        pk: int,
+        source: str,
+        photo_id: int,
+    ) -> FileResponse:
+        booking = participant_booking(request, pk)
+        selected = previous_condition_source(booking)
+        if selected is None or selected[0].lower() != source:
+            raise PermissionDenied("Фотография не относится к актуальному состоянию.")
+        _, act = selected
+        image_file: Any
+        if source == "return":
+            return_photo = get_object_or_404(
+                ReturnPhoto,
+                pk=photo_id,
+                return_act=act,
+            )
+            image_file = return_photo.image
+        elif source == "maintenance":
+            maintenance_photo = get_object_or_404(
+                MaintenancePhoto,
+                pk=photo_id,
+                maintenance=act,
+            )
+            image_file = maintenance_photo.image
+        else:
+            raise PermissionDenied("Неизвестный источник фотографии.")
+        content_type = mimetypes.guess_type(image_file.name or "")[0] or "image/jpeg"
+        return FileResponse(image_file.open("rb"), content_type=content_type)
+
+
 def rental_queryset() -> QuerySet[Rental]:
     return Rental.objects.select_related(
         "booking",
@@ -167,9 +301,12 @@ def rental_queryset() -> QuerySet[Rental]:
         "booking__application__product",
         "booking__application__product__manager",
         "booking__application__product__pickup_point",
+        "booking__handover",
         "return_act",
     ).prefetch_related(
         "history",
+        "booking__history",
+        "booking__application__history",
         "return_act__photos",
         Prefetch(
             "booking__application__product__photos",

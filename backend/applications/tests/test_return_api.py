@@ -284,6 +284,33 @@ def test_return_finish_requires_both_confirmations_and_damage_consent(
     assert maintenance.reason == "Скол покрытия"
 
 
+def test_successful_return_fixation_is_one_timeline_event(
+    tmp_path: Any,
+    settings: Any,
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    rental, renter = create_overdue_rental(timezone.now())
+    manager_client, renter_client = receive_and_add_photos(rental, renter)
+    renter_client.post(f"/api/v1/rentals/{rental.pk}/return/complete/")
+    manager_client.post(f"/api/v1/rentals/{rental.pk}/return/complete/")
+    renter_client.post(f"/api/v1/rentals/{rental.pk}/return/confirm/")
+    manager_client.post(f"/api/v1/rentals/{rental.pk}/return/confirm/")
+
+    detail = renter_client.get(f"/api/v1/rentals/{rental.pk}/")
+
+    assert detail.status_code == 200, detail.json()
+    descriptions = [item["description"] for item in detail.json()["timeline"]]
+    assert descriptions.count("Фиксация возврата завершена") == 1
+    assert "Фиксация завершена" not in descriptions
+    assert "Фотоакт возврата подтверждён" not in descriptions
+    assert (
+        rental.history.filter(
+            event__in=("MATERIALS_COMPLETED", "RETURN_CONFIRMED")
+        ).count()
+        == 4
+    )
+
+
 def test_finishing_return_for_maintenance_requires_reason_without_damage(
     tmp_path: Any,
     settings: Any,

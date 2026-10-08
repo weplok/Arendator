@@ -64,6 +64,15 @@ const handoverPhotoSchema = z.object({
   url: z.string(),
   created_at: z.string(),
 });
+const previousConditionSchema = z.object({
+  source: z.enum(["RETURN", "MAINTENANCE"]).nullable(),
+  completed_at: z.string().nullable(),
+  photos: z.array(z.object({
+    id: z.number().int(),
+    author_role: z.enum(["RENTER", "MANAGER"]),
+    url: z.string(),
+  })),
+});
 const handoverPartySchema = z.object({
   role: z.enum(["RENTER", "MANAGER"]),
   name: z.string(),
@@ -105,6 +114,18 @@ const rentalEventSchema = z.object({
   created_at: z.string(),
   note: z.string(),
 });
+const rentalTimelineEventSchema = z.object({
+  id: z.string(),
+  stage: z.enum(["APPLICATION", "BOOKING", "HANDOVER", "RENTAL", "PENALTY", "RETURN"]),
+  event: z.string(),
+  created_at: z.string(),
+  actor_role: z.enum(["RENTER", "MANAGER", "SYSTEM"]),
+  actor_name: z.string(),
+  description: z.string(),
+  note: z.string(),
+  old_state: z.string(),
+  new_state: z.string(),
+});
 export const rentalSchema = z.object({
   id: z.number().int(),
   booking_id: z.number().int(),
@@ -128,6 +149,7 @@ export const rentalSchema = z.object({
   current_cost: z.string(),
   return_act: returnActSchema.nullable(),
   history: z.array(rentalEventSchema),
+  timeline: z.array(rentalTimelineEventSchema).default([]),
   waiting_applications: z.array(z.object({
     id: z.number().int(),
     renter_name: z.string(),
@@ -178,6 +200,7 @@ export type Rental = z.infer<typeof rentalSchema>;
 export type ReturnAct = z.infer<typeof returnActSchema>;
 export type ReturnParty = z.infer<typeof handoverPartySchema>;
 export type BookingPeriod = z.infer<typeof bookingPeriodSchema>;
+export type PreviousCondition = z.infer<typeof previousConditionSchema>;
 
 export const RENTER_BOOKINGS_KEY = ["bookings", "renter"] as const;
 export const MANAGER_BOOKINGS_KEY = ["bookings", "manager"] as const;
@@ -209,6 +232,14 @@ export async function getManagerBookings(
   const statusParameter = status ? `&status=${status}` : "";
   return managerBookingListSchema.parse(
     await getJson(`/api/v1/manager/bookings/?period=${period}${statusParameter}`),
+  );
+}
+
+export async function getPreviousCondition(
+  bookingId: number,
+): Promise<PreviousCondition> {
+  return previousConditionSchema.parse(
+    await getJson(`/api/v1/bookings/${bookingId}/previous-condition/`),
   );
 }
 

@@ -468,6 +468,14 @@ class ModerationDecision(models.Model):
     def __str__(self) -> str:
         return f"{self.get_decision_display()}: {self.product_name}"
 
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk is not None:
+            raise ValidationError("Решение модерации нельзя изменять.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        raise ValidationError("Решение модерации нельзя удалять.")
+
 
 class ProductCharacteristicValue(models.Model):
     """A typed value for one applicable characteristic of a product."""
@@ -757,6 +765,8 @@ class ProductInstance(models.Model):
 
 
 class Maintenance(models.Model):
+    _audit_was_completed: bool
+
     instance = models.ForeignKey(
         ProductInstance,
         verbose_name="экземпляр",

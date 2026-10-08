@@ -3,14 +3,24 @@
 from datetime import timedelta
 from typing import Any
 
-from applications.models import BookingEvent, RentalApplication, RentalBooking
+from applications.models import (
+    BookingEvent,
+    Rental,
+    RentalApplication,
+    RentalBooking,
+    ReturnAct,
+    ReturnPhoto,
+)
 from applications.services import expire_due_bookings
+from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.utils import timezone
 import pytest
 from rest_framework.test import APIClient
 
 from catalog.models import ProductInstance
-from catalog.tests.factories import create_product, TEST_PASSWORD
+from catalog.tests.factories import create_product, make_png, TEST_PASSWORD
+from core.models import AuditEvent
 from users.models import User
 
 pytestmark = pytest.mark.django_db
@@ -76,6 +86,17 @@ def test_manager_assigns_instance_and_repeat_is_idempotent(
     instance.refresh_from_db()
     assert application.status == RentalApplication.Status.BOOKED
     assert instance.status == ProductInstance.Status.RESERVED
+    audit = AuditEvent.objects.get(
+        entity_type="BOOKING",
+        entity_id=str(created.json()["id"]),
+    )
+    assert audit.event_type == "CREATED"
+    assert audit.actor_role == "MANAGER"
+    assert audit.actor_name == product.manager.name
+    assert audit.instance_id == str(instance.pk)
+    audit.description = "Изменённое описание"
+    with pytest.raises(ValidationError):
+        audit.save()
 
 
 def test_only_manager_application_detail_contains_inventory_choices(
@@ -144,6 +165,88 @@ def test_booking_visibility_and_inventory_number_are_role_scoped(
     assert renter_response.json()["application_created_at"]
     assert manager_response.json()["instance"]["inventory_number"]
     assert stranger_response.status_code == 404
+
+
+def test_booking_exposes_only_latest_completed_condition_photos(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status="PUBLISHED")
+    instance = product.instances.get()
+    previous_renter = create_renter("previous@example.com")
+    previous_application = create_application(product.pk, previous_renter)
+    previous_booking = RentalBooking.objects.create(
+        application=previous_application,
+        instance=instance,
+        status=RentalBooking.Status.RENTED,
+        minute_rate_snapshot=product.minute_rate,
+        starting_price_snapshot=product.minute_rate * 10,
+    )
+    completed_at = timezone.now() - timedelta(hours=1)
+    previous_rental = Rental.objects.create(
+        booking=previous_booking,
+        status=Rental.Status.COMPLETED,
+        minute_rate_snapshot=product.minute_rate,
+        starting_price_snapshot=product.minute_rate * 10,
+        planned_return_at=completed_at,
+        rental_started_at=completed_at - timedelta(days=1),
+        return_received_at=completed_at,
+        ended_at=completed_at,
+    )
+    return_act = ReturnAct.objects.create(
+        rental=previous_rental,
+        renter_comment="Скрытый комментарий",
+        manager_comment="Тоже скрытый комментарий",
+    )
+    photo = ReturnPhoto.objects.create(
+        return_act=return_act,
+        author=previous_renter,
+        author_role=ReturnPhoto.AuthorRole.RENTER,
+        image=SimpleUploadedFile("condition.png", make_png(), content_type="image/png"),
+    )
+    instance.status = ProductInstance.Status.AVAILABLE
+    instance.save(update_fields=("status",))
+    renter = create_renter("next@example.com")
+    application = create_application(product.pk, renter)
+    booking_id = book_application(
+        authenticated_client(product.manager), application, instance
+    ).json()["id"]
+
+    response = authenticated_client(renter).get(
+        f"/api/v1/bookings/{booking_id}/previous-condition/"
+    )
+
+    assert response.status_code == 200
+    assert response.json()["source"] == "RETURN"
+    assert response.json()["photos"] == [
+        {
+            "id": photo.pk,
+            "author_role": "RENTER",
+            "url": (
+                f"/api/v1/bookings/{booking_id}/previous-condition/"
+                f"photos/return/{photo.pk}/"
+            ),
+        }
+    ]
+    assert "comment" not in str(response.json()).lower()
+    assert "previous@example.com" not in str(response.json())
+
+
+def test_previous_condition_is_hidden_from_a_booking_stranger(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status="PUBLISHED")
+    application = create_application(product.pk, create_renter())
+    booking_id = book_application(
+        authenticated_client(product.manager), application, product.instances.get()
+    ).json()["id"]
+
+    response = authenticated_client(create_renter("stranger@example.com")).get(
+        f"/api/v1/bookings/{booking_id}/previous-condition/"
+    )
+
+    assert response.status_code == 404
 
 
 @pytest.mark.parametrize("actor", ["renter", "manager"])

@@ -30,12 +30,14 @@ import {
   getManagerBookings,
   getRenterBooking,
   getRenterBookings,
+  getPreviousCondition,
   MANAGER_BOOKINGS_KEY,
   RENTER_BOOKINGS_KEY,
   type BookingPeriod,
   type RentalBooking,
 } from "../api/bookings";
 import { formatMoscowDateTime, formatRubles } from "./formatting";
+import { ProductGallery } from "../catalog/ProductGallery";
 import "./applications.css";
 
 const PERIOD_LABELS: Record<BookingPeriod, string> = {
@@ -223,6 +225,7 @@ interface BookingDetailProps {
 }
 
 function BookingDetail({ booking, audience, onArrival, onCancel }: BookingDetailProps) {
+  const [photosOpen, setPhotosOpen] = useState(false);
   const canCancel = ACTIVE_STATUSES.has(booking.status);
   const active = booking.status === "ACTIVE";
   const hasActionCard = active
@@ -250,6 +253,9 @@ function BookingDetail({ booking, audience, onArrival, onCancel }: BookingDetail
               <dt>Стартовая стоимость</dt><dd>{formatRubles(booking.starting_price_snapshot)}</dd>
               {booking.arrival_confirmed_at ? <><dt>Прибытие подтверждено</dt><dd>{formatMoscowDateTime(booking.arrival_confirmed_at)} МСК</dd></> : null}
             </dl>
+            <Button variant="outlined" onClick={() => setPhotosOpen(true)}>
+              Посмотреть фото
+            </Button>
           </Paper>
           <Paper variant="outlined" className="application-detail-card">
             <Typography component="h2" variant="h6">История</Typography>
@@ -270,7 +276,80 @@ function BookingDetail({ booking, audience, onArrival, onCancel }: BookingDetail
           {audience === "renter" && canCancel ? <Alert severity="info" sx={{ mt: 2 }}>Бронь гарантирует наличие товара только до срока получения, а не до планового возврата.</Alert> : null}
         </aside>
       </Box>
+      <PreviousConditionDialog
+        booking={booking}
+        open={photosOpen}
+        onClose={() => setPhotosOpen(false)}
+      />
     </>
+  );
+}
+
+function PreviousConditionDialog({
+  booking,
+  open,
+  onClose,
+}: {
+  booking: RentalBooking;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const query = useQuery({
+    queryKey: ["bookings", booking.id, "previous-condition"],
+    queryFn: () => getPreviousCondition(booking.id),
+    enabled: open,
+  });
+  const photos = query.data?.photos.map((photo, index) => ({
+    id: photo.id,
+    url: photo.url,
+    display_order: index,
+    is_primary: index === 0,
+  })) ?? [];
+  const renterPhotos = query.data?.photos.filter(
+    (photo) => photo.author_role === "RENTER",
+  ).length ?? 0;
+  const managerPhotos = photos.length - renterPhotos;
+  return (
+    <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+      <DialogTitle>Последнее зафиксированное состояние</DialogTitle>
+      <DialogContent className="previous-condition-dialog">
+        {query.isPending ? (
+          <div className="application-state" role="status">
+            <CircularProgress size={28} /> Загрузка фотографий…
+          </div>
+        ) : null}
+        {query.isError ? (
+          <Alert severity="error" action={<Button onClick={() => query.refetch()}>Повторить</Button>}>
+            Не удалось загрузить фотографии.
+          </Alert>
+        ) : null}
+        {query.data && photos.length === 0 ? (
+          <Alert severity="info">
+            Для этого экземпляра ещё нет завершённого фотоакта состояния.
+          </Alert>
+        ) : null}
+        {query.data && photos.length > 0 ? (
+          <>
+            <Typography color="text.secondary">
+              {query.data.source === "MAINTENANCE"
+                ? "Контрольный фотоакт после обслуживания"
+                : "Фотоакт последнего завершённого возврата"}
+              {query.data.completed_at
+                ? ` · ${formatMoscowDateTime(query.data.completed_at)} МСК`
+                : ""}
+            </Typography>
+            <ProductGallery photos={photos} productName={booking.product.name} />
+            <Typography variant="caption" color="text.secondary">
+              Фото арендатора: {renterPhotos}. Фото менеджера: {managerPhotos}.
+              Комментарии и данные предыдущего арендатора скрыты.
+            </Typography>
+          </>
+        ) : null}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Закрыть</Button>
+      </DialogActions>
+    </Dialog>
   );
 }
 

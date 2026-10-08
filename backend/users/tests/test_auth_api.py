@@ -237,6 +237,63 @@ def test_current_user_reports_the_service_admin_role() -> None:
     assert response.json()["role"] == "ADMIN"
 
 
+def test_current_user_can_update_name_and_square_avatar(tmp_path: Any) -> None:
+    user = create_renter()
+    client = APIClient()
+    client.force_login(user)
+    avatar = SimpleUploadedFile("avatar.png", ONE_PIXEL_PNG, content_type="image/png")
+
+    with override_settings(MEDIA_ROOT=tmp_path):
+        response = client.patch(
+            reverse("users:current-user"),
+            {"name": "  Анна Петрова  ", "avatar": avatar},
+            format="multipart",
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["name"] == "Анна Петрова"
+    assert response.json()["avatar"].startswith("/media/avatars/")
+
+
+def test_current_user_profile_does_not_allow_email_or_role_changes() -> None:
+    user = create_renter()
+    client = APIClient()
+    client.force_login(user)
+
+    response = client.patch(
+        reverse("users:current-user"),
+        {"email": "other@example.com", "role": User.Role.MANAGER, "name": "Анна"},
+        format="json",
+    )
+
+    user.refresh_from_db()
+    assert response.status_code == status.HTTP_200_OK
+    assert user.email == "renter@example.com"
+    assert user.role == User.Role.RENTER
+
+
+def test_current_user_can_remove_avatar(tmp_path: Any) -> None:
+    avatar = SimpleUploadedFile("avatar.png", ONE_PIXEL_PNG, content_type="image/png")
+    with override_settings(MEDIA_ROOT=tmp_path):
+        user = User.objects.create_user(
+            email="renter@example.com",
+            password=TEST_PASSWORD,
+            name="Анна Смирнова",
+            role=User.Role.RENTER,
+            avatar=avatar,
+        )
+        client = APIClient()
+        client.force_login(user)
+        response = client.patch(
+            reverse("users:current-user"),
+            {"avatar_remove": True},
+            format="json",
+        )
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["avatar"] is None
+
+
 def test_logout_requires_csrf_token() -> None:
     user = create_renter()
     client = APIClient(enforce_csrf_checks=True)

@@ -13,6 +13,21 @@ from catalog.models import Product, ProductInstance, validate_product_photo
 from users.models import User
 
 
+class ImmutableHistoryModel(models.Model):
+    """Prevent accidental mutation of append-only business history rows."""
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args: Any, **kwargs: Any) -> None:
+        if self.pk is not None:
+            raise ValidationError("События истории нельзя изменять.")
+        super().save(*args, **kwargs)
+
+    def delete(self, *args: Any, **kwargs: Any) -> tuple[int, dict[str, int]]:
+        raise ValidationError("События истории нельзя удалять.")
+
+
 def handover_photo_upload_to(instance: "HandoverPhoto", filename: str) -> str:
     """Generate an opaque storage key for a private handover photo."""
     extension = Path(filename).suffix.lower()
@@ -106,7 +121,7 @@ class RentalApplication(models.Model):
         return f"Заявка {self.pk or 'новая'}: {self.product}"
 
 
-class ApplicationEvent(models.Model):
+class ApplicationEvent(ImmutableHistoryModel):
     class Event(models.TextChoices):
         CREATED = "CREATED", "Заявка создана"
         BOOKED = "BOOKED", "Создана бронь"
@@ -272,7 +287,7 @@ class RentalBooking(models.Model):
         return f"Бронь {self.pk or 'новая'}: {self.application.product}"
 
 
-class BookingEvent(models.Model):
+class BookingEvent(ImmutableHistoryModel):
     class Event(models.TextChoices):
         CREATED = "CREATED", "Бронь создана"
         ARRIVAL_CONFIRMED = "ARRIVAL_CONFIRMED", "Прибытие подтверждено"
@@ -425,7 +440,7 @@ class Rental(models.Model):
         ]
 
 
-class RentalEvent(models.Model):
+class RentalEvent(ImmutableHistoryModel):
     class Event(models.TextChoices):
         RETURN_RECEIVED = "RETURN_RECEIVED", "Возврат принят"
         MATERIALS_COMPLETED = "MATERIALS_COMPLETED", "Фиксация завершена"
