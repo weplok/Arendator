@@ -71,7 +71,7 @@ def upload_photo(client: APIClient, booking_id: int, name: str) -> Any:
     )
 
 
-def test_renter_needs_two_photos_but_manager_can_complete_without_photos(
+def test_parties_cannot_complete_without_required_photos(
     tmp_path: Any, settings: Any
 ) -> None:
     settings.MEDIA_ROOT = tmp_path
@@ -92,6 +92,17 @@ def test_renter_needs_two_photos_but_manager_can_complete_without_photos(
     assert renter_complete.json()["field_errors"]["photos"] == [
         "Арендатор должен добавить минимум 2 фотографии."
     ]
+    assert manager_complete.status_code == 400
+    assert manager_complete.json()["field_errors"]["photos"] == [
+        "Менеджер должен добавить минимум 1 фотографию."
+    ]
+
+    manager_upload = upload_photo(manager_client, booking.pk, "manager.png")
+    manager_complete = manager_client.post(
+        f"/api/v1/bookings/{booking.pk}/handover/complete/"
+    )
+
+    assert manager_upload.status_code == 201, manager_upload.json()
     assert manager_complete.status_code == 200, manager_complete.json()
     assert manager_complete.json()["handover"]["manager"]["is_completed"] is True
 
@@ -140,6 +151,7 @@ def test_change_request_preserves_materials_and_requires_fresh_confirmations(
 
     upload_photo(renter_client, booking.pk, "first.png")
     upload_photo(renter_client, booking.pk, "second.png")
+    upload_photo(manager_client, booking.pk, "manager.png")
     renter_client.patch(
         f"/api/v1/bookings/{booking.pk}/handover/materials/",
         {"comment": "Состояние принято"},
@@ -171,6 +183,7 @@ def test_second_confirmation_starts_rental_and_returns_live_calculation(
     manager_client = authenticated_client(booking.application.product.manager)
     upload_photo(renter_client, booking.pk, "first.png")
     upload_photo(renter_client, booking.pk, "second.png")
+    upload_photo(manager_client, booking.pk, "manager.png")
     renter_client.post(f"/api/v1/bookings/{booking.pk}/handover/complete/")
     manager_client.post(f"/api/v1/bookings/{booking.pk}/handover/complete/")
 
@@ -212,6 +225,7 @@ def test_second_confirmation_rejects_past_planned_return(
     manager_client = authenticated_client(booking.application.product.manager)
     upload_photo(renter_client, booking.pk, "first.png")
     upload_photo(renter_client, booking.pk, "second.png")
+    upload_photo(manager_client, booking.pk, "manager.png")
     renter_client.post(f"/api/v1/bookings/{booking.pk}/handover/complete/")
     manager_client.post(f"/api/v1/bookings/{booking.pk}/handover/complete/")
     renter_client.post(f"/api/v1/bookings/{booking.pk}/handover/confirm/")
@@ -238,6 +252,7 @@ def test_renter_activity_exposes_pickup_then_active_rental(
     pickup = renter_client.get("/api/v1/activity/")
     upload_photo(renter_client, booking.pk, "first.png")
     upload_photo(renter_client, booking.pk, "second.png")
+    upload_photo(manager_client, booking.pk, "manager.png")
     renter_client.post(f"/api/v1/bookings/{booking.pk}/handover/complete/")
     manager_client.post(f"/api/v1/bookings/{booking.pk}/handover/complete/")
     renter_client.post(f"/api/v1/bookings/{booking.pk}/handover/confirm/")

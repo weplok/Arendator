@@ -192,9 +192,8 @@ function HandoverWorkspace(props: HandoverWorkspaceProps) {
   };
 
   const pendingCount = uploads.filter((upload) => upload.state === "uploading").length;
-  const missingPhotoCount = audience === "renter"
-    ? Math.max(0, 2 - ownParty.photos.length)
-    : 0;
+  const minimumPhotoCount = audience === "renter" ? 2 : 1;
+  const missingPhotoCount = Math.max(0, minimumPhotoCount - ownParty.photos.length);
   const completionDisabled = pendingCount > 0 || missingPhotoCount > 0;
   const actionError = complete.error ?? confirm.error ?? requestChanges.error;
 

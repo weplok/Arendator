@@ -53,7 +53,9 @@ const booking = {
       name: "Алексей Петров",
       avatar: null,
       comment: "Без замечаний",
-      photos: [],
+      photos: [
+        { id: 3, url: "/photo/3", created_at: "2026-09-25T16:04:00+03:00" },
+      ],
       is_completed: true,
       completed_at: "2026-09-25T16:05:00+03:00",
       is_confirmed: false,
@@ -83,6 +85,29 @@ describe("handover", () => {
     expect(screen.getByRole("button", { name: "Завершить фиксацию" })).toBeDisabled();
     expect(screen.getByText("Добавьте ещё 2 фото")).toBeInTheDocument();
     expect(screen.getByText("Без замечаний")).toBeInTheDocument();
+  });
+
+  it("keeps manager completion disabled until one photo exists", async () => {
+    const managerBooking = {
+      ...booking,
+      handover: {
+        ...booking.handover,
+        manager: {
+          ...booking.handover.manager,
+          comment: "",
+          photos: [],
+          is_completed: false,
+          completed_at: null,
+        },
+      },
+    };
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(managerBooking)));
+
+    renderPage("manager");
+
+    expect(await screen.findByRole("heading", { name: "Фиксация состояния" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Завершить фиксацию" })).toBeDisabled();
+    expect(screen.getByText("Добавьте ещё 1 фото")).toBeInTheDocument();
   });
 
   it("uploads dropped files independently and preserves a failed file for retry", async () => {

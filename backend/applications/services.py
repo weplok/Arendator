@@ -478,6 +478,10 @@ def complete_handover_materials(*, booking_id: int, role: str) -> HandoverAct:
         raise ValidationError(
             {"photos": "Арендатор должен добавить минимум 2 фотографии."}
         )
+    if role == HandoverPhoto.AuthorRole.MANAGER and photo_count < 1:
+        raise ValidationError(
+            {"photos": "Менеджер должен добавить минимум 1 фотографию."}
+        )
     setattr(handover, completed_field, timezone.now())
     handover.save(update_fields=(completed_field, "updated_at"))
     BookingEvent.objects.create(
