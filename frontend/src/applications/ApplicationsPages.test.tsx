@@ -149,6 +149,101 @@ describe("renter applications", () => {
     ).toBe(48 * 3_600_000);
   });
 
+  it("rejects a pickup deadline in the past before sending the request", async () => {
+    const requests: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      requests.push(path);
+      if (path === "/api/v1/auth/me/") return jsonResponse(renter);
+      if (path === "/api/v1/products/7/") return jsonResponse(product);
+      return jsonResponse(application, 201);
+    }));
+
+    renderApp("/products/7/apply");
+
+    await screen.findByRole("heading", { name: "Подать заявку" });
+    expect(screen.getByLabelText("Дата получения")).toHaveAttribute("min");
+    fireEvent.change(screen.getByLabelText("Дата получения"), {
+      target: { value: "2020-01-01" },
+    });
+    fireEvent.click(screen.getByRole("checkbox", {
+      name: /Понимаю, что товар нужно забрать/,
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Подать заявку" }));
+
+    expect(
+      await screen.findByText("Срок получения должен быть в будущем."),
+    ).toBeInTheDocument();
+    expect(requests).not.toContain("/api/v1/products/7/applications/");
+  });
+
+  it("shows a server field error next to the rejected deadline", async () => {
+    document.cookie = "csrftoken=test-token; path=/";
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      if (path === "/api/v1/auth/me/") return jsonResponse(renter);
+      if (path === "/api/v1/products/7/") return jsonResponse(product);
+      if (path === "/api/v1/products/7/applications/") {
+        return jsonResponse({
+          code: "validation_error",
+          message: "Исправьте ошибки в полях.",
+          field_errors: {
+            pickup_deadline_at: ["Срок получения должен быть в будущем."],
+          },
+        }, 400);
+      }
+      return jsonResponse([]);
+    }));
+
+    renderApp("/products/7/apply");
+
+    await screen.findByRole("heading", { name: "Подать заявку" });
+    fireEvent.click(screen.getByRole("checkbox", {
+      name: /Понимаю, что товар нужно забрать/,
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Подать заявку" }));
+
+    expect(
+      await screen.findByText("Срок получения должен быть в будущем."),
+    ).toBeInTheDocument();
+  });
+
+  it("rejects a return deadline equal to the pickup deadline", async () => {
+    const requests: string[] = [];
+    vi.stubGlobal("fetch", vi.fn(async (input: RequestInfo | URL) => {
+      const path = String(input);
+      requests.push(path);
+      if (path === "/api/v1/auth/me/") return jsonResponse(renter);
+      if (path === "/api/v1/products/7/") return jsonResponse(product);
+      return jsonResponse(application, 201);
+    }));
+
+    renderApp("/products/7/apply");
+
+    await screen.findByRole("heading", { name: "Подать заявку" });
+    fireEvent.change(screen.getByLabelText("Дата получения"), {
+      target: { value: "2099-10-10" },
+    });
+    fireEvent.change(screen.getByLabelText("Время получения, МСК"), {
+      target: { value: "12:00" },
+    });
+    fireEvent.change(screen.getByLabelText("Дата возврата"), {
+      target: { value: "2099-10-10" },
+    });
+    fireEvent.change(screen.getByLabelText("Время возврата, МСК"), {
+      target: { value: "12:00" },
+    });
+    fireEvent.click(screen.getByRole("checkbox", {
+      name: /Понимаю, что товар нужно забрать/,
+    }));
+    fireEvent.click(screen.getByRole("button", { name: "Подать заявку" }));
+
+    expect(
+      await screen.findByText("Плановый возврат должен быть позже срока получения."),
+    ).toBeInTheDocument();
+    expect(requests).not.toContain("/api/v1/products/7/applications/");
+  });
+
   it("confirms cancellation and keeps the completed application visible", async () => {
     document.cookie = "csrftoken=test-token; path=/";
     let currentApplication = application;

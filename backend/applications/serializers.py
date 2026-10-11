@@ -36,9 +36,9 @@ class ApplicationCreateSerializer(serializers.Serializer):
         errors: dict[str, str] = {}
         if pickup_deadline_at <= timezone.now():
             errors["pickup_deadline_at"] = "Срок получения должен быть в будущем."
-        if planned_return_at < pickup_deadline_at:
+        if planned_return_at <= pickup_deadline_at:
             errors["planned_return_at"] = (
-                "Плановый возврат не может быть раньше срока получения."
+                "Плановый возврат должен быть позже срока получения."
             )
         if errors:
             raise serializers.ValidationError(errors)

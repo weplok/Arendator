@@ -1,6 +1,7 @@
 """Booking assignment, arrival, cancellation, and expiry API tests."""
 
 from datetime import timedelta
+from threading import Barrier, Thread
 from typing import Any
 
 from applications.models import (
@@ -14,6 +15,8 @@ from applications.models import (
 from applications.services import expire_due_bookings
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import close_old_connections
+from django.test import TransactionTestCase
 from django.utils import timezone
 import pytest
 from rest_framework.test import APIClient
@@ -61,6 +64,57 @@ def book_application(
         {"instance_id": str(instance.pk)},
         format="json",
     )
+
+
+class BookingConcurrencyPostgreSQLTests(TransactionTestCase):
+    """Exercise row locking with independent PostgreSQL connections."""
+
+    databases = {"default"}
+
+    def test_parallel_booking_requests_leave_one_current_booking(self) -> None:
+        from django.conf import settings
+
+        if settings.DATABASES["default"]["ENGINE"] != "django.db.backends.postgresql":
+            self.skipTest("Конкурентная блокировка проверяется только на PostgreSQL.")
+
+        product = create_product(status="PUBLISHED")
+        instance = product.instances.get()
+        first = create_application(product.pk, create_renter("first@example.com"))
+        second = create_application(product.pk, create_renter("second@example.com"))
+        start = Barrier(3)
+        statuses: list[int] = []
+        errors: list[Exception] = []
+
+        def send_booking(application_id: int) -> None:
+            close_old_connections()
+            try:
+                client = authenticated_client(product.manager)
+                start.wait(timeout=10)
+                response = client.post(
+                    f"/api/v1/manager/applications/{application_id}/book/",
+                    {"instance_id": str(instance.pk)},
+                    format="json",
+                )
+                statuses.append(response.status_code)
+            except Exception as exc:
+                errors.append(exc)
+            finally:
+                close_old_connections()
+
+        threads = [
+            Thread(target=send_booking, args=(application_id,))
+            for application_id in (first.pk, second.pk)
+        ]
+        for thread in threads:
+            thread.start()
+        start.wait(timeout=10)
+        for thread in threads:
+            thread.join(timeout=10)
+
+        self.assertFalse(errors, errors)
+        self.assertTrue(all(not thread.is_alive() for thread in threads))
+        self.assertCountEqual(statuses, [201, 409])
+        self.assertEqual(RentalBooking.objects.count(), 1)
 
 
 def test_manager_assigns_instance_and_repeat_is_idempotent(

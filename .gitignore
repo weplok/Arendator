@@ -33,5 +33,7 @@ Thumbs.db
 docs/*
 !docs/design/
 !docs/category-taxonomy-v*.yaml
+!docs/qa/
+!docs/qa/acceptance-traceability.md
 .agents/
 backend/media/*

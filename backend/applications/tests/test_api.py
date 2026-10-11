@@ -4,6 +4,7 @@ from datetime import timedelta
 from typing import Any
 
 from applications.models import RentalApplication
+from applications.services import expire_waiting_applications
 from django.utils import timezone
 import pytest
 from rest_framework.test import APIClient
@@ -59,6 +60,24 @@ def test_renter_can_apply_when_all_instances_are_unavailable(
     assert response.json()["product"]["available_instances_count"] == 0
     assert response.json()["product"]["total_instances_count"] == 1
     assert response.json()["estimated_cost"] == "1887.50"
+
+
+def test_waiting_application_expires_at_pickup_deadline(
+    tmp_path: Any, settings: Any
+) -> None:
+    settings.MEDIA_ROOT = tmp_path
+    product = create_product(status="PUBLISHED")
+    application = RentalApplication.objects.create(
+        product=product,
+        renter=create_renter(),
+        pickup_deadline_at=timezone.now() - timedelta(seconds=1),
+        planned_return_at=timezone.now() + timedelta(days=1),
+    )
+
+    expire_waiting_applications()
+
+    application.refresh_from_db()
+    assert application.status == RentalApplication.Status.EXPIRED
 
 
 def test_pending_application_limit_equals_active_instance_count(
@@ -139,6 +158,7 @@ def test_renter_can_create_one_waiting_application_per_active_instance(
     [
         (timedelta(minutes=-1), timedelta(hours=1), "pickup_deadline_at"),
         (timedelta(hours=2), timedelta(hours=1), "planned_return_at"),
+        (timedelta(hours=2), timedelta(hours=2), "planned_return_at"),
     ],
 )
 def test_application_rejects_invalid_deadlines(

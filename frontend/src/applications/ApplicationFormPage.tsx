@@ -98,6 +98,7 @@ function ApplicationForm({ product }: { product: Awaited<ReturnType<typeof getPr
 
   const pickup = moscowInputToDate(dates.pickupDate, dates.pickupTime);
   const plannedReturn = moscowInputToDate(dates.returnDate, dates.returnTime);
+  const earliestPickupDate = toMoscowInputParts(new Date()).date;
   const estimatedMinutes = pickup && plannedReturn
     ? Math.max(0, Math.ceil((plannedReturn.getTime() - pickup.getTime()) / 60_000))
     : 0;
@@ -207,7 +208,10 @@ function ApplicationForm({ product }: { product: Awaited<ReturnType<typeof getPr
                 value={dates.pickupDate}
                 error={Boolean(errors.pickup)}
                 helperText={errors.pickup}
-                slotProps={{ inputLabel: { shrink: true } }}
+                slotProps={{
+                  htmlInput: { min: earliestPickupDate },
+                  inputLabel: { shrink: true },
+                }}
                 onChange={(event) => updatePickup({ pickupDate: event.target.value })}
               />
               <TextField
@@ -346,8 +350,8 @@ function validateApplicationForm(
   if (!pickup || pickup <= new Date()) {
     errors.pickup = "Срок получения должен быть в будущем.";
   }
-  if (!plannedReturn || !pickup || plannedReturn < pickup) {
-    errors.plannedReturn = "Плановый возврат не может быть раньше срока получения.";
+  if (!plannedReturn || !pickup || plannedReturn <= pickup) {
+    errors.plannedReturn = "Плановый возврат должен быть позже срока получения.";
   }
   if (!consent) errors.consent = "Подтвердите условия подачи заявки.";
   if (errors.pickup || errors.plannedReturn || errors.consent) {

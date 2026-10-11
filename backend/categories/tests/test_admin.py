@@ -1,7 +1,9 @@
 """Django admin configuration tests for categories."""
 
+import json
 from typing import Any
 
+from django import forms
 from django.contrib import admin
 from django.test import Client
 from django.urls import reverse
@@ -9,7 +11,12 @@ import pytest
 
 from catalog.models import ProductCharacteristicValue
 from catalog.tests.factories import create_product
-from categories.admin import CategoryAdmin, CharacteristicAdmin
+from categories.admin import (
+    CategoryAdmin,
+    CategoryAdminForm,
+    CharacteristicAdmin,
+    CharacteristicAdminForm,
+)
 from categories.models import Category, Characteristic, CharacteristicOption
 from users.models import User
 
@@ -21,6 +28,67 @@ def test_category_admin_supports_creating_characteristics_inline() -> None:
 
     assert isinstance(category_admin, CategoryAdmin)
     assert any(inline.model is Characteristic for inline in category_admin.inlines)
+
+
+def test_category_admin_parent_field_excludes_category_and_descendants() -> None:
+    root = Category.objects.create(name="Инструменты")
+    child = Category.objects.create(name="Дрели", parent=root)
+    other = Category.objects.create(name="Фото")
+
+    form = CategoryAdminForm(instance=root)
+
+    parent_field = form.fields["parent"]
+    assert isinstance(parent_field, forms.ModelChoiceField)
+    assert parent_field.queryset is not None
+    parent_ids = set(parent_field.queryset.values_list("pk", flat=True))
+    assert root.pk not in parent_ids
+    assert child.pk not in parent_ids
+    assert other.pk in parent_ids
+
+
+def test_admin_forms_expose_inherited_names_for_client_validation() -> None:
+    root = Category.objects.create(name="Инструменты")
+    child = Category.objects.create(name="Дрели", parent=root)
+    Characteristic.objects.create(
+        category=root, name="Бренд", type=Characteristic.Type.LIST
+    )
+
+    category_form = CategoryAdminForm()
+    characteristic_form = CharacteristicAdminForm(initial={"category": child})
+
+    category_names = json.loads(
+        category_form.fields["parent"].widget.attrs[
+            "data-inherited-characteristic-names"
+        ]
+    )
+    characteristic_names = json.loads(
+        characteristic_form.fields["category"].widget.attrs[
+            "data-inherited-characteristic-names"
+        ]
+    )
+    assert category_names[str(root.pk)] == ["Бренд"]
+    assert characteristic_names[str(child.pk)] == ["Бренд"]
+
+
+def test_category_admin_renders_client_validation_data() -> None:
+    administrator = User.objects.create_superuser(
+        email="admin@example.com",
+        password="Strong-test-pass-937!",
+        name="Администратор",
+    )
+    root = Category.objects.create(name="Инструменты")
+    Characteristic.objects.create(
+        category=root, name="Бренд", type=Characteristic.Type.LIST
+    )
+    client = Client()
+    client.force_login(administrator)
+
+    response = client.get(reverse("admin:categories_category_add"))
+
+    assert response.status_code == 200
+    content = response.content.decode()
+    assert "data-inherited-characteristic-names" in content
+    assert "categories/admin_validation" in content
 
 
 def test_characteristic_admin_supports_creating_list_options_inline() -> None:
@@ -101,6 +169,8 @@ def test_admin_rejects_inherited_characteristic_name_on_new_category() -> None:
 
     assert response.status_code == 200
     assert not Category.objects.filter(name="Дрели").exists()
+    inline_formset = response.context["inline_admin_formsets"][0].formset
+    assert "name" in inline_formset.forms[0].errors
 
 
 def test_admin_rejects_deleting_a_used_list_option(

@@ -357,3 +357,21 @@ def test_return_photo_is_private(tmp_path: Any, settings: Any) -> None:
 
     assert own.status_code == 200
     assert forbidden.status_code == 403
+
+
+def test_rental_calculation_rounds_partial_minutes_and_splits_overdue_cost() -> None:
+    now = timezone.now().replace(microsecond=0)
+    rental, _ = create_overdue_rental(now)
+
+    at_deadline = rental_calculation(rental, rental.planned_return_at)
+    one_second_late = rental_calculation(
+        rental, rental.planned_return_at + timedelta(seconds=1)
+    )
+
+    assert at_deadline["timely_minutes"] == 10
+    assert at_deadline["late_minutes"] == 0
+    assert at_deadline["current_cost"] == Decimal("25.00")
+    assert one_second_late["timely_minutes"] == 10
+    assert one_second_late["late_minutes"] == 1
+    assert one_second_late["late_surcharge"] == Decimal("1.25")
+    assert one_second_late["current_cost"] == Decimal("27.50")
