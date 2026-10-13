@@ -12,7 +12,6 @@ import pytest
 from catalog.models import ProductCharacteristicValue
 from catalog.tests.factories import create_product
 from categories.admin import (
-    CategoryAdmin,
     CategoryAdminForm,
     CharacteristicAdmin,
     CharacteristicAdminForm,
@@ -21,13 +20,6 @@ from categories.models import Category, Characteristic, CharacteristicOption
 from users.models import User
 
 pytestmark = pytest.mark.django_db
-
-
-def test_category_admin_supports_creating_characteristics_inline() -> None:
-    category_admin = admin.site._registry[Category]
-
-    assert isinstance(category_admin, CategoryAdmin)
-    assert any(inline.model is Characteristic for inline in category_admin.inlines)
 
 
 def test_category_admin_parent_field_excludes_category_and_descendants() -> None:

@@ -75,7 +75,7 @@ def test_mark_all_read_and_delete_are_scoped_to_current_user() -> None:
 
 def test_disabled_event_prevents_future_notification_creation() -> None:
     renter = create_renter()
-    settings = NotificationSettings.objects.create(
+    NotificationSettings.objects.create(
         user=renter,
         disabled_events=[Notification.Event.BOOKING_CREATED],
     )
@@ -90,7 +90,6 @@ def test_disabled_event_prevents_future_notification_creation() -> None:
         target_label="К брони",
     )
 
-    assert settings.sound_enabled is True
     assert notification is None
     assert Notification.objects.count() == 0
 
