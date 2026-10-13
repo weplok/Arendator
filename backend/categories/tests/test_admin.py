@@ -4,7 +4,6 @@ import json
 from typing import Any
 
 from django import forms
-from django.contrib import admin
 from django.test import Client
 from django.urls import reverse
 import pytest
@@ -13,7 +12,6 @@ from catalog.models import ProductCharacteristicValue
 from catalog.tests.factories import create_product
 from categories.admin import (
     CategoryAdminForm,
-    CharacteristicAdmin,
     CharacteristicAdminForm,
 )
 from categories.models import Category, Characteristic, CharacteristicOption
@@ -83,11 +81,28 @@ def test_category_admin_renders_client_validation_data() -> None:
     assert "categories/admin_validation" in content
 
 
-def test_characteristic_admin_supports_creating_list_options_inline() -> None:
-    characteristic_admin = admin.site._registry[Characteristic]
+def test_admin_creates_list_characteristic_with_option(admin_client: Client) -> None:
+    category = Category.objects.create(name="Инструменты")
 
-    assert isinstance(characteristic_admin, CharacteristicAdmin)
-    assert characteristic_admin.inlines
+    response = admin_client.post(
+        reverse("admin:categories_characteristic_add"),
+        {
+            "category": category.pk,
+            "name": "Бренд",
+            "type": Characteristic.Type.LIST,
+            "unit": "",
+            "display_order": "0",
+            "options-TOTAL_FORMS": "1",
+            "options-INITIAL_FORMS": "0",
+            "options-0-value": "Bosch",
+            "options-0-display_order": "0",
+            "_save": "Сохранить",
+        },
+    )
+
+    assert response.status_code == 302
+    characteristic = Characteristic.objects.get(category=category, name="Бренд")
+    assert list(characteristic.options.values_list("value", flat=True)) == ["Bosch"]
 
 
 def test_admin_creates_a_category_with_multiple_characteristics() -> None:
