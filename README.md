@@ -4,6 +4,9 @@
 Требования к продукту определены в [SPEC.md](SPEC.md), а отложенные функции —
 в [TODO.md](TODO.md).
 
+Инструкция и конфигурация production-развёртывания для
+`https://arend.weplok.space` находятся в [deploy/README.md](deploy/README.md).
+
 ## Запуск через Docker Compose
 
 Нужен Docker с поддержкой Compose. Команды ниже выполняются из корня репозитория

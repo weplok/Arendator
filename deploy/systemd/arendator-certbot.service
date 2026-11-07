@@ -1,0 +1,9 @@
+[Unit]
+Description=Renew the Arendator TLS certificate
+Requires=docker.service arendator.service
+After=docker.service arendator.service network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/arendator
+ExecStart=/bin/sh deploy/scripts/renew-letsencrypt.sh
