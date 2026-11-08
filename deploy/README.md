@@ -43,6 +43,38 @@ The backend startup applies migrations, loads the category taxonomy, and
 creates the initial superuser if it does not exist. The password in
 `.env.production` does not reset an existing superuser password.
 
+## Temporary HTTP mode without a certificate
+
+The main production configuration requires an existing TLS certificate. To
+start the site temporarily over plain HTTP, apply the HTTP override:
+
+```sh
+docker compose --env-file .env.production \
+  -f docker-compose.prod.yml \
+  -f docker-compose.http.yml \
+  up -d --build --remove-orphans
+docker compose --env-file .env.production \
+  -f docker-compose.prod.yml \
+  -f docker-compose.http.yml \
+  ps
+curl --fail http://arend.weplok.space/api/health/
+```
+
+The override publishes only port 80, disables Django HTTPS redirects and uses
+non-secure session cookies. Use it only for temporary diagnostics and do not
+enter real credentials or production data over HTTP.
+
+To switch from HTTP mode to HTTPS, issue the certificate with the bootstrap
+script. It stops the temporary nginx container and recreates the stack with
+the main TLS configuration:
+
+```sh
+sh deploy/scripts/init-letsencrypt.sh admin@example.com
+```
+
+Do not enable `arendator.service` until the certificate exists: the systemd
+unit intentionally starts the HTTPS-only configuration.
+
 ## Startup and certificate renewal with systemd
 
 After the first certificate has been issued successfully:
