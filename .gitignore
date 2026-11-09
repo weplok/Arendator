@@ -36,5 +36,6 @@ docs/*
 !docs/category-taxonomy-v*.yaml
 !docs/qa/
 !docs/qa/acceptance-traceability.md
+!docs/Отчет*
 .agents/
 backend/media/*
